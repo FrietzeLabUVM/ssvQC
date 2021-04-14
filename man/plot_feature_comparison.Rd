@@ -8,7 +8,8 @@ plot_feature_comparison(
   peak_grs,
   min_fraction = 0,
   min_number = 2,
-  force_euler = FALSE
+  force_euler = FALSE,
+  peak_colors = NULL
 )
 }
 \arguments{
