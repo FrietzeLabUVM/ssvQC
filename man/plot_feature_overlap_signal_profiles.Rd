@@ -9,7 +9,9 @@ plot_feature_overlap_signal_profiles(
   group_var = "overlap_group",
   rank_var = "rnk",
   fill_limits = NULL,
-  signal_var = "y"
+  signal_var = "y",
+  color_var = "name",
+  color_mapping = NULL
 )
 }
 \arguments{

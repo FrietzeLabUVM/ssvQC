@@ -8,6 +8,7 @@ make_centered_query_gr(
   query_dt,
   query_gr,
   view_size = NULL,
+  fetch_fun = NULL,
   n_cores = getOption("mc.cores", 1),
   ...
 )

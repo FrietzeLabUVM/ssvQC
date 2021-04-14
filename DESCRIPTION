@@ -1,11 +1,10 @@
-Package: seqqc
+Package: ssvQC
 Type: Package
-Title: What the Package Does (Title Case)
+Title: QC for enrichment based NGS
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Authors@R: person("Joseph R", "Boyd", email = "jrboyd@uvm.edu",
+                  role = c("aut", "cre"))/
+Description: Peak comparison augmented with signal.  Fraction of Reads in Peaks (FRIP). Strand Cross-Correlation (SCC)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

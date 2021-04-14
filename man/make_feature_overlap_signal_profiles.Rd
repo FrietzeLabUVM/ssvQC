@@ -7,6 +7,7 @@
 make_feature_overlap_signal_profiles(
   query_dt,
   overlaps_gr,
+  feature_groups = NULL,
   view_size = NULL,
   group_var = "overlap_group",
   rank_var = "rnk",
@@ -20,6 +21,8 @@ make_feature_overlap_signal_profiles(
 \item{query_dt}{data.table that specifies file paths with $file.  Suitable for use with \link[seqsetvis]{ssvFetchBam} or \link[seqsetvis]{ssvFetchBigwig}}
 
 \item{overlaps_gr}{GRanges with membership table in mcols.  Create with \link[seqsetvis]{ssvOverlapIntervalSets} or \link[seqsetvis]{ssvConsensusIntervalSets}.}
+
+\item{feature_groups}{Optional data.frame defining "id" and "group". Default of NULL uses \link[seqsetvis]{ssvFactorizeMembTable} on overlaps_gr}
 
 \item{view_size}{Size of regions to fetch.  Will be median of widths of overlaps_gr if NULL. Default is NULL.}
 
