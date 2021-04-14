@@ -1,0 +1,44 @@
+Package: seqqc
+Type: Package
+Title: What the Package Does (Title Case)
+Version: 0.1.0
+Author: Who wrote it
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Suggests:
+    BiocFileCache,
+    BiocManager,
+    BiocStyle,
+    ChIPpeakAnno,
+    covr,
+    cowplot,
+    knitr,
+    rmarkdown,
+    testthat
+Depends: R (>= 3.6), ggplot2, data.table, GenomicRanges
+Imports:
+    digest,
+    eulerr,
+    GenomeInfoDb,
+    GenomicAlignments,
+    ggplotify,
+    grDevices,
+    grid,
+    IRanges,
+    limma,
+    methods,
+    pbapply,
+    pbmcapply,
+    png,
+    RColorBrewer,
+    Rsamtools,
+    rtracklayer,
+    seqsetvis,
+    S4Vectors,
+    stats,
+    UpSetR
+RoxygenNote: 7.1.1
