@@ -412,8 +412,10 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
   levels(prof_dt$facet) = gsub("_", "\n", levels(prof_dt$facet))
 
   prof_dt[, y_relative := y / max(y), list(id)]
-
-  if(is.null(assign_dt)){
+  if(!is.null(prof_dt$cluster_id)){
+    clust_dt = prof_dt
+    assign_dt = unique(clust_dt[, list(id, cluster_id)])
+  }else if(is.null(assign_dt)){
     set.seed(0)
     clust_dt = seqsetvis::ssvSignalClustering(prof_dt, fill_ = fill_var, max_cols = Inf, facet_ = "facet", max_rows = Inf, nclust = nclust)
     assign_dt = unique(clust_dt[, list(id, cluster_id)])
