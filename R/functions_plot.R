@@ -63,10 +63,10 @@ plot_fq_dt = function(fq_dt){
 #'   cowplot::plot_grid(plotlist = peak_plots$consensus[4:5], nrow = 1)
 #' )
 #'
-plot_feature_comparison = function(peak_grs, min_fraction = 0, min_number = 2, force_euler = FALSE){
+plot_feature_comparison = function(peak_grs, min_fraction = 0, min_number = 2, force_euler = FALSE, peak_colors = NULL){
   olaps_all = seqsetvis::ssvOverlapIntervalSets(c(peak_grs))
 
-  p_peak_counts_all = seqsetvis::ssvFeatureBars(peak_grs, bar_colors = "black", show_counts = FALSE, counts_text_colors = "gray60") +
+  p_peak_counts_all = seqsetvis::ssvFeatureBars(peak_grs, show_counts = FALSE, counts_text_colors = "gray60", bar_colors = peak_colors) +
     guides(fill = "none") +
     scale_y_continuous(labels = function(x)x/1e3) +
     labs(y = "peak count (k)", title = "all peaks", subtitle = paste("counts:", formatC(max(lengths(peak_grs)), big.mark = ",", format = "d"), "max"), x = "")
@@ -78,14 +78,14 @@ plot_feature_comparison = function(peak_grs, min_fraction = 0, min_number = 2, f
     labs(title = "all peaks", subtitle = paste("overlaps:", formatC(length(olaps_all), big.mark = ",", format = "d"), "regions"))
 
   if(length(peak_grs) < 4){
-    p_peak_venn_all = seqsetvis::ssvFeatureVenn(olaps_all) +
+    p_peak_venn_all = seqsetvis::ssvFeatureVenn(olaps_all, circle_colors = peak_colors) +
       labs(title = "all peaks", subtitle = paste("overlaps:", formatC(length(olaps_all), big.mark = ",", format = "d"), "regions"))
   }else{
     p_peak_venn_all = ggplot() + theme_void() + labs(title = "Can't run venn for more than 3 groups")
   }
 
   if(length(peak_grs) < 9 || force_euler){
-    p_peak_euler_all = seqsetvis::ssvFeatureEuler(olaps_all) +
+    p_peak_euler_all = seqsetvis::ssvFeatureEuler(olaps_all, circle_colors = peak_colors) +
       labs(title = "all peaks", subtitle = paste("overlaps:", formatC(length(olaps_all), big.mark = ",", format = "d"), "regions"))
   }else{
     p_peak_euler_all = ggplot() + theme_void() + labs(title = "Can't run Euler for more than 8 groups.\nCan force with force_euler = TRUE.")
@@ -132,6 +132,31 @@ plot_feature_comparison = function(peak_grs, min_fraction = 0, min_number = 2, f
       venn = p_peak_venn_consensus,
       euler = p_peak_euler_consensus)
   ))
+}
+
+#' plot_peak_dt
+#'
+#' @param peak_dt
+#' @param name_lev
+#'
+#' @return
+#' @export
+#'
+#' @examples
+plot_peak_dt = function(peak_dt, name_lev = NULL){
+  if(!is.null(name_lev)){
+    stopifnot(all(peak_dt$name %in% name_lev))
+    peak_dt$name = factor(peak_dt$name, levels = name_lev)
+  }
+
+
+  p_peaks1 = ggplot(peak_dt, aes(x = name, y = peak_count, fill = treatment)) +
+    geom_bar(stat = 'identity') +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+          plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
+    scale_y_continuous(labels = function(x)x/1e3) +
+    labs(y = "peaks (k)", x = "")
+  p_peaks1
 }
 
 #' plot_frip_dt
@@ -640,7 +665,7 @@ plot_feature_overlap_signal_profiles = function(grouped_prof_dt, group_var = "ov
 
   p2_line_facets = ggplot(agg_dt, aes_string(x = "x", y = "plot_fill_", color = color_var)) +
     geom_path() +
-    facet_grid(paste0("name_split~", group_var), scales = "free_y") +
+    facet_grid(paste0(group_var, "~name_split"), scales = "free_y") +
     labs(y = "mean read pileup", x = "bp", color = "")
   if(!is.null(color_mapping)){
     p2_line_facets = p2_line_facets + scale_color_manual(values = color_mapping)
