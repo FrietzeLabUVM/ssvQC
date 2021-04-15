@@ -201,27 +201,29 @@ QcConfigFeatures.files = function(file_paths,
     )
 }
 
-.enforce_file_var = function(df){
-    if(!"file" %in% colnames(df)){
-        file_var = colnames(df)[1]
+.enforce_file_var = function(my_df){
+    if(!"file" %in% colnames(my_df)){
+        file_var = colnames(my_df)[1]
         message("Guessing file paths are in first column, ", file_var)
-        colnames(df)[colnames(df) == file_var] = "file"
+        colnames(my_df)[colnames(my_df) == file_var] = "file"
     }
-    df
+    my_df
 }
 
-.enforce_name_var = function(df){
-    if(!"name" %in% colnames(df)){
-        cn = setdiff(colnames(df), c("file", "name", "name_split"))
-        nams = apply(df[, cn], 1, function(x)paste(x, collapse = "_"))
-        df$name = nams
+.enforce_name_var = function(my_df){
+    if(!"name" %in% colnames(my_df)){
+        cn = setdiff(colnames(my_df), c("file", "name", "name_split"))
+        nams = apply(my_df[, cn, with = FALSE], 1, function(x)paste(x, collapse = "_"))
+        my_df$name = nams
     }
-    if(!"name_split" %in% colnames(df)){
-        cn = setdiff(colnames(df), c("file", "name", "name_split"))
-        nams = apply(df[, cn], 1, function(x)paste(x, collapse = "\n"))
-        df$name_split = nams
+    if(!"name_split" %in% colnames(my_df)){
+        cn = setdiff(colnames(my_df), c("file", "name", "name_split"))
+        nams = apply(my_df[, cn, with = FALSE], 1, function(x)paste(x, collapse = "\n"))
+        my_df$name_split = nams
     }
-    df
+    my_df$name = factor(my_df$name, levels = my_df$name)
+    my_df$name_split = factor(my_df$name_split, levels = my_df$name_split)
+    my_df
 }
 
 
@@ -571,14 +573,14 @@ setGeneric("QcScaleColor", function(object){standardGeneric("QcScaleColor")})
 #' @rdname QcScaleColor-methods
 #' @aliases QcScaleColor,QcConfig-method
 #' @examples
-#' df = data.frame(group = c("A", "B"))
-#' df$x = 1:2
-#' df$y = 1
+#' my_df = data.frame(group = c("A", "B"))
+#' my_df$x = 1:2
+#' my_df$y = 1
 #' library(ggplot2)
-#' ggplot(df, aes(x = x, y = y, color = group)) +
+#' ggplot(my_df, aes(x = x, y = y, color = group)) +
 #'   geom_point(size = 20) +
 #'   expand_limits(x = c(0, 3)) +
-#'   QcScaleColor(QcConfig(df$group))
+#'   QcScaleColor(QcConfig(my_df$group))
 setMethod("QcScaleColor", c("QcConfig"), function(object){
     cols = QcColorMapping(object)
     ggplot2::scale_color_manual(values = cols)
@@ -599,14 +601,14 @@ setGeneric("QcScaleFill", function(object){standardGeneric("QcScaleFill")})
 #' @rdname QcScaleFill-methods
 #' @aliases QcScaleFill,QcConfig-method
 #' @examples
-#' df = data.frame(group = c("A", "B"))
-#' df$x = 1:2
-#' df$y = 1
+#' my_df = data.frame(group = c("A", "B"))
+#' my_df$x = 1:2
+#' my_df$y = 1
 #' library(ggplot2)
-#' ggplot(df, aes(x = x, y = y, fill = group)) +
+#' ggplot(my_df, aes(x = x, y = y, fill = group)) +
 #'   geom_point(size = 20, pch = 22) +
 #'   expand_limits(x = c(0, 3)) +
-#'   QcScaleFill(QcConfig(df$group))
+#'   QcScaleFill(QcConfig(my_df$group))
 setMethod("QcScaleFill", c("QcConfig"), function(object){
     cols = object@group_colors
     names(cols) = as.character(object@group_names)

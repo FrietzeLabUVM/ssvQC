@@ -1,3 +1,11 @@
+#' Title
+#'
+#' @param my_plots 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 sync_width = function(my_plots){
   stopifnot(class(my_plots) == "list")
   is_ok = sapply(my_plots, function(x){
@@ -27,6 +35,14 @@ sync_width = function(my_plots){
   my_grobs
 }
 
+#' Title
+#'
+#' @param my_plots 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 sync_height = function(my_plots){
   stopifnot(class(my_plots) == "list")
   is_ok = sapply(my_plots, function(x){
@@ -56,6 +72,15 @@ sync_height = function(my_plots){
   my_grobs
 }
 
+#' Title
+#'
+#' @param x 
+#' @param n 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 sampleCap = function(x, n = 500){
   n = min(n, length(unique(x)))
   out = sample(unique(x), n)
@@ -63,6 +88,14 @@ sampleCap = function(x, n = 500){
   out
 }
 
+#' Title
+#'
+#' @param f 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 get_mapped_reads = function(f){
   stats = Rsamtools::idxstatsBam(f)
   sum(stats[,3])

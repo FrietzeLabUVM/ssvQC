@@ -7,7 +7,7 @@ setClass("ssvQC",
            bfc = "BiocFileCache"
          ))
 
-#' Title
+#' ssvQC
 #'
 #' @param feature_config 
 #' @param signal_config 
@@ -59,6 +59,10 @@ ssvQC = function(feature_config,
     bfc = BiocFileCache::BiocFileCache()
   }
   
+  stopifnot(file.exists(signal_config@meta_data$file))
+  stopifnot(file.exists(signal_config@meta_data$file))
+    
+  dir.create(out_dir, showWarnings = FALSE)
   new("ssvQC",
       feature_config = feature_config,
       signal_config = signal_config,
@@ -141,4 +145,28 @@ get_feature_file_load_function = function(feature_files){
   sapply(file_types, .get_feature_file_load_function)
   
 
+}
+
+#' Title
+#'
+#' @param sqc 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+#' 
+#' sqc = ssvQC(feature_config_file, bam_config_file)
+qcBasicMetrics = function(sqc){
+  if(grepl("bam", sqc@signal_config@read_mode)){
+     if(is.null(sqc@signal_config@meta_data$mapped_reads)){
+       sqc@signal_config@meta_data$mapped_reads = sapply(sqc@signal_config@meta_data$file, get_mapped_reads)
+     }
+  }
+}
+
+qcAssessPeaks = function(){
+  signal_config
 }

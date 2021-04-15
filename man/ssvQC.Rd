@@ -2,7 +2,7 @@
 % Please edit documentation in R/ssvQC.R
 \name{ssvQC}
 \alias{ssvQC}
-\title{Title}
+\title{ssvQC}
 \usage{
 ssvQC(feature_config, signal_config, out_dir = getwd(), bfc = NULL)
 }
@@ -19,7 +19,7 @@ ssvQC(feature_config, signal_config, out_dir = getwd(), bfc = NULL)
 
 }
 \description{
-Title
+ssvQC
 }
 \examples{
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")

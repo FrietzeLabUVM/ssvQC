@@ -21,12 +21,12 @@ QcScaleFill
 QcScaleFill for QcConfig
 }
 \examples{
-df = data.frame(group = c("A", "B"))
-df$x = 1:2
-df$y = 1
+my_df = data.frame(group = c("A", "B"))
+my_df$x = 1:2
+my_df$y = 1
 library(ggplot2)
-ggplot(df, aes(x = x, y = y, fill = group)) +
+ggplot(my_df, aes(x = x, y = y, fill = group)) +
   geom_point(size = 20, pch = 22) +
   expand_limits(x = c(0, 3)) +
-  QcScaleFill(QcConfig(df$group))
+  QcScaleFill(QcConfig(my_df$group))
 }
