@@ -62,3 +62,8 @@ sampleCap = function(x, n = 500){
   if(is.factor(out)) out = as.character(out)
   out
 }
+
+get_mapped_reads = function(f){
+  stats = Rsamtools::idxstatsBam(f)
+  sum(stats[,3])
+}

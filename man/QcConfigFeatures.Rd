@@ -2,39 +2,44 @@
 % Please edit documentation in R/QcConfig.R
 \name{QcConfigFeatures}
 \alias{QcConfigFeatures}
-\title{QcConfigFeatures}
+\title{Title}
 \usage{
 QcConfigFeatures(
-  file_paths,
-  groups = NULL,
-  group_names = NULL,
-  group_colors = NULL,
-  n_peaks = 5000,
+  cfg_df,
+  group_var = "file",
+  color_var = group_var,
+  color_mapping = NULL,
+  feature_load_FUN = NULL,
+  n_peaks = 1000,
   min_fraction = 0,
   min_number = 1
 )
 }
 \arguments{
-\item{file_paths}{character paths to files}
+\item{cfg_df}{}
 
-\item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
+\item{group_var}{}
 
-\item{group_names}{vector of group names to assign from according to groups}
+\item{color_var}{}
 
-\item{group_colors}{vector of colors to use per group}
+\item{color_mapping}{}
 
-\item{n_peaks}{number of peaks to subset for}
+\item{feature_load_FUN}{}
 
-\item{min_fraction}{A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.}
+\item{n_peaks}{}
 
-\item{min_number}{An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.}
+\item{min_fraction}{}
+
+\item{min_number}{}
 }
 \value{
-a QcConfigFeatures object
+
 }
 \description{
-QcConfigFeatures
+Title
 }
 \examples{
-QcConfigFeatures(c("A", "B"))
+feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+cfg_df = parse_config_body(feature_config_file)
+QcConfigFeatures(cfg_df)
 }

@@ -1,0 +1,7 @@
+#CFG main_dir=$SSVQC_DATA consensus_n=2 consensus_fraction=0
+#CFG color_by=cell color_map=MCF10A:blue2,MCF10AT1:darkmagenta,MCF10CA1:violetred1
+#CFG run_by=mark to_run=CTCF
+file,cell,mark,rep
+MCF10A_CTCF_random100.narrowPeak,MCF10A,CTCF,rep1
+MCF10AT1_CTCF_random100.narrowPeak,MCF10AT1,CTCF,rep1
+MCF10CA1_CTCF_random100.narrowPeak,MCF10CA1,CTCF,rep1

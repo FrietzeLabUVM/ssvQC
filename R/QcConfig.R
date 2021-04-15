@@ -10,10 +10,10 @@
 #' @export
 setClass("QcConfig",
          representation = list(
-             file_paths = "character",
-             groups = "numeric",
-             group_names = "character",
-             group_colors = "character"
+             meta_data = "data.frame",
+             group_var = "character",
+             color_var = "character",
+             color_mapping = "character"
          ))
 
 #' QcConfig
@@ -28,10 +28,10 @@ setClass("QcConfig",
 #' @importFrom methods new
 #' @examples
 #' QcConfig(c("A", "B"))
-QcConfig = function(file_paths,
-                    groups = NULL,
-                    group_names = NULL,
-                    group_colors = NULL){
+QcConfig.files = function(file_paths,
+                          groups = NULL,
+                          group_names = NULL,
+                          group_colors = NULL){
     if(is.null(groups)){
         groups = seq_along(file_paths)
     }
@@ -41,12 +41,15 @@ QcConfig = function(file_paths,
     if(is.null(group_colors)){
         group_colors = seqsetvis::safeBrew(length(group_names))
     }
-
+    if(is.null(names(group_colors))){
+        names(group_colors) = group_names
+    }
+    cfg_df = data.frame(file = as.character(file_paths), group = group_names[groups])
     new("QcConfig",
-        file_paths =  as.character(file_paths),
-        groups = groups,
-        group_names = group_names,
-        group_colors = group_colors
+        meta_data =  cfg_df,
+        group_var = "group",
+        color_var = "group",
+        color_mapping = group_colors
     )
 }
 
@@ -66,6 +69,83 @@ setClass("QcConfigFeatures", contains = "QcConfig",
              min_number = "numeric"
          ))
 
+
+#' Title
+#'
+#' @param cfg_df 
+#' @param group_var 
+#' @param color_var 
+#' @param color_mapping 
+#' @param feature_load_FUN 
+#' @param n_peaks 
+#' @param min_fraction 
+#' @param min_number 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#' cfg_df = parse_config_body(feature_config_file)
+#' QcConfigFeatures(cfg_df)
+QcConfigFeatures = function(cfg_df,
+                             group_var = "file",
+                             color_var = group_var,
+                             color_mapping = NULL,
+                             feature_load_FUN = NULL,
+                            n_peaks = 1e3,
+                            min_fraction = 0,
+                            min_number = 1){
+    .enforce_file_var(cfg_df)
+    if(!group_var %in% colnames(cfg_df)){
+        stop("group_var ", group_var, " was not in column names.")
+    }
+    if(!color_var %in% colnames(cfg_df)){
+        stop("color_var ", color_var, " was not in column names.")
+    }
+    
+    if(!is.null(color_mapping)){
+        if(!is.null(names(color_mapping))){
+            color_names = names(color_mapping)
+        }else if(is.factor(cfg_df[[color_var]])){
+            color_names = levels(cfg_df[[color_var]])
+        }else{
+            color_names = unique(cfg_df[[color_var]])
+        }
+        stopifnot(length(color_names) == length(color_mapping))
+        names(color_mapping) = color_var
+        
+    }else{
+        if(is.factor(cfg_df[[color_var]])){
+            color_names = levels(cfg_df[[color_var]])
+        }else{
+            color_names = unique(cfg_df[[color_var]])
+        }
+        color_mapping = seqsetvis::safeBrew(length(color_names))
+        names(color_mapping) = color_names
+    }
+    
+    stopifnot(cfg_df[[color_var]] %in% names(color_mapping))
+
+    if(is.null(feature_load_FUN)){
+        file_paths = cfg_df[["file"]]
+        file_formats = guess_feature_file_format(file_paths)
+        stopifnot(length(unique(file_formats)) == 1)
+        feature_load_FUN = get_feature_file_load_function(file_paths[1])[[1]]
+    }
+    
+    new("QcConfigFeatures",
+        meta_data =  cfg_df,
+        group_var = group_var,
+        color_var = color_var,
+        color_mapping = color_mapping,
+        feature_load_FUN = feature_load_FUN,
+        n_peaks = n_peaks,
+        min_fraction = min_fraction,
+        min_number = min_number)
+}
+
+
 #' QcConfigFeatures
 #'
 #' @param file_paths character paths to files
@@ -80,14 +160,15 @@ setClass("QcConfigFeatures", contains = "QcConfig",
 #' @export
 #'
 #' @examples
-#' QcConfigFeatures(c("A", "B"))
-QcConfigFeatures = function(file_paths,
-                            groups = NULL,
-                            group_names = NULL,
-                            group_colors = NULL,
-                            n_peaks = 5e3,
-                            min_fraction = 0,
-                            min_number = 1){
+#' QcConfigFeatures.files(c("A.narrowPeak", "B.narrowPeak"))
+QcConfigFeatures.files = function(file_paths,
+                                  group_names = NULL,
+                                  groups = NULL,
+                                  group_colors = NULL,
+                                  feature_load_FUN = NULL,
+                                  n_peaks = 1e3,
+                                  min_fraction = 0,
+                                  min_number = 1){
     if(is.null(groups)){
         groups = seq_along(file_paths)
     }
@@ -97,16 +178,94 @@ QcConfigFeatures = function(file_paths,
     if(is.null(group_colors)){
         group_colors = seqsetvis::safeBrew(length(group_names))
     }
-
+    if(is.null(names(group_colors))){
+        names(group_colors) = group_names
+    }
+    if(is.null(feature_load_FUN)){
+        feature_load_FUN = get_feature_file_load_function(file_paths[1])[[1]]
+    }
+    cfg_df = data.frame(file = as.character(file_paths), group = group_names[groups])
+    
     new("QcConfigFeatures",
-        file_paths =  as.character(file_paths),
-        groups = groups,
-        group_names = group_names,
-        group_colors = group_colors,
+        meta_data =  cfg_df,
+        group_var = "group",
+        color_var = "group",
+        color_mapping = group_colors,
+        feature_load_FUN = feature_load_FUN,
         n_peaks = n_peaks,
         min_fraction = min_fraction,
         min_number = min_number
     )
+}
+
+.enforce_file_var = function(df){
+    if(!"file" %in% colnames(df)){
+        file_var = colnames(df)[1]
+        message("Guessing file paths are in first column, ", file_var)
+        colnames(df)[colnames(df) == file_var] = "file"
+    }
+    df
+}
+
+
+#' Title
+#'
+#' @param f 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+parse_config_body = function(f){
+    as.data.table(read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE))
+}
+
+#' Title
+#'
+#' @param feature_config_file 
+#'
+#' @return
+#' @export
+#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#'
+#' @examples
+parseQcConfigFeatures = function(feature_config_file){
+    peak_config_dt = .parse_config_body(feature_config_file)
+    peak_config_dt = .enforce_file_var(peak_config_dt)
+    #move file to first column
+    peak_config_dt = peak_config_dt[, colnames(peak_config_dt)[order(colnames(peak_config_dt) != "file")], with = FALSE]
+    
+    
+    cfg_txt = fread(feature_config_file, sep = "\n", header = FALSE)[grepl("^#CFG", V1)]
+    cfg_txt = paste(sub("#CFG ?", "", cfg_txt$V1), collapse = " ")
+    sp = strsplit(cfg_txt, " +")[[1]]
+    sp = strsplit(sp, "=")
+    sp
+    cfg_names = sapply(sp, function(x){
+        x[1]
+    })
+    cfg_vals = sapply(sp, function(x){
+        x[2]
+    })
+    names(cfg_vals) = cfg_names
+    
+    valid_feature_var = c("main_dir", "consensus_n", "consensus_fraction", "color_by", "color_map", "run_by", "to_run")
+    bad_var = setdiff(cfg_names, valid_feature_var)
+    if(length(bad_var) > 0){
+        stop("Unrecogized variables in config file: ", paste(bad_var, collapse = ", "))
+    }
+    
+    
+    tfun = function(config_dt, main_dir, consensus_n, consensus_fraction, color_by, color_map, run_by, to_run){
+        message(main_dir)
+        message(consensus_n)
+    }
+    do.call(tfun, as.list(config_dt = peak_config_dt, cfg_vals))
+    
+}
+
+parseQcConfigSignal = function(signal_config_file){
+    
 }
 
 #' QcConfigSignal
@@ -147,7 +306,7 @@ QcConfigSignal = function(file_paths,
     if(is.null(group_colors)){
         group_colors = seqsetvis::safeBrew(length(group_names))
     }
-
+    
     new("QcConfigSignal",
         file_paths = as.character(file_paths),
         groups = groups,

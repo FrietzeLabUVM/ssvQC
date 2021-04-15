@@ -1,0 +1,8 @@
+#CFG main_dir=$SSVQC_DATA read_mode=SE
+#CFG color_by=cell color_map=MCF10A:blue2,MCF10AT1:darkmagenta,MCF10CA1:violetred1
+#CFG run_by=mark to_run=CTCF
+sample_ID,genotype,type,mark,rep
+file,cell,mark,rep
+MCF10A_CTCF_R1.100peaks.bam,MCF10A,CTCF,rep1
+MCF10AT1_CTCF_R1.100peaks.bam,MCF10AT1,CTCF,rep1
+MCF10CA1_CTCF_R1.100peaks.bam,MCF10CA1,CTCF,rep1
