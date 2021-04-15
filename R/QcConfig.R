@@ -1,4 +1,6 @@
-
+DEFAULT_CONSENSUS_N = 1
+DEFAULT_CONSENSUS_FRACTION = 0
+DEFAULT_VIEW_SIZE = 3e3
 
 #' QcConfig
 #'
@@ -48,7 +50,6 @@ QcConfig.files = function(file_paths,
     new("QcConfig",
         meta_data =  cfg_df,
         group_var = "group",
-        color_var = "group",
         color_mapping = group_colors
     )
 }
@@ -70,7 +71,7 @@ setClass("QcConfigFeatures", contains = "QcConfig",
          ))
 
 
-#' Title
+#' QcConfigFeatures
 #'
 #' @param cfg_df 
 #' @param group_var 
@@ -86,16 +87,16 @@ setClass("QcConfigFeatures", contains = "QcConfig",
 #'
 #' @examples
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-#' cfg_df = parse_config_body(feature_config_file)
+#' cfg_df = .parse_config_body(feature_config_file)
 #' QcConfigFeatures(cfg_df)
 QcConfigFeatures = function(cfg_df,
-                             group_var = "file",
-                             color_var = group_var,
-                             color_mapping = NULL,
-                             feature_load_FUN = NULL,
+                            group_var = "file",
+                            color_var = group_var,
+                            color_mapping = NULL,
+                            feature_load_FUN = NULL,
                             n_peaks = 1e3,
-                            min_fraction = 0,
-                            min_number = 1){
+                            min_fraction = DEFAULT_CONSENSUS_FRACTION,
+                            min_number = DEFAULT_CONSENSUS_N){
     .enforce_file_var(cfg_df)
     if(!group_var %in% colnames(cfg_df)){
         stop("group_var ", group_var, " was not in column names.")
@@ -113,7 +114,7 @@ QcConfigFeatures = function(cfg_df,
             color_names = unique(cfg_df[[color_var]])
         }
         stopifnot(length(color_names) == length(color_mapping))
-        names(color_mapping) = color_var
+        names(color_mapping) = color_names
         
     }else{
         if(is.factor(cfg_df[[color_var]])){
@@ -126,7 +127,7 @@ QcConfigFeatures = function(cfg_df,
     }
     
     stopifnot(cfg_df[[color_var]] %in% names(color_mapping))
-
+    
     if(is.null(feature_load_FUN)){
         file_paths = cfg_df[["file"]]
         file_formats = guess_feature_file_format(file_paths)
@@ -146,6 +147,7 @@ QcConfigFeatures = function(cfg_df,
 }
 
 
+
 #' QcConfigFeatures
 #'
 #' @param file_paths character paths to files
@@ -160,15 +162,16 @@ QcConfigFeatures = function(cfg_df,
 #' @export
 #'
 #' @examples
-#' QcConfigFeatures.files(c("A.narrowPeak", "B.narrowPeak"))
+#' np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
+#' QcConfigFeatures.files(np_files)
 QcConfigFeatures.files = function(file_paths,
                                   group_names = NULL,
                                   groups = NULL,
                                   group_colors = NULL,
                                   feature_load_FUN = NULL,
                                   n_peaks = 1e3,
-                                  min_fraction = 0,
-                                  min_number = 1){
+                                  min_fraction = DEFAULT_CONSENSUS_FRACTION,
+                                  min_number = DEFAULT_CONSENSUS_N){
     if(is.null(groups)){
         groups = seq_along(file_paths)
     }
@@ -207,6 +210,20 @@ QcConfigFeatures.files = function(file_paths,
     df
 }
 
+.enforce_name_var = function(df){
+    if(!"name" %in% colnames(df)){
+        cn = setdiff(colnames(df), c("file", "name", "name_split"))
+        nams = apply(df[, cn], 1, function(x)paste(x, collapse = "_"))
+        df$name = nams
+    }
+    if(!"name_split" %in% colnames(df)){
+        cn = setdiff(colnames(df), c("file", "name", "name_split"))
+        nams = apply(df[, cn], 1, function(x)paste(x, collapse = "\n"))
+        df$name_split = nams
+    }
+    df
+}
+
 
 #' Title
 #'
@@ -216,27 +233,26 @@ QcConfigFeatures.files = function(file_paths,
 #' @export
 #'
 #' @examples
-parse_config_body = function(f){
-    as.data.table(read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE))
+.parse_config_body = function(f){
+    config_dt = as.data.table(read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE))
+    config_dt = .enforce_file_var(config_dt)
+    config_dt = .enforce_name_var(config_dt)
+    #move file to first column
+    config_dt = config_dt[, colnames(config_dt)[order(colnames(config_dt) != "file")], with = FALSE]
+    config_dt
 }
 
 #' Title
 #'
-#' @param feature_config_file 
+#' @param f 
+#' @param valid_feature_var 
 #'
 #' @return
 #' @export
-#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #'
 #' @examples
-parseQcConfigFeatures = function(feature_config_file){
-    peak_config_dt = .parse_config_body(feature_config_file)
-    peak_config_dt = .enforce_file_var(peak_config_dt)
-    #move file to first column
-    peak_config_dt = peak_config_dt[, colnames(peak_config_dt)[order(colnames(peak_config_dt) != "file")], with = FALSE]
-    
-    
-    cfg_txt = fread(feature_config_file, sep = "\n", header = FALSE)[grepl("^#CFG", V1)]
+.parse_config_header = function(f, valid_feature_var){
+    cfg_txt = fread(f, sep = "\n", header = FALSE)[grepl("^#CFG", V1)]
     cfg_txt = paste(sub("#CFG ?", "", cfg_txt$V1), collapse = " ")
     sp = strsplit(cfg_txt, " +")[[1]]
     sp = strsplit(sp, "=")
@@ -248,27 +264,99 @@ parseQcConfigFeatures = function(feature_config_file){
         x[2]
     })
     names(cfg_vals) = cfg_names
+    cfg_vals = as.list(cfg_vals)
     
-    valid_feature_var = c("main_dir", "consensus_n", "consensus_fraction", "color_by", "color_map", "run_by", "to_run")
     bad_var = setdiff(cfg_names, valid_feature_var)
     if(length(bad_var) > 0){
         stop("Unrecogized variables in config file: ", paste(bad_var, collapse = ", "))
     }
     
-    
-    tfun = function(config_dt, main_dir, consensus_n, consensus_fraction, color_by, color_map, run_by, to_run){
-        message(main_dir)
-        message(consensus_n)
+    ### special cases
+    if(!is.null(cfg_vals[["main_dir"]])){
+        if(cfg_vals[["main_dir"]] == "$SSVQC_DATA"){
+            cfg_vals[["main_dir"]] = system.file("extdata", package = "ssvQC")
+        }
     }
-    do.call(tfun, as.list(config_dt = peak_config_dt, cfg_vals))
+    #numeric: consensus_n, consensus_fraction, n_peaks, view_size
+    for(var in c("consensus_n", "consensus_fraction", "n_peaks", "view_size")){
+        if(!is.null(cfg_vals[[var]])){
+            cfg_vals[[var]] = as.numeric(cfg_vals[[var]])
+        }    
+    }
+    #parsing the color mapping
+    if(!is.null(cfg_vals[["color_map"]])){
+        cmap = cfg_vals[["color_map"]]
+        if(grepl(":", cmap)){
+            cmap = strsplit(strsplit(cmap, ",")[[1]], ":")
+            color_map = sapply(cmap, function(x)x[2])
+            names(color_map) = sapply(cmap, function(x)x[1])
+            cfg_vals[["color_map"]] = color_map    
+        }else{
+            color_map = strsplit(cmap, ",")[[1]]
+            cfg_vals[["color_map"]] = color_map
+        }
+    }
+    #read mode synonym
+    if(!is.null(cfg_vals[["read_mode"]])){
+        read_mode = cfg_vals[["read_mode"]]
+        if(read_mode == "SE") read_mode = "bam_SE"
+        if(read_mode == "PE") read_mode = "bam_PE"
+        if(!read_mode %in% c("bam_SE", "bam_PE", "bigwig")){
+            stop("read_mode '", read_mode, "' is not recognized as a valid choice from 'bam_SE', 'bam_PE', or 'bigwig'")
+        }
+        cfg_vals[["read_mode"]] = read_mode
+    }
+    
+    cfg_vals
+}
+
+#' QcConfigFeatures.parse
+#'
+#' @param feature_config_file 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#' QcConfigFeatures.parse(feature_config_file)
+QcConfigFeatures.parse = function(feature_config_file){
+    peak_config_dt = .parse_config_body(feature_config_file)
+    valid_feature_var = c("main_dir", "n_peaks", "consensus_n", "consensus_fraction", "color_by", "color_map", "run_by", "to_run")
+    cfg_vals = .parse_config_header(feature_config_file, valid_feature_var)
+    
+    if(!is.null(cfg_vals[["main_dir"]])){
+        choose_file_path = function(main_dir, files){
+            abs_path = files
+            rel_path = file.path(main_dir, files)
+            ifelse(file.exists(rel_path), rel_path, abs_path)
+        }
+        peak_config_dt[, file := choose_file_path(cfg_vals[["main_dir"]], file)]
+        cfg_vals[["main_dir"]] = NULL
+    }
+    if(!all(file.exists(peak_config_dt$file))){
+        stop(paste(c("Files specified in config do not exist:", peak_config_dt$file[!file.exists(peak_config_dt$file)]), collapse = "\n  "))
+    }
+    
+    tfun = function(config_dt, 
+                    main_dir = NULL, 
+                    n_peaks = 1e3, 
+                    consensus_n = 1, consensus_fraction = 0, 
+                    color_by = NULL, color_map = NULL, 
+                    run_by = NULL, to_run = NULL){
+        QcConfigFeatures(cfg_df = config_dt, 
+                         group_var = run_by, 
+                         color_var = color_by, 
+                         color_mapping = color_map, 
+                         n_peaks = n_peaks, 
+                         min_fraction = consensus_fraction,
+                         min_number = consensus_n)
+    }
+    do.call(tfun, c(list(config_dt = peak_config_dt), cfg_vals))
     
 }
 
-parseQcConfigSignal = function(signal_config_file){
-    
-}
-
-#' QcConfigSignal
+' QcConfigSignal
 #'
 #' @slot view_size numeric.
 #'
@@ -276,10 +364,132 @@ parseQcConfigSignal = function(signal_config_file){
 #'
 setClass("QcConfigSignal", contains = "QcConfig",
          representation = list(
-             view_size = "numeric"
+             view_size = "numeric",
+             read_mode = "character"
          ))
 
-#' QcConfigSignal
+
+#' Title
+#'
+#' @param cfg_df 
+#' @param group_var 
+#' @param color_var 
+#' @param color_mapping 
+#' @param read_mode 
+#' @param view_size 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+#' bam_cfg_df = .parse_config_body(bam_config_file)
+#' QcConfigSignal(bam_cfg_df)
+#' 
+#' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
+#' bigwig_cfg_df = .parse_config_body(bigwig_config_file)
+#' QcConfigSignal(bigwig_cfg_df)
+QcConfigSignal = function(cfg_df,
+                          group_var = "file",
+                          color_var = group_var,
+                          color_mapping = NULL,
+                          read_mode = NULL,
+                          view_size = DEFAULT_VIEW_SIZE){
+    .enforce_file_var(cfg_df)
+    if(!group_var %in% colnames(cfg_df)){
+        stop("group_var ", group_var, " was not in column names.")
+    }
+    if(!color_var %in% colnames(cfg_df)){
+        stop("color_var ", color_var, " was not in column names.")
+    }
+    
+    if(!is.null(color_mapping)){
+        if(!is.null(names(color_mapping))){
+            color_names = names(color_mapping)
+        }else if(is.factor(cfg_df[[color_var]])){
+            color_names = levels(cfg_df[[color_var]])
+        }else{
+            color_names = unique(cfg_df[[color_var]])
+        }
+        stopifnot(length(color_names) == length(color_mapping))
+        names(color_mapping) = color_names
+        
+    }else{
+        if(is.factor(cfg_df[[color_var]])){
+            color_names = levels(cfg_df[[color_var]])
+        }else{
+            color_names = unique(cfg_df[[color_var]])
+        }
+        color_mapping = seqsetvis::safeBrew(length(color_names))
+        names(color_mapping) = color_names
+    }
+    
+    stopifnot(cfg_df[[color_var]] %in% names(color_mapping))
+    
+    if(is.null(read_mode)){
+        read_mode = guess_read_mode(cfg_df$file[1])
+    }
+    
+    stopifnot(read_mode %in% c("bam_SE", "bam_PE", "bigwig"))
+    
+    new("QcConfigSignal",
+        meta_data =  cfg_df,
+        group_var = group_var,
+        color_var = color_var,
+        color_mapping = color_mapping,
+        read_mode = read_mode,
+        view_size = view_size)
+}
+
+#' Title
+#'
+#' @param signal_config_file 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+#' QcConfigSignal.parse(bam_config_file)
+#' 
+#' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
+#' QcConfigSignal.parse(bigwig_config_file)
+QcConfigSignal.parse = function(signal_config_file){
+    signal_config_dt = .parse_config_body(signal_config_file)
+    valid_feature_var = c("main_dir", "view_size", "read_mode", "color_by", "color_map", "run_by", "to_run")
+    cfg_vals = .parse_config_header(signal_config_file, valid_feature_var)
+    
+    if(!is.null(cfg_vals[["main_dir"]])){
+        choose_file_path = function(main_dir, files){
+            abs_path = files
+            rel_path = file.path(main_dir, files)
+            ifelse(file.exists(rel_path), rel_path, abs_path)
+        }
+        signal_config_dt[, file := choose_file_path(cfg_vals[["main_dir"]], file)]
+        cfg_vals[["main_dir"]] = NULL
+    }
+    if(!all(file.exists(signal_config_dt$file))){
+        stop(paste(c("Files specified in config do not exist:", signal_config_dt$file[!file.exists(signal_config_dt$file)]), collapse = "\n  "))
+    }
+    
+    tfun = function(config_dt, 
+                    main_dir = NULL, 
+                    read_mode = NULL,
+                    view_size = DEFAULT_VIEW_SIZE,
+                    color_by = NULL, color_map = NULL, 
+                    run_by = NULL, to_run = NULL){
+        QcConfigSignal(cfg_df = config_dt, 
+                       group_var = run_by, 
+                       color_var = color_by, 
+                       color_mapping = color_map, 
+                       read_mode = read_mode, 
+                       view_size = view_size)
+    }
+    do.call(tfun, c(list(config_dt = signal_config_dt), cfg_vals))
+}
+
+#
+#' QcConfigSignal.files
 #'
 #' @param file_paths character paths to files
 #' @param groups numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)
@@ -291,12 +501,17 @@ setClass("QcConfigSignal", contains = "QcConfig",
 #' @export
 #'
 #' @examples
-#' QcConfigSignal(c("A", "B"))
-QcConfigSignal = function(file_paths,
-                          groups = NULL,
-                          group_names = NULL,
-                          group_colors = NULL,
-                          view_size = 3e3){
+#' bam_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "CTCF.+bam$", full.names = TRUE)
+#' QcConfigSignal.files(bam_files)
+#' 
+#' np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
+#' QcConfigFeatures.files(np_files)
+QcConfigSignal.files = function(file_paths,
+                                groups = NULL,
+                                group_names = NULL,
+                                group_colors = NULL,
+                                view_size = DEFAULT_VIEW_SIZE, 
+                                read_mode = NULL){
     if(is.null(groups)){
         groups = seq_along(file_paths)
     }
@@ -306,14 +521,13 @@ QcConfigSignal = function(file_paths,
     if(is.null(group_colors)){
         group_colors = seqsetvis::safeBrew(length(group_names))
     }
+    if(is.null(names(group_colors))){
+        names(group_colors) = group_names
+    }
     
-    new("QcConfigSignal",
-        file_paths = as.character(file_paths),
-        groups = groups,
-        group_names = group_names,
-        group_colors = group_colors,
-        view_size = view_size
-    )
+    cfg_df = data.frame(file = as.character(file_paths), group = group_names[groups])
+    
+    QcConfigSignal(cfg_df, group_var = "group", color_mapping = group_colors)
 }
 
 

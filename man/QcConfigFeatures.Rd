@@ -2,7 +2,7 @@
 % Please edit documentation in R/QcConfig.R
 \name{QcConfigFeatures}
 \alias{QcConfigFeatures}
-\title{Title}
+\title{QcConfigFeatures}
 \usage{
 QcConfigFeatures(
   cfg_df,
@@ -11,8 +11,8 @@ QcConfigFeatures(
   color_mapping = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
-  min_fraction = 0,
-  min_number = 1
+  min_fraction = DEFAULT_CONSENSUS_FRACTION,
+  min_number = DEFAULT_CONSENSUS_N
 )
 }
 \arguments{
@@ -36,10 +36,10 @@ QcConfigFeatures(
 
 }
 \description{
-Title
+QcConfigFeatures
 }
 \examples{
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-cfg_df = parse_config_body(feature_config_file)
+cfg_df = .parse_config_body(feature_config_file)
 QcConfigFeatures(cfg_df)
 }

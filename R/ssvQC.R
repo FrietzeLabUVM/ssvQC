@@ -1,5 +1,4 @@
 
-setOldClass("BiocFileCache")
 setClass("ssvQC",
          representation = list(
            feature_config = "QcConfigFeatures",
@@ -8,20 +7,63 @@ setClass("ssvQC",
            bfc = "BiocFileCache"
          ))
 
+#' Title
+#'
+#' @param feature_config 
+#' @param signal_config 
+#' @param out_dir 
+#' @param bfc 
+#'
+#' @return
+#' @export
+#' @import BiocFileCache
+#'
+#' @examples
+#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#' feature_config = QcConfigFeatures.parse(feature_config_file)
+#' 
+#' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+#' bam_config = QcConfigSignal.parse(bam_config_file)
+#' 
+#' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
+#' bigwig_config = QcConfigSignal.parse(bigwig_config_file)
+#' 
+#' ssvQC(feature_config_file, bam_config_file)
+#' 
+#' ssvQC(feature_config, bam_config)
+#' 
+#' ssvQC(feature_config, bigwig_config_file)
+#' 
 ssvQC = function(feature_config,
                  signal_config,
                  out_dir = getwd(),
                  bfc = NULL){
 
   if(is.character(feature_config)){
-    
+    if(file.exists(feature_config)){
+      feature_config = QcConfigFeatures.parse(feature_config)
+    }
+  }
+  if(!"QcConfigFeatures" %in% class(feature_config)){
+    stop("feature_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
+  }
+  if(is.character(signal_config)){
+    if(file.exists(signal_config)){
+      signal_config = QcConfigSignal.parse(signal_config)
+    }
+  }
+  if(!"QcConfigSignal" %in% class(signal_config)){
+    stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
+  }
+  if(is.null(bfc)){
+    bfc = BiocFileCache::BiocFileCache()
   }
   
   new("ssvQC",
-      file_paths =  as.character(file_paths),
-      groups = groups,
-      group_names = group_names,
-      group_colors = group_colors
+      feature_config = feature_config,
+      signal_config = signal_config,
+      out_dir = out_dir,
+      bfc = bfc 
   )
 }
 
@@ -51,6 +93,35 @@ guess_feature_file_format = function(feature_files){
   sapply(feature_files, .guess_feature_file_format)
 }
 
+#' Title
+#'
+#' @param signal_file 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+guess_read_mode = function(signal_file){
+  if(grepl(".bam$", signal_file[1])){
+    mode = "bam_SE"
+  }else{
+    mode = "bigwig"
+  }
+  message("read_mode has been guessed as ", mode)
+  if(mode == "bam_SE"){
+    message("Currently ssvQC cannot guess whether a bam file is SE or PE.  Please manually specify bam_PE if appropriate.")
+  }
+  mode
+}
+
+#' Title
+#'
+#' @param feature_files 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 get_feature_file_load_function = function(feature_files){
   file_types = guess_feature_file_format(feature_files)
   .get_feature_file_load_function = function(file_type){
@@ -70,10 +141,4 @@ get_feature_file_load_function = function(feature_files){
   sapply(file_types, .get_feature_file_load_function)
   
 
-}
-
-
-
-.default_feature_config = function(feature_files){
-  QcConfigFeatures(feature_files)
 }

@@ -11,8 +11,8 @@ QcConfigFeatures.files(
   group_colors = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
-  min_fraction = 0,
-  min_number = 1
+  min_fraction = DEFAULT_CONSENSUS_FRACTION,
+  min_number = DEFAULT_CONSENSUS_N
 )
 }
 \arguments{
@@ -37,5 +37,6 @@ a QcConfigFeatures object
 QcConfigFeatures
 }
 \examples{
-QcConfigFeatures.files(c("A.narrowPeak", "B.narrowPeak"))
+np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
+QcConfigFeatures.files(np_files)
 }

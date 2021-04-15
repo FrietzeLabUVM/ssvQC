@@ -2,33 +2,42 @@
 % Please edit documentation in R/QcConfig.R
 \name{QcConfigSignal}
 \alias{QcConfigSignal}
-\title{QcConfigSignal}
+\title{Title}
 \usage{
 QcConfigSignal(
-  file_paths,
-  groups = NULL,
-  group_names = NULL,
-  group_colors = NULL,
-  view_size = 3000
+  cfg_df,
+  group_var = "file",
+  color_var = group_var,
+  color_mapping = NULL,
+  read_mode = NULL,
+  view_size = DEFAULT_VIEW_SIZE
 )
 }
 \arguments{
-\item{file_paths}{character paths to files}
+\item{cfg_df}{}
 
-\item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
+\item{group_var}{}
 
-\item{group_names}{vector of group names to assign from according to groups}
+\item{color_var}{}
 
-\item{group_colors}{vector of colors to use per group}
+\item{color_mapping}{}
 
-\item{view_size}{view size in bp to apply. Defaults to 3000.}
+\item{read_mode}{}
+
+\item{view_size}{}
 }
 \value{
-a QcConfigSignal object
+
 }
 \description{
-QcConfigSignal
+Title
 }
 \examples{
-QcConfigSignal(c("A", "B"))
+bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+bam_cfg_df = .parse_config_body(bam_config_file)
+QcConfigSignal(bam_cfg_df)
+
+bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
+bigwig_cfg_df = .parse_config_body(bigwig_config_file)
+QcConfigSignal(bigwig_cfg_df)
 }
