@@ -14,6 +14,8 @@ setClass("QcConfig",
          representation = list(
              meta_data = "data.frame",
              group_var = "character",
+             group_to_run = "character",
+             group_reference = "character",
              color_var = "character",
              color_mapping = "character"
          ))
@@ -46,10 +48,12 @@ QcConfig.files = function(file_paths,
     if(is.null(names(group_colors))){
         names(group_colors) = group_names
     }
-    cfg_df = data.frame(file = as.character(file_paths), group = group_names[groups])
+    cfg_df = data.frame(file = as.character(file_paths),  color = group_names[groups], group = "All")
     new("QcConfig",
         meta_data =  cfg_df,
         group_var = "group",
+        color_var = "color",
+        group_to_run = unique(cfg_df$group),
         color_mapping = group_colors
     )
 }
@@ -90,8 +94,10 @@ setClass("QcConfigFeatures", contains = "QcConfig",
 #' cfg_df = .parse_config_body(feature_config_file)
 #' QcConfigFeatures(cfg_df)
 QcConfigFeatures = function(cfg_df,
-                            group_var = "file",
-                            color_var = group_var,
+                            group_var = "All",
+                            group_to_run = NULL,
+                            group_reference = NULL,
+                            color_var = "file",
                             color_mapping = NULL,
                             feature_load_FUN = NULL,
                             n_peaks = 1e3,
@@ -99,7 +105,11 @@ QcConfigFeatures = function(cfg_df,
                             min_number = DEFAULT_CONSENSUS_N){
     .enforce_file_var(cfg_df)
     if(!group_var %in% colnames(cfg_df)){
-        stop("group_var ", group_var, " was not in column names.")
+        if(group_var == "All"){
+            cfg_df[[group_var]] = group_var
+        }else{
+            stop("group_var ", group_var, " was not in column names.")    
+        }
     }
     if(!color_var %in% colnames(cfg_df)){
         stop("color_var ", color_var, " was not in column names.")
@@ -134,10 +144,20 @@ QcConfigFeatures = function(cfg_df,
         stopifnot(length(unique(file_formats)) == 1)
         feature_load_FUN = get_feature_file_load_function(file_paths[1])[[1]]
     }
+    if(is.null(group_to_run)){
+        group_to_run = unique(cfg_df[[group_var]])   
+    }
+    stopifnot(all(group_to_run %in% cfg_df[[group_var]]))
+    if(is.null(group_reference)){
+        group_reference = character()
+    }
+    stopifnot(all(group_reference %in% cfg_df[[group_var]]))
     
     new("QcConfigFeatures",
         meta_data =  cfg_df,
         group_var = group_var,
+        group_to_run = group_to_run,
+        group_reference = group_reference,
         color_var = color_var,
         color_mapping = color_mapping,
         feature_load_FUN = feature_load_FUN,
@@ -345,9 +365,11 @@ QcConfigFeatures.parse = function(feature_config_file){
                     n_peaks = 1e3, 
                     consensus_n = 1, consensus_fraction = 0, 
                     color_by = NULL, color_map = NULL, 
-                    run_by = NULL, to_run = NULL){
+                    run_by = NULL, to_run = NULL, to_run_reference = NULL){
         QcConfigFeatures(cfg_df = config_dt, 
                          group_var = run_by, 
+                         group_to_run = to_run,
+                         group_reference = to_run_reference,
                          color_var = color_by, 
                          color_mapping = color_map, 
                          n_peaks = n_peaks, 
@@ -392,8 +414,10 @@ setClass("QcConfigSignal", contains = "QcConfig",
 #' bigwig_cfg_df = .parse_config_body(bigwig_config_file)
 #' QcConfigSignal(bigwig_cfg_df)
 QcConfigSignal = function(cfg_df,
-                          group_var = "file",
-                          color_var = group_var,
+                          group_var = "All",
+                          group_to_run = NULL,
+                          group_reference = NULL,
+                          color_var = "file",
                           color_mapping = NULL,
                           read_mode = NULL,
                           view_size = DEFAULT_VIEW_SIZE){
@@ -434,9 +458,20 @@ QcConfigSignal = function(cfg_df,
     
     stopifnot(read_mode %in% c("bam_SE", "bam_PE", "bigwig"))
     
+    if(is.null(group_to_run)){
+        group_to_run = unique(cfg_df[[group_var]])   
+    }
+    stopifnot(all(group_to_run %in% cfg_df[[group_var]]))
+    if(is.null(group_reference)){
+        group_reference = character()
+    }
+    stopifnot(all(group_reference %in% cfg_df[[group_var]]))
+    
     new("QcConfigSignal",
         meta_data =  cfg_df,
         group_var = group_var,
+        group_to_run = group_to_run,
+        group_reference = group_reference,
         color_var = color_var,
         color_mapping = color_mapping,
         read_mode = read_mode,
@@ -458,7 +493,7 @@ QcConfigSignal = function(cfg_df,
 #' QcConfigSignal.parse(bigwig_config_file)
 QcConfigSignal.parse = function(signal_config_file){
     signal_config_dt = .parse_config_body(signal_config_file)
-    valid_feature_var = c("main_dir", "view_size", "read_mode", "color_by", "color_map", "run_by", "to_run")
+    valid_feature_var = c("main_dir", "view_size", "read_mode", "color_by", "color_map", "run_by", "to_run", "to_run_reference")
     cfg_vals = .parse_config_header(signal_config_file, valid_feature_var)
     
     if(!is.null(cfg_vals[["main_dir"]])){

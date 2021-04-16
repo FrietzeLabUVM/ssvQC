@@ -1,6 +1,9 @@
+setOldClass("ggplot")
+
 #' QcPlot
 #'
 #' @export
+#' @import ggplot2
 setClass("QcPlot",
          representation = list(
            plot = "ggplot",

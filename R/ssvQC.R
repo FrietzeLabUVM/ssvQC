@@ -160,10 +160,11 @@ get_feature_file_load_function = function(feature_files){
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' 
 #' sqc = ssvQC(feature_config_file, bam_config_file)
-qcBasicMetrics = function(sqc){
+ssvQC.runAll = function(sqc){
   out_dir = sqc@out_dir
   res_file = function(f)file.path(out_dir, f)
   
+  #bam specific independent of peaks
   if(grepl("bam", sqc@signal_config@read_mode)){
 
     bam_config_dt = sqc@signal_config@meta_data
@@ -187,8 +188,11 @@ qcBasicMetrics = function(sqc){
       
     ggsave(res_file("mapped_reads.pdf"), p_mapped_reads, width = 2+.5*nrow(bam_config_dt), height = 3)
   }
+  
+  #feature overlaps independendent of signal
+  # todo = sqc@feature_config@
 }
 
-qcAssessPeaks = function(){
-  signal_config
-}
+# qcAssessPeaks = function(){
+#   signal_config
+# }

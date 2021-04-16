@@ -6,8 +6,10 @@
 \usage{
 QcConfigFeatures(
   cfg_df,
-  group_var = "file",
-  color_var = group_var,
+  group_var = "All",
+  group_to_run = NULL,
+  group_reference = NULL,
+  color_var = "file",
   color_mapping = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
