@@ -4,7 +4,8 @@ setClass("ssvQC",
            feature_config = "QcConfigFeatures",
            signal_config = "QcConfigSignal",
            out_dir = "character",
-           bfc = "BiocFileCache"
+           bfc = "BiocFileCache",
+           saving_enabled = "logical"
          ))
 
 #' ssvQC
@@ -160,10 +161,31 @@ get_feature_file_load_function = function(feature_files){
 #' 
 #' sqc = ssvQC(feature_config_file, bam_config_file)
 qcBasicMetrics = function(sqc){
+  out_dir = sqc@out_dir
+  res_file = function(f)file.path(out_dir, f)
+  
   if(grepl("bam", sqc@signal_config@read_mode)){
-     if(is.null(sqc@signal_config@meta_data$mapped_reads)){
-       sqc@signal_config@meta_data$mapped_reads = sapply(sqc@signal_config@meta_data$file, get_mapped_reads)
-     }
+
+    bam_config_dt = sqc@signal_config@meta_data
+    if(is.null(bam_config_dt$mapped_reads)){
+      bam_config_dt$mapped_reads = sapply(bam_config_dt$file, get_mapped_reads)
+    }
+        
+    color_var = sqc@signal_config@color_var
+    group_var = sqc@signal_config@group_var
+    color_mapping = sqc@signal_config@color_mapping
+    
+    theme_set(theme(panel.background = element_blank(), axis.text.x = element_text(size = 8)))
+    
+    p_mapped_reads = ggplot(bam_config_dt, aes_string(x = "mark", y = "mapped_reads", fill = color_var)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = color_mapping) +
+      scale_y_continuous(labels = function(x)x/1e6) +
+      labs(y = "M mapped reads", fill = color_var, x= "") +
+      labs(title = "Mapped reads")
+    
+      
+    ggsave(res_file("mapped_reads.pdf"), p_mapped_reads, width = 2+.5*nrow(bam_config_dt), height = 3)
   }
 }
 
