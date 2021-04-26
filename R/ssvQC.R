@@ -8,6 +8,10 @@ setClass("ssvQC",
            saving_enabled = "logical"
          ))
 
+setClass("ssvQC.featureOnly", contains = "ssvQC")
+setClass("ssvQC.signalOnly", contains = "ssvQC")
+setClass("ssvQC.complete", contains = "ssvQC")
+
 #' ssvQC
 #'
 #' @param feature_config 
@@ -35,118 +39,76 @@ setClass("ssvQC",
 #' 
 #' ssvQC(feature_config, bigwig_config_file)
 #' 
-ssvQC = function(feature_config,
-                 signal_config,
+#' ssvQC(signal_config = bam_config)
+#' 
+ssvQC = function(feature_config = NULL,
+                 signal_config = NULL,
                  out_dir = getwd(),
                  bfc = NULL){
-
-  if(is.character(feature_config)){
-    if(file.exists(feature_config)){
-      feature_config = QcConfigFeatures.parse(feature_config)
+  if(is.null(feature_config) & is.null(signal_config)){
+    stop("At least one of feature_config or signal_config must be specified.")
+  }
+  
+  if(!is.null(feature_config)){
+    if(is.character(feature_config)){
+      if(file.exists(feature_config)){
+        feature_config = QcConfigFeatures.parse(feature_config)
+      }
     }
+    if(!"QcConfigFeatures" %in% class(feature_config)){
+      stop("feature_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
+    }  
+    stopifnot(file.exists(feature_config@meta_data$file))
   }
-  if(!"QcConfigFeatures" %in% class(feature_config)){
-    stop("feature_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
-  }
-  if(is.character(signal_config)){
-    if(file.exists(signal_config)){
-      signal_config = QcConfigSignal.parse(signal_config)
+  if(!is.null(signal_config)){
+    if(is.character(signal_config)){
+      if(file.exists(signal_config)){
+        signal_config = QcConfigSignal.parse(signal_config)
+      }
     }
+    if(!"QcConfigSignal" %in% class(signal_config)){
+      stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
+    }  
+    stopifnot(file.exists(signal_config@meta_data$file))
   }
-  if(!"QcConfigSignal" %in% class(signal_config)){
-    stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
-  }
+  
   if(is.null(bfc)){
     bfc = BiocFileCache::BiocFileCache()
   }
   
-  stopifnot(file.exists(signal_config@meta_data$file))
-  stopifnot(file.exists(signal_config@meta_data$file))
-    
   dir.create(out_dir, showWarnings = FALSE)
-  new("ssvQC",
-      feature_config = feature_config,
-      signal_config = signal_config,
-      out_dir = out_dir,
-      bfc = bfc 
-  )
-}
-
-#' guess_feature_file_format
-#'
-#' @param feature_files 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-guess_feature_file_format = function(feature_files){
-  .guess_feature_file_format = function(feature_file){
-    file_format = "unknown"
-    if(grepl("narrowPeak$", feature_file)){
-      file_format = "narrowPeak"
-    }else if(grepl("broadPeak$", feature_file)){
-      file_format = "broadPeak"
-    }else if(grepl("bed$", feature_file)){
-      file_format = "bed"
-    }else{
-      warning("Could not guess file format for feature file: ", feature_file)
-    }
-    file_format
-  }
   
-  sapply(feature_files, .guess_feature_file_format)
-}
-
-#' Title
-#'
-#' @param signal_file 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-guess_read_mode = function(signal_file){
-  if(grepl(".bam$", signal_file[1])){
-    mode = "bam_SE"
-  }else{
-    mode = "bigwig"
-  }
-  message("read_mode has been guessed as ", mode)
-  if(mode == "bam_SE"){
-    message("Currently ssvQC cannot guess whether a bam file is SE or PE.  Please manually specify bam_PE if appropriate.")
-  }
-  mode
-}
-
-#' Title
-#'
-#' @param feature_files 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-get_feature_file_load_function = function(feature_files){
-  file_types = guess_feature_file_format(feature_files)
-  .get_feature_file_load_function = function(file_type){
-    switch (file_type,
-            narrowPeak = seqsetvis::easyLoad_narrowPeak,
-            broadPeak = seqsetvis::easyLoad_broadPeak,
-            seacr = seqsetvis::easyLoad_seacr,
-            bed = seqsetvis::easyLoad_bed,
-            unknown = {
-              warning("Treating unknown file type as bed but if you see errors, check file type.")
-              seqsetvis::easyLoad_bed
-            },
-            stop("'", file_type, "' is not a supported file_type")
+  if(!is.null(feature_config) & !is.null(signal_config)){
+    new("ssvQC.complete",
+        feature_config = feature_config,
+        signal_config = signal_config,
+        out_dir = out_dir,
+        bfc = bfc,
+        saving_enabled = TRUE
     )
+  }else if(!is.null(feature_config)){
+    new("ssvQC.featureOnly",
+        feature_config = feature_config,
+        signal_config = QcConfigSignal.null(),
+        out_dir = out_dir,
+        bfc = bfc,
+        saving_enabled = TRUE
+    )
+  }else if(!is.null(signal_config)){
+    new("ssvQC.signalOnly",
+        feature_config = QcConfigFeatures.null(),
+        signal_config = signal_config,
+        out_dir = out_dir,
+        bfc = bfc,
+        saving_enabled = TRUE
+    )
+  }else{
+    stop("At least one of feature_config or signal_config must be specified. This should have been caught earlier.")
   }
   
-  sapply(file_types, .get_feature_file_load_function)
   
-
 }
+
 
 #' Title
 #'
@@ -160,20 +122,22 @@ get_feature_file_load_function = function(feature_files){
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' 
 #' sqc = ssvQC(feature_config_file, bam_config_file)
+#' 
+#' ssvQC(feature_config_file)
 ssvQC.runAll = function(sqc){
   out_dir = sqc@out_dir
   res_file = function(f)file.path(out_dir, f)
   
   #bam specific independent of peaks
   if(grepl("bam", sqc@signal_config@read_mode)){
-
+    
     bam_config_dt = sqc@signal_config@meta_data
     if(is.null(bam_config_dt$mapped_reads)){
       bam_config_dt$mapped_reads = sapply(bam_config_dt$file, get_mapped_reads)
     }
-        
-    color_var = sqc@signal_config@color_var
-    group_var = sqc@signal_config@group_var
+    
+    color_var = sqc@signal_config@color_by
+    group_var = sqc@signal_config@run_by
     color_mapping = sqc@signal_config@color_mapping
     
     theme_set(theme(panel.background = element_blank(), axis.text.x = element_text(size = 8)))
@@ -185,9 +149,11 @@ ssvQC.runAll = function(sqc){
       labs(y = "M mapped reads", fill = color_var, x= "") +
       labs(title = "Mapped reads")
     
-      
+    
     ggsave(res_file("mapped_reads.pdf"), p_mapped_reads, width = 2+.5*nrow(bam_config_dt), height = 3)
   }
+  
+  
   
   #feature overlaps independendent of signal
   # todo = sqc@feature_config@

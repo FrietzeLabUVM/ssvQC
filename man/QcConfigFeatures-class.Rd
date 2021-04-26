@@ -14,8 +14,8 @@ QcConfigFeatures
 
 \item{\code{n_peaks}}{numeric.}
 
-\item{\code{min_fraction}}{numeric.}
+\item{\code{consensus_fraction}}{numeric.}
 
-\item{\code{min_number}}{numeric.}
+\item{\code{consensus_n}}{numeric.}
 }}
 

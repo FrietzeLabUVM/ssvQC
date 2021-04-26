@@ -4,7 +4,12 @@
 \alias{ssvQC}
 \title{ssvQC}
 \usage{
-ssvQC(feature_config, signal_config, out_dir = getwd(), bfc = NULL)
+ssvQC(
+  feature_config = NULL,
+  signal_config = NULL,
+  out_dir = getwd(),
+  bfc = NULL
+)
 }
 \arguments{
 \item{feature_config}{}
@@ -36,5 +41,7 @@ ssvQC(feature_config_file, bam_config_file)
 ssvQC(feature_config, bam_config)
 
 ssvQC(feature_config, bigwig_config_file)
+
+ssvQC(signal_config = bam_config)
 
 }

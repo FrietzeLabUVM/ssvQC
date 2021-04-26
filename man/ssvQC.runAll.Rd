@@ -20,4 +20,6 @@ feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.
 bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 
 sqc = ssvQC(feature_config_file, bam_config_file)
+
+ssvQC(feature_config_file)
 }

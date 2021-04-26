@@ -13,12 +13,20 @@ DEFAULT_VIEW_SIZE = 3e3
 setClass("QcConfig",
          representation = list(
              meta_data = "data.frame",
-             group_var = "character",
-             group_to_run = "character",
-             group_reference = "character",
-             color_var = "character",
-             color_mapping = "character"
+             run_by = "character",
+             to_run = "character",
+             to_run_reference = "character",
+             color_by = "character",
+             color_mapping = "character",
+             is_null = "logical"
          ))
+
+setMethod("initialize","QcConfig", function(.Object,...){
+    .Object <- callNextMethod()
+    validObject(.Object)
+    .Object@is_null = FALSE
+    .Object
+})
 
 #' QcConfig
 #'
@@ -31,7 +39,7 @@ setClass("QcConfig",
 #' @export
 #' @importFrom methods new
 #' @examples
-#' QcConfig(c("A", "B"))
+#' QcConfig.files(c("A", "B"))
 QcConfig.files = function(file_paths,
                           groups = NULL,
                           group_names = NULL,
@@ -48,12 +56,12 @@ QcConfig.files = function(file_paths,
     if(is.null(names(group_colors))){
         names(group_colors) = group_names
     }
-    cfg_df = data.frame(file = as.character(file_paths),  color = group_names[groups], group = "All")
+    config_df = data.frame(file = as.character(file_paths),  color = group_names[groups], group = "All", stringsAsFactors = FALSE)
     new("QcConfig",
-        meta_data =  cfg_df,
-        group_var = "group",
-        color_var = "color",
-        group_to_run = unique(cfg_df$group),
+        meta_data =  config_df,
+        run_by = "group",
+        color_by = "color",
+        to_run = unique(config_df$group),
         color_mapping = group_colors
     )
 }
@@ -62,110 +70,115 @@ QcConfig.files = function(file_paths,
 #'
 #' @slot feature_load_FUN function.
 #' @slot n_peaks numeric.
-#' @slot min_fraction numeric.
-#' @slot min_number numeric.
+#' @slot consensus_fraction numeric.
+#' @slot consensus_n numeric.
 #'
 #' @export
 setClass("QcConfigFeatures", contains = "QcConfig",
          representation = list(
              feature_load_FUN = "function",
              n_peaks = "numeric",
-             min_fraction = "numeric",
-             min_number = "numeric"
+             consensus_fraction = "numeric",
+             consensus_n = "numeric"
          ))
 
 
 #' QcConfigFeatures
 #'
-#' @param cfg_df 
-#' @param group_var 
-#' @param color_var 
+#' @param config_df 
+#' @param run_by 
+#' @param color_by 
 #' @param color_mapping 
 #' @param feature_load_FUN 
 #' @param n_peaks 
-#' @param min_fraction 
-#' @param min_number 
+#' @param consensus_fraction 
+#' @param consensus_n 
 #'
 #' @return
 #' @export
 #'
 #' @examples
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-#' cfg_df = .parse_config_body(feature_config_file)
-#' QcConfigFeatures(cfg_df)
-QcConfigFeatures = function(cfg_df,
-                            group_var = "All",
-                            group_to_run = NULL,
-                            group_reference = NULL,
-                            color_var = "file",
+#' config_df = .parse_config_body(feature_config_file)
+#' QcConfigFeatures(config_df)
+QcConfigFeatures = function(config_df,
+                            run_by = "All",
+                            to_run = NULL,
+                            to_run_reference = NULL,
+                            color_by = "file",
                             color_mapping = NULL,
                             feature_load_FUN = NULL,
                             n_peaks = 1e3,
-                            min_fraction = DEFAULT_CONSENSUS_FRACTION,
-                            min_number = DEFAULT_CONSENSUS_N){
-    .enforce_file_var(cfg_df)
-    if(!group_var %in% colnames(cfg_df)){
-        if(group_var == "All"){
-            cfg_df[[group_var]] = group_var
+                            consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
+                            consensus_n = DEFAULT_CONSENSUS_N){
+    .enforce_file_var(config_df)
+    if(!run_by %in% colnames(config_df)){
+        if(run_by == "All"){
+            config_df[[run_by]] = run_by
         }else{
-            stop("group_var ", group_var, " was not in column names.")    
+            stop("run_by ", run_by, " was not in column names.")    
         }
     }
-    if(!color_var %in% colnames(cfg_df)){
-        stop("color_var ", color_var, " was not in column names.")
+    if(!color_by %in% colnames(config_df)){
+        stop("color_by ", color_by, " was not in column names.")
     }
     
     if(!is.null(color_mapping)){
         if(!is.null(names(color_mapping))){
             color_names = names(color_mapping)
-        }else if(is.factor(cfg_df[[color_var]])){
-            color_names = levels(cfg_df[[color_var]])
+        }else if(is.factor(config_df[[color_by]])){
+            color_names = levels(config_df[[color_by]])
         }else{
-            color_names = unique(cfg_df[[color_var]])
+            color_names = unique(config_df[[color_by]])
         }
         stopifnot(length(color_names) == length(color_mapping))
         names(color_mapping) = color_names
         
     }else{
-        if(is.factor(cfg_df[[color_var]])){
-            color_names = levels(cfg_df[[color_var]])
+        if(is.factor(config_df[[color_by]])){
+            color_names = levels(config_df[[color_by]])
         }else{
-            color_names = unique(cfg_df[[color_var]])
+            color_names = unique(config_df[[color_by]])
         }
         color_mapping = seqsetvis::safeBrew(length(color_names))
         names(color_mapping) = color_names
     }
     
-    stopifnot(cfg_df[[color_var]] %in% names(color_mapping))
+    stopifnot(config_df[[color_by]] %in% names(color_mapping))
     
     if(is.null(feature_load_FUN)){
-        file_paths = cfg_df[["file"]]
+        file_paths = config_df[["file"]]
         file_formats = guess_feature_file_format(file_paths)
         stopifnot(length(unique(file_formats)) == 1)
         feature_load_FUN = get_feature_file_load_function(file_paths[1])[[1]]
     }
-    if(is.null(group_to_run)){
-        group_to_run = unique(cfg_df[[group_var]])   
+    if(is.null(to_run)){
+        to_run = unique(config_df[[run_by]])   
     }
-    stopifnot(all(group_to_run %in% cfg_df[[group_var]]))
-    if(is.null(group_reference)){
-        group_reference = character()
+    stopifnot(all(to_run %in% config_df[[run_by]]))
+    if(is.null(to_run_reference)){
+        to_run_reference = character()
     }
-    stopifnot(all(group_reference %in% cfg_df[[group_var]]))
+    stopifnot(all(to_run_reference %in% config_df[[run_by]]))
     
     new("QcConfigFeatures",
-        meta_data =  cfg_df,
-        group_var = group_var,
-        group_to_run = group_to_run,
-        group_reference = group_reference,
-        color_var = color_var,
+        meta_data =  config_df,
+        run_by = run_by,
+        to_run = to_run,
+        to_run_reference = to_run_reference,
+        color_by = color_by,
         color_mapping = color_mapping,
         feature_load_FUN = feature_load_FUN,
         n_peaks = n_peaks,
-        min_fraction = min_fraction,
-        min_number = min_number)
+        consensus_fraction = consensus_fraction,
+        consensus_n = consensus_n)
 }
 
+QcConfigFeatures.null = function(){
+    qc = suppressWarnings({QcConfigFeatures(data.frame(file = "null"))})
+    qc@is_null = TRUE
+    qc
+}
 
 
 #' QcConfigFeatures
@@ -175,8 +188,8 @@ QcConfigFeatures = function(cfg_df,
 #' @param group_names vector of group names to assign from according to groups
 #' @param group_colors vector of colors to use per group
 #' @param n_peaks number of peaks to subset for
-#' @param min_number An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.
-#' @param min_fraction A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.
+#' @param consensus_n An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.
+#' @param consensus_fraction A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.
 #'
 #' @return a QcConfigFeatures object
 #' @export
@@ -190,8 +203,8 @@ QcConfigFeatures.files = function(file_paths,
                                   group_colors = NULL,
                                   feature_load_FUN = NULL,
                                   n_peaks = 1e3,
-                                  min_fraction = DEFAULT_CONSENSUS_FRACTION,
-                                  min_number = DEFAULT_CONSENSUS_N){
+                                  consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
+                                  consensus_n = DEFAULT_CONSENSUS_N){
     if(is.null(groups)){
         groups = seq_along(file_paths)
     }
@@ -207,17 +220,17 @@ QcConfigFeatures.files = function(file_paths,
     if(is.null(feature_load_FUN)){
         feature_load_FUN = get_feature_file_load_function(file_paths[1])[[1]]
     }
-    cfg_df = data.frame(file = as.character(file_paths), group = group_names[groups])
+    config_df = data.frame(file = as.character(file_paths), group = group_names[groups])
     
     new("QcConfigFeatures",
-        meta_data =  cfg_df,
-        group_var = "group",
-        color_var = "group",
+        meta_data =  config_df,
+        run_by = "group",
+        color_by = "group",
         color_mapping = group_colors,
         feature_load_FUN = feature_load_FUN,
         n_peaks = n_peaks,
-        min_fraction = min_fraction,
-        min_number = min_number
+        consensus_fraction = consensus_fraction,
+        consensus_n = consensus_n
     )
 }
 
@@ -306,16 +319,16 @@ QcConfigFeatures.files = function(file_paths,
         }    
     }
     #parsing the color mapping
-    if(!is.null(cfg_vals[["color_map"]])){
-        cmap = cfg_vals[["color_map"]]
+    if(!is.null(cfg_vals[["color_mapping"]])){
+        cmap = cfg_vals[["color_mapping"]]
         if(grepl(":", cmap)){
             cmap = strsplit(strsplit(cmap, ",")[[1]], ":")
-            color_map = sapply(cmap, function(x)x[2])
-            names(color_map) = sapply(cmap, function(x)x[1])
-            cfg_vals[["color_map"]] = color_map    
+            color_mapping = sapply(cmap, function(x)x[2])
+            names(color_mapping) = sapply(cmap, function(x)x[1])
+            cfg_vals[["color_mapping"]] = color_mapping    
         }else{
-            color_map = strsplit(cmap, ",")[[1]]
-            cfg_vals[["color_map"]] = color_map
+            color_mapping = strsplit(cmap, ",")[[1]]
+            cfg_vals[["color_mapping"]] = color_mapping
         }
     }
     #read mode synonym
@@ -344,7 +357,7 @@ QcConfigFeatures.files = function(file_paths,
 #' QcConfigFeatures.parse(feature_config_file)
 QcConfigFeatures.parse = function(feature_config_file){
     peak_config_dt = .parse_config_body(feature_config_file)
-    valid_feature_var = c("main_dir", "n_peaks", "consensus_n", "consensus_fraction", "color_by", "color_map", "run_by", "to_run")
+    valid_feature_var = c("main_dir", "n_peaks", "consensus_n", "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run")
     cfg_vals = .parse_config_header(feature_config_file, valid_feature_var)
     
     if(!is.null(cfg_vals[["main_dir"]])){
@@ -364,17 +377,17 @@ QcConfigFeatures.parse = function(feature_config_file){
                     main_dir = NULL, 
                     n_peaks = 1e3, 
                     consensus_n = 1, consensus_fraction = 0, 
-                    color_by = NULL, color_map = NULL, 
+                    color_by = NULL, color_mapping = NULL, 
                     run_by = NULL, to_run = NULL, to_run_reference = NULL){
-        QcConfigFeatures(cfg_df = config_dt, 
-                         group_var = run_by, 
-                         group_to_run = to_run,
-                         group_reference = to_run_reference,
-                         color_var = color_by, 
-                         color_mapping = color_map, 
+        QcConfigFeatures(config_df = config_dt, 
+                         run_by = run_by, 
+                         to_run = to_run,
+                         to_run_reference = to_run_reference,
+                         color_by = color_by, 
+                         color_mapping = color_mapping, 
                          n_peaks = n_peaks, 
-                         min_fraction = consensus_fraction,
-                         min_number = consensus_n)
+                         consensus_fraction = consensus_fraction,
+                         consensus_n = consensus_n)
     }
     do.call(tfun, c(list(config_dt = peak_config_dt), cfg_vals))
     
@@ -395,9 +408,9 @@ setClass("QcConfigSignal", contains = "QcConfig",
 
 #' Title
 #'
-#' @param cfg_df 
-#' @param group_var 
-#' @param color_var 
+#' @param config_df 
+#' @param run_by 
+#' @param color_by 
 #' @param color_mapping 
 #' @param read_mode 
 #' @param view_size 
@@ -407,75 +420,81 @@ setClass("QcConfigSignal", contains = "QcConfig",
 #'
 #' @examples
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
-#' bam_cfg_df = .parse_config_body(bam_config_file)
-#' QcConfigSignal(bam_cfg_df)
+#' bam_config_df = .parse_config_body(bam_config_file)
+#' QcConfigSignal(bam_config_df)
 #' 
 #' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
-#' bigwig_cfg_df = .parse_config_body(bigwig_config_file)
-#' QcConfigSignal(bigwig_cfg_df)
-QcConfigSignal = function(cfg_df,
-                          group_var = "All",
-                          group_to_run = NULL,
-                          group_reference = NULL,
-                          color_var = "file",
+#' bigwig_config_df = .parse_config_body(bigwig_config_file)
+#' QcConfigSignal(bigwig_config_df)
+QcConfigSignal = function(config_df,
+                          run_by = "All",
+                          to_run = NULL,
+                          to_run_reference = NULL,
+                          color_by = "file",
                           color_mapping = NULL,
                           read_mode = NULL,
                           view_size = DEFAULT_VIEW_SIZE){
-    .enforce_file_var(cfg_df)
-    if(!group_var %in% colnames(cfg_df)){
-        stop("group_var ", group_var, " was not in column names.")
+    .enforce_file_var(config_df)
+    if(!run_by %in% colnames(config_df)){
+        stop("run_by ", run_by, " was not in column names.")
     }
-    if(!color_var %in% colnames(cfg_df)){
-        stop("color_var ", color_var, " was not in column names.")
+    if(!color_by %in% colnames(config_df)){
+        stop("color_by ", color_by, " was not in column names.")
     }
     
     if(!is.null(color_mapping)){
         if(!is.null(names(color_mapping))){
             color_names = names(color_mapping)
-        }else if(is.factor(cfg_df[[color_var]])){
-            color_names = levels(cfg_df[[color_var]])
+        }else if(is.factor(config_df[[color_by]])){
+            color_names = levels(config_df[[color_by]])
         }else{
-            color_names = unique(cfg_df[[color_var]])
+            color_names = unique(config_df[[color_by]])
         }
         stopifnot(length(color_names) == length(color_mapping))
         names(color_mapping) = color_names
         
     }else{
-        if(is.factor(cfg_df[[color_var]])){
-            color_names = levels(cfg_df[[color_var]])
+        if(is.factor(config_df[[color_by]])){
+            color_names = levels(config_df[[color_by]])
         }else{
-            color_names = unique(cfg_df[[color_var]])
+            color_names = unique(config_df[[color_by]])
         }
         color_mapping = seqsetvis::safeBrew(length(color_names))
         names(color_mapping) = color_names
     }
     
-    stopifnot(cfg_df[[color_var]] %in% names(color_mapping))
+    stopifnot(config_df[[color_by]] %in% names(color_mapping))
     
     if(is.null(read_mode)){
-        read_mode = guess_read_mode(cfg_df$file[1])
+        read_mode = guess_read_mode(config_df$file[1])
     }
     
     stopifnot(read_mode %in% c("bam_SE", "bam_PE", "bigwig"))
     
-    if(is.null(group_to_run)){
-        group_to_run = unique(cfg_df[[group_var]])   
+    if(is.null(to_run)){
+        to_run = unique(config_df[[run_by]])   
     }
-    stopifnot(all(group_to_run %in% cfg_df[[group_var]]))
-    if(is.null(group_reference)){
-        group_reference = character()
+    stopifnot(all(to_run %in% config_df[[run_by]]))
+    if(is.null(to_run_reference)){
+        to_run_reference = character()
     }
-    stopifnot(all(group_reference %in% cfg_df[[group_var]]))
+    stopifnot(all(to_run_reference %in% config_df[[run_by]]))
     
     new("QcConfigSignal",
-        meta_data =  cfg_df,
-        group_var = group_var,
-        group_to_run = group_to_run,
-        group_reference = group_reference,
-        color_var = color_var,
+        meta_data =  config_df,
+        run_by = run_by,
+        to_run = to_run,
+        to_run_reference = to_run_reference,
+        color_by = color_by,
         color_mapping = color_mapping,
         read_mode = read_mode,
         view_size = view_size)
+}
+
+QcConfigSignal.null = function(){
+    qc = suppressWarnings({QcConfigSignal(data.frame(file = "null"))})
+    qc@is_null = TRUE
+    qc
 }
 
 #' Title
@@ -493,7 +512,7 @@ QcConfigSignal = function(cfg_df,
 #' QcConfigSignal.parse(bigwig_config_file)
 QcConfigSignal.parse = function(signal_config_file){
     signal_config_dt = .parse_config_body(signal_config_file)
-    valid_feature_var = c("main_dir", "view_size", "read_mode", "color_by", "color_map", "run_by", "to_run", "to_run_reference")
+    valid_feature_var = c("main_dir", "view_size", "read_mode", "color_by", "color_mapping", "run_by", "to_run", "to_run_reference")
     cfg_vals = .parse_config_header(signal_config_file, valid_feature_var)
     
     if(!is.null(cfg_vals[["main_dir"]])){
@@ -513,12 +532,14 @@ QcConfigSignal.parse = function(signal_config_file){
                     main_dir = NULL, 
                     read_mode = NULL,
                     view_size = DEFAULT_VIEW_SIZE,
-                    color_by = NULL, color_map = NULL, 
-                    run_by = NULL, to_run = NULL){
-        QcConfigSignal(cfg_df = config_dt, 
-                       group_var = run_by, 
-                       color_var = color_by, 
-                       color_mapping = color_map, 
+                    color_by = NULL, color_mapping = NULL, 
+                    run_by = NULL, to_run = NULL, to_run_reference = NULL){
+        QcConfigSignal(config_df = config_dt, 
+                       run_by = run_by, 
+                       to_run = to_run,
+                       to_run_reference = to_run_reference,
+                       color_by = color_by, 
+                       color_mapping = color_mapping, 
                        read_mode = read_mode, 
                        view_size = view_size)
     }
@@ -562,9 +583,9 @@ QcConfigSignal.files = function(file_paths,
         names(group_colors) = group_names
     }
     
-    cfg_df = data.frame(file = as.character(file_paths), group = group_names[groups])
+    config_df = data.frame(file = as.character(file_paths), group = group_names[groups])
     
-    QcConfigSignal(cfg_df, group_var = "group", color_mapping = group_colors)
+    QcConfigSignal(config_df, run_by = "group", color_mapping = group_colors)
 }
 
 
@@ -649,6 +670,71 @@ setMethod("QcScaleFill", c("QcConfig"), function(object){
     names(cols) = as.character(object@group_names)
     ggplot2::scale_fill_manual(values = cols)
 })
+
+
+
+#' Title
+#'
+#' @param qc 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#' config_df = .parse_config_body(feature_config_file)
+#' qc = QcConfigFeatures(config_df)
+.show_QcConfig = function(qc){
+    if(qc@is_null){
+        msg = "This QcConfig is a NULL placeholder."
+    }else{
+        msg = paste(sep = "\n",
+                    paste("Configuration for", nrow(qc@meta_data), "items."),
+                    paste0(length(unique(qc@meta_data[[qc@run_by]])), " potential running group(s) detected for '", qc@run_by, "'."),
+                    paste("Will run:", paste(qc@to_run, collapse = ", ")),
+                    ifelse(length(qc@to_run_reference) > 0, 
+                           paste("Referenced vs:", paste(qc@to_run_reference, collapse = ", ")),
+                           "No reference set."),
+                    paste0("Use plot() to view color mapping for '", qc@color_by , "'.")
+        )
+    }
+    message(msg)
+}
+
+.plot_QcConfig = function(qc){
+    plot_dt = as.data.table(qc@meta_data)
+    plot_dt[, y := rev(seq_len(.N)), c(qc@run_by)]
+    ggplot(plot_dt, aes_string(x = qc@run_by, y = "y", fill = qc@color_by, label = "name_split")) +
+        geom_label() +
+        scale_fill_manual(values = qc@color_mapping) +
+        theme(panel.background = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
+        labs(y = "") +
+        guides(
+            fill = guide_legend(
+                override.aes = aes(label = "")
+            ))
+}
+
+#' Title
+#'
+#' @param QcConfig 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setMethod("plot", "QcConfig", definition = function(x).plot_QcConfig(x))
+
+
+#' Title
+#'
+#' @param QcConfig 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setMethod("show", "QcConfig", definition = function(object).show_QcConfig(object))
 
 # ob1 = QcConfig(LETTERS[1:5], groups = c(rep(1, 3), rep(2, 2)))
 # ob2 = QcConfigFeatures(LETTERS[1:5], groups = c(rep(1, 3), rep(2, 2)))

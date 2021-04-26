@@ -5,22 +5,22 @@
 \title{Title}
 \usage{
 QcConfigSignal(
-  cfg_df,
-  group_var = "All",
-  group_to_run = NULL,
-  group_reference = NULL,
-  color_var = "file",
+  config_df,
+  run_by = "All",
+  to_run = NULL,
+  to_run_reference = NULL,
+  color_by = "file",
   color_mapping = NULL,
   read_mode = NULL,
   view_size = DEFAULT_VIEW_SIZE
 )
 }
 \arguments{
-\item{cfg_df}{}
+\item{config_df}{}
 
-\item{group_var}{}
+\item{run_by}{}
 
-\item{color_var}{}
+\item{color_by}{}
 
 \item{color_mapping}{}
 
@@ -36,10 +36,10 @@ Title
 }
 \examples{
 bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
-bam_cfg_df = .parse_config_body(bam_config_file)
-QcConfigSignal(bam_cfg_df)
+bam_config_df = .parse_config_body(bam_config_file)
+QcConfigSignal(bam_config_df)
 
 bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
-bigwig_cfg_df = .parse_config_body(bigwig_config_file)
-QcConfigSignal(bigwig_cfg_df)
+bigwig_config_df = .parse_config_body(bigwig_config_file)
+QcConfigSignal(bigwig_config_df)
 }

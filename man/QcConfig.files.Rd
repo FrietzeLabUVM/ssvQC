@@ -27,5 +27,5 @@ A QcConfig object
 QcConfig
 }
 \examples{
-QcConfig(c("A", "B"))
+QcConfig.files(c("A", "B"))
 }

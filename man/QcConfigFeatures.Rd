@@ -5,24 +5,24 @@
 \title{QcConfigFeatures}
 \usage{
 QcConfigFeatures(
-  cfg_df,
-  group_var = "All",
-  group_to_run = NULL,
-  group_reference = NULL,
-  color_var = "file",
+  config_df,
+  run_by = "All",
+  to_run = NULL,
+  to_run_reference = NULL,
+  color_by = "file",
   color_mapping = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
-  min_fraction = DEFAULT_CONSENSUS_FRACTION,
-  min_number = DEFAULT_CONSENSUS_N
+  consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
+  consensus_n = DEFAULT_CONSENSUS_N
 )
 }
 \arguments{
-\item{cfg_df}{}
+\item{config_df}{}
 
-\item{group_var}{}
+\item{run_by}{}
 
-\item{color_var}{}
+\item{color_by}{}
 
 \item{color_mapping}{}
 
@@ -30,9 +30,9 @@ QcConfigFeatures(
 
 \item{n_peaks}{}
 
-\item{min_fraction}{}
+\item{consensus_fraction}{}
 
-\item{min_number}{}
+\item{consensus_n}{}
 }
 \value{
 
@@ -42,6 +42,6 @@ QcConfigFeatures
 }
 \examples{
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-cfg_df = .parse_config_body(feature_config_file)
-QcConfigFeatures(cfg_df)
+config_df = .parse_config_body(feature_config_file)
+QcConfigFeatures(config_df)
 }

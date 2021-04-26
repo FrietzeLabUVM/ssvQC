@@ -11,8 +11,8 @@ QcConfigFeatures.files(
   group_colors = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
-  min_fraction = DEFAULT_CONSENSUS_FRACTION,
-  min_number = DEFAULT_CONSENSUS_N
+  consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
+  consensus_n = DEFAULT_CONSENSUS_N
 )
 }
 \arguments{
@@ -26,9 +26,9 @@ QcConfigFeatures.files(
 
 \item{n_peaks}{number of peaks to subset for}
 
-\item{min_fraction}{A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.}
+\item{consensus_fraction}{A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.}
 
-\item{min_number}{An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.}
+\item{consensus_n}{An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.}
 }
 \value{
 a QcConfigFeatures object

@@ -1,5 +1,5 @@
 #CFG main_dir=$SSVQC_DATA read_mode=bam_SE
-#CFG color_by=cell color_map=MCF10A:blue2,MCF10AT1:darkmagenta,MCF10CA1:violetred1
+#CFG color_by=cell color_mapping=MCF10A:blue2,MCF10AT1:darkmagenta,MCF10CA1:violetred1
 #CFG run_by=mark to_run=CTCF to_run_reference=input view_size=3e3
 file,cell,mark,rep
 MCF10A_CTCF_R1.100peaks.bam,MCF10A,CTCF,rep1
