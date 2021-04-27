@@ -36,12 +36,20 @@ bam_config = QcConfigSignal.parse(bam_config_file)
 bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 bigwig_config = QcConfigSignal.parse(bigwig_config_file)
 
-ssvQC(feature_config_file, bam_config_file)
+sqc.complete.file = ssvQC(feature_config_file, bam_config_file)
 
-ssvQC(feature_config, bam_config)
+sqc.complete = ssvQC(feature_config, bam_config)
 
-ssvQC(feature_config, bigwig_config_file)
+sqc.complete.bw = ssvQC(feature_config, bigwig_config_file)
 
-ssvQC(signal_config = bam_config)
+sqc.signal = ssvQC(signal_config = bam_config)
+
+sqc.feature = ssvQC(feature_config = feature_config)
+
+ssvQC.runAll(sqc.complete)
+ssvQC.runAll(sqc.signal)
+ssvQC.runAll(sqc.feature)
+
+sqc = sqc.complete
 
 }

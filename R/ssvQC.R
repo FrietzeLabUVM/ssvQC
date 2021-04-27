@@ -1,3 +1,4 @@
+setOldClass(c("theme", "gg"))
 
 setClass("ssvQC",
          representation = list(
@@ -5,12 +6,22 @@ setClass("ssvQC",
            signal_config = "QcConfigSignal",
            out_dir = "character",
            bfc = "BiocFileCache",
-           saving_enabled = "logical"
+           saving_enabled = "logical",
+           plot_post_FUN = "function",
+           plots = "list"
          ))
 
 setClass("ssvQC.featureOnly", contains = "ssvQC")
 setClass("ssvQC.signalOnly", contains = "ssvQC")
 setClass("ssvQC.complete", contains = "ssvQC")
+
+setMethod("initialize","ssvQC", function(.Object,...){
+  .Object <- callNextMethod()
+  validObject(.Object)
+  .Object@plot_post_FUN = function(p)p
+  .Object@plots = list()
+  .Object
+})
 
 #' ssvQC
 #'
@@ -33,13 +44,21 @@ setClass("ssvQC.complete", contains = "ssvQC")
 #' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 #' bigwig_config = QcConfigSignal.parse(bigwig_config_file)
 #' 
-#' ssvQC(feature_config_file, bam_config_file)
+#' sqc.complete.file = ssvQC(feature_config_file, bam_config_file)
 #' 
-#' ssvQC(feature_config, bam_config)
+#' sqc.complete = ssvQC(feature_config, bam_config)
 #' 
-#' ssvQC(feature_config, bigwig_config_file)
+#' sqc.complete.bw = ssvQC(feature_config, bigwig_config_file)
 #' 
-#' ssvQC(signal_config = bam_config)
+#' sqc.signal = ssvQC(signal_config = bam_config)
+#' 
+#' sqc.feature = ssvQC(feature_config = feature_config)
+#' 
+#' ssvQC.runAll(sqc.complete)
+#' ssvQC.runAll(sqc.signal)
+#' ssvQC.runAll(sqc.feature)
+#' 
+#' sqc = sqc.complete
 #' 
 ssvQC = function(feature_config = NULL,
                  signal_config = NULL,
@@ -108,6 +127,54 @@ ssvQC = function(feature_config = NULL,
   
   
 }
+
+setGeneric("ssvQC.runAll", function(object){standardGeneric("ssvQC.runAll")})
+setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
+  message("complete")
+})
+setMethod("ssvQC.runAll", "ssvQC.featureOnly", function(object){
+  message("featureOnly")
+})
+setMethod("ssvQC.runAll", "ssvQC.signalOnly", function(object){
+  message("signalOnly")
+})
+
+
+.run_mapped_reads = function(sqc){
+  out_dir = sqc@out_dir
+  res_file = function(f)file.path(out_dir, f)
+  
+  #bam specific independent of peaks
+  if(!grepl("bam", sqc@signal_config@read_mode)){
+    stop("Read mode must be bam to assess mapped reads.") 
+  }
+  
+  bam_config_dt = sqc@signal_config@meta_data
+  if(is.null(bam_config_dt$mapped_reads)){
+    bam_config_dt$mapped_reads = sapply(bam_config_dt$file, get_mapped_reads)
+  }
+  
+  color_var = sqc@signal_config@color_by
+  group_var = sqc@signal_config@run_by
+  color_mapping = sqc@signal_config@color_mapping
+  
+  p_mapped_reads = ggplot(bam_config_dt, aes_string(x = "mark", y = "mapped_reads", fill = color_var)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    scale_fill_manual(values = color_mapping) +
+    scale_y_continuous(labels = function(x)x/1e6) +
+    labs(y = "M mapped reads", fill = color_var, x= "") +
+    labs(title = "Mapped reads") +
+    theme(panel.background = element_blank(), axis.text.x = element_text(size = 8))
+  
+  sqc@plots[["mapped_reads"]] = p_mapped_reads
+  
+  if(sqc@saving_enabled){
+    ggsave(res_file("mapped_reads.pdf"), p_mapped_reads, width = 2+.5*nrow(bam_config_dt), height = 3)  
+  }
+  
+  p_mapped_reads
+}
+
 
 
 #' Title

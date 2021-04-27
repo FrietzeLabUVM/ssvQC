@@ -1,4 +1,4 @@
-#CFG main_dir=$SSVQC_DATA n_peaks=50 consensus_n=2 consensus_fraction=0
+#CFG main_dir=$SSVQC_DATA n_peaks=50 consensus_n=2 consensus_fraction=0 overlap_extension=50
 #CFG color_by=cell color_mapping=MCF10A:blue2,MCF10AT1:darkmagenta,MCF10CA1:violetred1
 #CFG run_by=mark to_run=CTCF
 file,cell,mark,rep

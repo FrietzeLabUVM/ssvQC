@@ -13,6 +13,7 @@ QcConfigFeatures(
   color_mapping = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
+  overlap_extension = 0,
   consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
   consensus_n = DEFAULT_CONSENSUS_N
 )

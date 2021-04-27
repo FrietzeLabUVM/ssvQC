@@ -1,0 +1,452 @@
+---
+title: "PR_mm10_bcells_cutnrun"
+author: "joe boyd"
+date: "3/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, results='hide')
+```
+
+## Focus on Ikaros
+
+Assess in detail the differences between DF4 and WT Ikaros binding.
+
+Incorporate ATAC-seq data to verify and IGG cut&run to weed out artifacts.
+
+```{r libs}
+options(mc.cores = 30)
+library(ssvQC)
+library(seqsetvis)
+library(BiocFileCache)
+bfc = BiocFileCache()
+bfcif = ssvRecipes::bfcif
+
+out_dir = "figs_raw_pdf_fig3"
+dir.create(out_dir, showWarnings = FALSE)
+res_file = function(f){file.path(out_dir, f)}
+```
+
+```{r peak files}
+peak_config_dt = as.data.table(read.table("../ssvQC_peak_config.fig3.csv", sep = ",", header = TRUE, stringsAsFactors = FALSE))
+peak_config_dt[, file := sample_ID]
+peak_config_dt = peak_config_dt[, colnames(peak_config_dt)[order(colnames(peak_config_dt) != "file")], with = FALSE]
+```
+
+```{r bam files}
+bam_config_dt = as.data.table(read.table("../ssvQC_bam_config.fig3.csv", sep = ",", header = TRUE, stringsAsFactors = FALSE))
+bam_config_dt[, file := sample_ID]
+bam_config_dt = bam_config_dt[, colnames(bam_config_dt)[order(colnames(bam_config_dt) != "file")], with = FALSE]
+```
+
+```{r fix names, echo=FALSE}
+#need code to parse var names
+bam_config_dt[, name := paste(mark, type, rep, sep = "_")]
+peak_config_dt[, name := paste(mark, type, rep, sep = "_")]
+
+bam_config_dt[, name_split := paste(mark, type, rep, sep = "\n")]
+peak_config_dt[, name_split := paste(mark, type, rep, sep = "\n")]
+
+stopifnot(!any(duplicated(bam_config_dt$name)))
+stopifnot(!any(duplicated(peak_config_dt$name)))
+
+bam_config_dt$name = factor(bam_config_dt$name, levels = bam_config_dt$name)
+bam_config_dt$name_split = factor(bam_config_dt$name_split, levels = bam_config_dt$name_split)
+peak_config_dt$name = factor(peak_config_dt$name, levels = peak_config_dt$name)
+peak_config_dt$name_split = factor(peak_config_dt$name_split, levels = peak_config_dt$name_split)
+```
+
+```{r filter}
+stopifnot(all(file.exists(bam_config_dt$file)))
+stopifnot(all(file.exists(peak_config_dt$file)))
+```
+
+Read depth is comparable
+
+```{r mapped reads}
+get_mapped_reads = function(f){
+  stats = Rsamtools::idxstatsBam(f)
+  stats = subset(stats, grepl("chr[0-9XY]+$", seqnames ))
+  sum(stats[,3])
+}
+
+color_mapping = c("fresh" = "gray30","frozen" = "dodgerblue")
+
+bam_config_dt[, mapped_reads := get_mapped_reads(file), .(file)]
+
+type_var = "type"
+group_var = "mark"
+grp_bam_config_dt = split(bam_config_dt, bam_config_dt[[group_var]])
+
+plots_mapped_reads = lapply(grp_bam_config_dt, function(.bam_config_dt){
+  nam = paste(unique(.bam_config_dt[[group_var]]), collapse = ", ")
+  ggplot(.bam_config_dt, aes_string(x = "name_split", y = "mapped_reads", fill = type_var)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    scale_fill_manual(values = color_mapping) +
+    scale_y_continuous(labels = function(x)x/1e6) +
+    labs(y = "M mapped reads", fill = type_var, x= "") +
+    theme(panel.background = element_blank(), axis.text.x = element_text(size = 8)) + 
+    labs(title = nam)
+  
+})
+```
+
+```{r, fig.width=7, fig.height=3}
+library(cowplot)
+leg = get_legend(plots_mapped_reads$H3K4me3)
+plots_mapped_reads.no_leg = lapply(plots_mapped_reads, function(p){p + guides(fill = "none")})
+plots_mapped_reads.no_leg[-1] = lapply(plots_mapped_reads.no_leg[-1], function(p){p + labs(y = "")})
+ggplot() + theme_void() + draw_grob(leg)
+pg_mapped_reads = cowplot::plot_grid(plotlist = c(plots_mapped_reads.no_leg, list(legend = leg)), rel_widths = c(1, 1, 1, .5), nrow = 1)
+ggsave(res_file("mapped_reads.pdf"), width = 7, height = 3)
+pg_mapped_reads
+```
+
+```{r peak overlaps, fig.width=12, fig.height=12}
+ctrl_bam_config_dt = grp_bam_config_dt$IgG
+todo = c("Ikaros", "H3K4me3")
+profile_plots = list()
+type_colors = c("fresh" = "gray30","frozen" = "dodgerblue")
+
+
+for(m in todo){
+  message(m)
+  main_title = paste("Overlap of", m, "peaks")
+  olap_title = paste(m, "peaks by frequency")
+  i_peak_config_dt = peak_config_dt[mark == m]
+  i_bam_config_dt = bam_config_dt[mark == m]
+  
+  
+  
+  name_cols =  type_colors[i_peak_config_dt[[type_var]]]
+  names(name_cols) = i_peak_config_dt$name_split
+  
+  
+  
+  peak_grs_all = easyLoad_narrowPeak(i_peak_config_dt$file, file_names = i_peak_config_dt$name_split)
+  peak_grs_all = lapply(peak_grs_all, function(x)x[order(x$pValue, decreasing = TRUE)])
+  peak_grs_all = lapply(peak_grs_all, function(x){x[nchar(as.character(seqnames(x))) <= 5]})
+  
+  p_all_upset = ssvFeatureUpset(peak_grs_all) + labs(title = olap_title)
+  
+  sp_peak_grs = split(peak_grs_all, i_peak_config_dt$type)
+  peak_grs = lapply(sp_peak_grs, function(x){
+    if(length(x) > 1){
+      ssvConsensusIntervalSets(x, min_number = 2)  
+    }else{
+      x[[1]]
+    }
+    
+  })
+  
+  olaps_gr = ssvOverlapIntervalSets(peak_grs)
+  p_freq_upset = ssvFeatureUpset(olaps_gr) + labs(title = olap_title)
+  
+  cons2_gr = ssvConsensusIntervalSets(peak_grs, min_number = 2, min_fraction = 0)
+  p_cons2_upset = ssvFeatureUpset(cons2_gr) + labs(title = paste(m, "consensus in any 2"))
+  
+  
+  set.seed(0)
+  view_size = 3e3
+  qgr = sample(resize(olaps_gr, view_size, fix = "center"), min(length(olaps_gr), 2e3))
+  
+  options(mc.cores = 30)
+  q_bam_config_dt = rbind(i_bam_config_dt, ctrl_bam_config_dt)
+  
+  prof_dt = bfcif(bfc, digest::digest(list(q_bam_config_dt, qgr, view_size, "signal")), function(){
+    ssvFetchBamPE(q_bam_config_dt, qgr, n_region_splits = 50, return_data.table = TRUE)
+  })
+  prof_dt[, y_norm := y / mapped_reads * 1e6]
+  
+  prof_dt.igg = bfcif(bfc, digest::digest(list(ctrl_bam_config_dt, qgr, view_size, "igg")), function(){
+    ssvFetchBamPE(ctrl_bam_config_dt, qgr, n_region_splits = 50, return_data.table = TRUE)
+  })
+  
+  clust_dt = ssvSignalClustering(prof_dt, fill_ = "y_norm", max_rows = 5e3)
+  
+  p_heat.raw = ssvSignalHeatmap.ClusterBars(clust_dt, facet_ = "name_split", fill_ = "y", max_rows = Inf, fill_limits = c(0, 80), FUN_format_heatmap = function(p){
+    p +
+      labs(title = m, fill = "read pileup", x = "bp") +
+      scale_fill_viridis_c()
+  })
+  
+  
+  p_heat.norm = ssvSignalHeatmap.ClusterBars(clust_dt, facet_ = "name_split", fill_ = "y_norm", max_rows = Inf, fill_limits = c(0, 5), FUN_format_heatmap = function(p){
+    p +
+      labs(title = m, fill = "RPM", x = "bp") +
+      scale_fill_viridis_c()
+  })
+  
+  clust_dt.agg = clust_dt[, .(y = mean(y), y_norm = mean(y_norm)), .(cluster_id, name_split, x, type)]
+  p_line_norm = ggplot(clust_dt.agg, aes(x = x, y = y_norm, color = type)) + geom_path() +
+    scale_color_manual(values = type_colors) +
+    facet_grid(cluster_id~name_split, scales = "free_y") +
+    labs(y = "RPM", x= "bp")
+  
+  group_prof_dt = bfcif(bfc, digest::digest(list(q_bam_config_dt, qgr, view_size, "signal_overlaps")), function(){
+    make_feature_overlap_signal_profiles(q_bam_config_dt, qgr, view_size = view_size)
+  })
+  
+  group_prof_dt[,  y_norm := y / mapped_reads * 1e6]
+  p_heat.overlap_raw = plot_feature_overlap_signal_profiles(group_prof_dt, fill_limits = c(0, 80))
+  
+  p_heat.overlap_norm = plot_feature_overlap_signal_profiles(group_prof_dt, fill_limits = c(0, 5), signal_var = "y_norm")
+  
+  assign_dt = unique(clust_dt[, .(id, cluster_id)])
+  
+  profile_plots[[m]] = list(raw = p_heat.raw, 
+                            norm = p_heat.norm, 
+                            norm.line = p_line_norm,
+                            overlap = p_heat.overlap_raw, 
+                            overlap_norm = p_heat.overlap_norm, 
+                            peak_grs_all = peak_grs_all,
+                            peak_grs_assessed = peak_grs,
+                            plot_all_overlaps = p_all_upset,
+                            plot_assesment_overlaps = p_freq_upset,
+                            assign_dt = assign_dt,
+                            clust_dt = clust_dt,
+                            query_gr = qgr)
+}
+
+```
+
+
+```{r plot heatmaps, fig.width=5.1, fig.height=5.85}
+
+profile_plots$Ikaros$raw
+ggsave(res_file("Ikaros_heatmap.raw.pdf"), width = 3.1, height = 5.85)
+profile_plots$Ikaros$norm
+ggsave(res_file("Ikaros_heatmap.norm.pdf"), width = 3.1, height = 5.85)
+```
+
+```{r plot ik olap, fig.width=6.5, fig.height=4.8}
+profile_plots$Ikaros$overlap$heatmap
+tmp_cols = c(type_colors, type_colors[2], type_colors)
+names(tmp_cols) = c("Ikaros_fresh_rep1", "Ikaros_frozen_rep1", "Ikaros_frozen_rep2", "IgG_fresh_rep1", "IgG_frozen_rep1")
+lp = profile_plots$Ikaros$overlap$lineplot +
+  scale_color_manual(values = tmp_cols) +
+  theme(panel.background = element_blank(), legend.position = "bottom")
+pg_overlap_signal_ikaros = cowplot::plot_grid(profile_plots$Ikaros$overlap$heatmap + theme(legend.position = "bottom"), lp)
+pg_overlap_signal_ikaros
+ggsave(res_file("Ikaros_heatmap.overlaps.pdf"), pg_overlap_signal_ikaros, width = 6.5, height = 4.8)
+```
+
+```{r plot k4 heatmaps, fig.width=7, fig.height=5.85}
+profile_plots$H3K4me3$raw
+ggsave(res_file("H3K4me3_heatmap.raw.pdf"), width = 7, height = 5.85)
+profile_plots$H3K4me3$norm
+ggsave(res_file("H3K4me3_heatmap.norm.pdf"), width = 7, height = 5.85)
+```
+
+```{r plot k4 olap, fig.width=12, fig.height=4.8}
+profile_plots$H3K4me3$overlap$heatmap
+
+tmp_cols = type_colors[bam_config_dt[mark %in% c("H3K4me3", "IgG")]$type]
+# tmp_cols = c(rep(type_colors[1], 4), rep(type_colors[2], 2))
+names(tmp_cols) = bam_config_dt[mark %in% c("H3K4me3", "IgG")]$name
+lp = profile_plots$H3K4me3$overlap$lineplot +
+  scale_color_manual(values = tmp_cols) +
+  theme(panel.background = element_blank(), legend.position = "bottom")
+pg_overlap_signal_ikaros = cowplot::plot_grid(profile_plots$H3K4me3$overlap$heatmap + theme(legend.position = "bottom"), lp)
+pg_overlap_signal_ikaros
+ggsave(res_file("H3K4me3_heatmap.overlaps.pdf"), pg_overlap_signal_ikaros, width = 12, height = 4.8)
+```
+
+```{r ik peak compare, fig.height=7, fig.width=7.6}
+ik_cols = rev(c("dodgerblue", "dodgerblue3", "gray30"))
+
+names(profile_plots$Ikaros$peak_grs_all) = gsub("\n", "_", names(profile_plots$Ikaros$peak_grs_all))
+names(profile_plots$H3K4me3$peak_grs_all) = gsub("\n", "_", names(profile_plots$H3K4me3$peak_grs_all))
+
+nam = "Ikaros"
+peak_grs = profile_plots$Ikaros$peak_grs_all
+
+ik_compare = plot_feature_comparison(peak_grs, peak_colors = ik_cols)$all
+ik_compare = lapply(ik_compare, function(x){
+  x + labs(title = "", subtitle = "")
+})
+ik_compare$count 
+ik_compare$venn 
+pg_ik = cowplot::plot_grid(ncol = 1, rel_heights = c(.3, 9),
+                           ggplot() + theme_void() + coord_cartesian(xlim = c(0,1), ylim = c(0,1)) + draw_text(nam, x = 0.03, hjust = 0),
+                           cowplot::plot_grid(ncol = 1, rel_heights = c(1.4, 1),
+                                              cowplot::plot_grid(plotlist = ik_compare[1:3], nrow = 1, rel_widths = c(1, 1, 1.3)),
+                                              cowplot::plot_grid(plotlist = ik_compare[4:5], nrow = 1, rel_widths = c(1, 1))
+                           )
+)
+ggsave(res_file("Ikaros_peak_comparison.pdf"), pg_ik, width = 7.6, height = 7)
+pg_ik
+```
+
+```{r k4 peak compare, fig.height=9, fig.width=9.6}
+k4_cols = rev(c("dodgerblue", "dodgerblue3", "gray30"))
+# k4_cols = type_colors
+nam = "H3K4me3"
+peak_grs = profile_plots[[nam]]$peak_grs_all
+
+k4_compare = plot_feature_comparison(peak_grs, peak_colors = k4_cols)$all
+k4_compare = lapply(k4_compare, function(x){
+  x + labs(title = "", subtitle = "")
+})
+k4_compare$count 
+k4_compare$venn 
+pg_k4 = cowplot::plot_grid(ncol = 1, rel_heights = c(.3, 9),
+                           ggplot() + theme_void() + coord_cartesian(xlim = c(0,1), ylim = c(0,1)) + draw_text(nam, x = 0.03, hjust = 0),
+                           cowplot::plot_grid(ncol = 1, rel_heights = c(1.4, 1),
+                                              cowplot::plot_grid(plotlist = c(k4_compare[1:2], list(ggplot() + theme_void())), nrow = 1, rel_widths = c(1, 1, .7)),
+                                              cowplot::plot_grid(plotlist = k4_compare[c(3,5)], nrow = 1, rel_widths = c(1, 1.3))
+                           )
+)
+ggsave(res_file("H3K4me3_peak_comparison.pdf"), pg_k4, width = 9.6, height = 9)
+pg_k4
+```
+
+```{r k4 upset, fig.width=7, fig.height=7}
+k4_compare$upset +
+  labs(title = nam)
+ggsave(res_file("H3K4me3_upset_plot.pdf"), width = 7, height = 7)
+```
+
+```{r FRIP, fig.height=7, fig.width=7}
+k4_frip_dt = make_frip_dt(rbind(grp_bam_config_dt$H3K4me3, grp_bam_config_dt$IgG), resize(profile_plots$H3K4me3$query_gr, 6e2, fix = "center"), name_lev = levels(bam_config_dt$name))
+k4_frip_dt[, treatment := tstrsplit(name, split = "_", keep = 2)]
+# k4_frip_dt[grepl("IgG", name), treatment := "IgG"]
+
+treat_cols = c("fresh" = "gray30", frozen = "dodgerblue", IgG = "firebrick4")
+
+k4_plots_frip.raw = plot_frip_dt(k4_frip_dt, name_lev = levels(droplevels(bam_config_dt[mark %in% c("H3K4me3", "IgG")]$name)))
+k4_plots_frip = lapply(k4_plots_frip.raw[c(2,4:6)], function(p){
+  p + scale_fill_manual(values = treat_cols) + scale_color_manual(values = treat_cols) +
+    theme(panel.background = element_blank())
+})
+pg_k4_frip = cowplot::plot_grid(plotlist = k4_plots_frip)
+pg_k4_frip
+ggsave(res_file("H3K4me3_FRIP.pdf"), pg_k4_frip, width = 7, height = 7) 
+```
+
+```{r FRIP, fig.height=7, fig.width=7}
+ik_frip_dt = make_frip_dt(rbind(grp_bam_config_dt$Ikaros, grp_bam_config_dt$IgG), resize(profile_plots$Ikaros$query_gr, 6e2, fix = "center"), name_lev = levels(bam_config_dt$name))
+ik_frip_dt[, treatment := tstrsplit(name, split = "_", keep = 2)]
+# ik_frip_dt[grepl("IgG", name), treatment := "IgG"]
+
+treat_cols = c("fresh" = "gray30", frozen = "dodgerblue", IgG = "firebrick4")
+
+ik_plots_frip.raw = plot_frip_dt(ik_frip_dt, name_lev = levels(droplevels(bam_config_dt[mark %in% c("Ikaros", "IgG")]$name)))
+ik_plots_frip = lapply(ik_plots_frip.raw[c(2,4:6)], function(p){
+  p + scale_fill_manual(values = treat_cols) + scale_color_manual(values = treat_cols) +
+    theme(panel.background = element_blank())
+})
+pg_ik_frip = cowplot::plot_grid(plotlist = ik_plots_frip)
+pg_ik_frip
+ggsave(res_file("Ikaros_FRIP.pdf"), pg_ik_frip, width = 7, height = 7) 
+```
+
+```{r frag sizes, fig.width=4, fig.height=4}
+ik_frag_dt = bfcif(bfc, digest::digest(list("Ikaros_fragsize", rbind(grp_bam_config_dt$Ikaros, grp_bam_config_dt$IgG), resize(profile_plots$Ikaros$query_gr, 6e2, fix = "center"), return_fragSizes = TRUE, return_data.table = TRUE, n_region_splits = 50)), function(){
+  ssvFetchBamPE(rbind(grp_bam_config_dt$Ikaros, grp_bam_config_dt$IgG), resize(profile_plots$Ikaros$query_gr, 6e2, fix = "center"), return_fragSizes = TRUE, return_data.table = TRUE, n_region_splits = 50)  
+})
+
+k4_frag_dt = bfcif(bfc, digest::digest(list("k4_fragsize", rbind(grp_bam_config_dt$H3K4me3, grp_bam_config_dt$IgG), resize(profile_plots$H3K4me3$query_gr, 6e2, fix = "center"), return_fragSizes = TRUE, return_data.table = TRUE, n_region_splits = 50)), function(){
+  ssvFetchBamPE(rbind(grp_bam_config_dt$H3K4me3, grp_bam_config_dt$IgG), resize(profile_plots$H3K4me3$query_gr, 6e2, fix = "center"), return_fragSizes = TRUE, return_data.table = TRUE, n_region_splits = 50)
+})
+
+ik_frag_dt$name_split = factor(ik_frag_dt$name_split, levels = )
+theme_set(theme(panel.background = element_blank(), legend.background = element_blank(), legend.box.background = element_blank(), legend.key = element_blank()))
+ggplot(ik_frag_dt, aes(x = name_split, y = fragment_size, color = type)) + geom_boxplot() +
+  scale_color_manual(values = type_colors) +
+  labs(x = "", y = "Fragment Size", title = "Ikaros")
+ggsave(res_file("Ikaros_fragment_size.pdf"), width = 4, height = 4)
+ggplot(k4_frag_dt, aes(x = name_split, y = fragment_size, color = type)) + geom_boxplot() +
+  scale_color_manual(values = type_colors) +
+  labs(x = "", y = "Fragment Size", title = "H3K4me3")
+ggsave(res_file("H3K4me3_fragment_size.pdf"), width = 4, height = 4)
+```
+
+```{r scc}
+ik_scc_dt = bfcif(bfc, 
+                  digest::digest(list(rbind(grp_bam_config_dt$Ikaros, grp_bam_config_dt$IgG), 
+                                      resize(profile_plots$Ikaros$query_gr, 6e2, fix = "center"), "scc_ik")),
+                  function(){
+                    make_scc_dt(rbind(grp_bam_config_dt$Ikaros, grp_bam_config_dt$IgG), 
+                                resize(profile_plots$Ikaros$query_gr, 6e2, fix = "center"))
+                  })
+k4_scc_dt = bfcif(bfc, 
+                  digest::digest(list(rbind(grp_bam_config_dt$H3K4me3, grp_bam_config_dt$IgG), 
+                                      resize(profile_plots$H3K4me3$query_gr, 6e2, fix = "center"), "scc_k4")),
+                  function(){
+                    make_scc_dt(rbind(grp_bam_config_dt$H3K4me3, grp_bam_config_dt$IgG), 
+                                resize(profile_plots$H3K4me3$query_gr, 6e2, fix = "center"))
+                  })
+```
+
+```{r scc plots, fig.width=11, fig.height=5}
+theme_set(theme(panel.background = element_blank()))
+ik_scc_plots = plot_scc_dt(ik_scc_dt)
+cowplot::plot_grid(
+  ik_scc_plots$scc_curves,
+  ik_scc_plots$scc_dots
+)
+ggsave(res_file("Ikaros_SCC.pdf"), width = 11, height = 5)
+
+k4_scc_plots = plot_scc_dt(k4_scc_dt)
+cowplot::plot_grid(
+  k4_scc_plots$scc_curves,
+  k4_scc_plots$scc_dots
+)
+ggsave(res_file("H3K4me3_SCC.pdf"), width = 11, height = 5)
+```
+
+```{r scc cluster plots, fig.width=7, fig.height=8}
+ik_scc_cluster_plots = plot_signals(profile_plots$Ikaros$clust_dt, query_gr = profile_plots$Ikaros$query_gr, scc_dt = ik_scc_dt, frip_dt = ik_frip_dt)
+
+k4_scc_cluster_plots = plot_signals(profile_plots$H3K4me3$clust_dt, query_gr = profile_plots$H3K4me3$query_gr, scc_dt = k4_scc_dt, frip_dt = k4_frip_dt)
+
+ik_scc_cluster_plots$scc_curves_per_cluster + theme(panel.background = element_blank())
+ggsave("Ikaros_SCC_per_cluster.pdf", width = 7, height = 8)
+
+```
+
+```{r, fig.width=8, fig.height=8}
+k4_scc_cluster_plots$scc_curves_per_cluster + theme(panel.background = element_blank())
+ggsave("H3K4me3_SCC_per_cluster.pdf", width = 8, height = 8)
+```
+
+```{r, fig.width=7, fig.height=8}
+k4_scc_cluster_plots$frip_bars_per_cluster + scale_fill_manual(values = type_colors)
+ggsave("H3K4me3_FRIP_per_cluster.pdf", width = 7, height = 8)
+```
+
+```{r, fig.width=7, fig.height=8}
+ik_scc_cluster_plots$frip_bars_per_cluster + scale_fill_manual(values = type_colors)
+ggsave("Ikaros_FRIP_per_cluster.pdf", width = 7, height = 8)
+```
+
+```{r}
+
+make_frip_dt(rbind(grp_bam_config_dt$Ikaros, grp_bam_config_dt$IgG), resize(profile_plots$Ikaros$query_gr, 6e2, fix = "center"), name_lev = levels(bam_config_dt$name))
+
+
+ik_frip_dt[, .(FRIP = sum(frip)), .(name)]
+peak_grs_all = easyLoad_narrowPeak(peak_config_dt$file, file_names = peak_config_dt$name_split)
+frip_dt_all = rbindlist(lapply(names(peak_grs_all), function(nam){
+  gr = peak_grs_all[[nam]]
+  b_cfg = bam_config_dt[name_split == nam | mark == "IgG"]
+  frip_dt = bfcif(bfc, digest::digest(list(b_cfg, resize(gr, 6e2, fix = "center"))), function(){
+    make_frip_dt(b_cfg, resize(gr, 6e2, fix = "center"))  
+  })
+  frip_dt = frip_dt[, .(FRIP = sum(frip)), .(name)]
+  frip_dt = merge(frip_dt, b_cfg, by = "name")
+  frip_dt[, is_target := name_split == nam]
+  frip_dt = frip_dt[, .(FRIP = mean(FRIP)), .(is_target)]
+  frip_dt = dcast(frip_dt, .~is_target, value.var = "FRIP")
+  frip_dt$name_split = nam
+  setnames(frip_dt, c("FALSE", "TRUE"), c("FRIP_IgG_average", "FRIP"))
+  frip_dt
+}))
+peak_cnts = sapply(peak_grs_all, length)
+peak_cnts[bam_config_dt$name_split]
+bam_config_dt$peak_count = peak_cnts[bam_config_dt$name_split]
+bam_config_dt = merge(bam_config_dt, frip_dt_all, by = "name_split", all.x = TRUE)
+fwrite(bam_config_dt[, .(file, genotype, type, mark, rep, name, mapped_reads, peak_count, FRIP_IgG_average, FRIP)], file = res_file("stats_report.csv"))
+```

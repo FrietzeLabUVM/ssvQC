@@ -1,6 +1,7 @@
 DEFAULT_CONSENSUS_N = 1
 DEFAULT_CONSENSUS_FRACTION = 0
 DEFAULT_VIEW_SIZE = 3e3
+DEFAULT_PROCESS_FEATURES = TRUE
 
 #' QcConfig
 #'
@@ -79,9 +80,120 @@ setClass("QcConfigFeatures", contains = "QcConfig",
              feature_load_FUN = "function",
              n_peaks = "numeric",
              consensus_fraction = "numeric",
-             consensus_n = "numeric"
+             consensus_n = "numeric",
+             loaded_features = "list",
+             overlap_gr = "GRanges",
+             overlap_extension = "numeric",
+             assessment_gr = "GRanges"
+             
          ))
 
+setMethod("initialize","QcConfigFeatures", function(.Object,...){
+    .Object <- callNextMethod()
+    validObject(.Object)
+    .Object@loaded_features = list()
+    .Object@overlap_gr = GRanges()
+    .Object@assessment_gr = GRanges()
+    
+    .Object
+})
+
+setMethod("names", "QcConfigFeatures",
+          function(x)
+          {
+              c("loaded_features", "overlapped_features", "assessment_features")
+          })
+
+
+setMethod("$", "QcConfigFeatures",
+          function(x, name)
+          {
+              switch (name,
+                      loaded_features = x@loaded_features,
+                      overlapped_features = x@overlap_gr,
+                      assessment_features = x@assessment_gr
+              )
+          })
+
+
+setGeneric("featuresList", function(object){standardGeneric("featuresList")})
+#' Title
+#'
+#' @param QcConfigFeatures 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setMethod("featuresList", "QcConfigFeatures", 
+          definition = function(object){
+              if(length(object@loaded_features) == 0){
+                  object@loaded_features = object@feature_load_FUN(object@meta_data$file)
+                  names(object@loaded_features) = object@meta_data$name_split
+              }
+              if(length(object@loaded_features) == 0){
+                  stop("Somehow, no files were loaded. Report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+              }
+              object
+          })
+
+setGeneric("featuresOverlaps", function(object){standardGeneric("featuresOverlaps")})
+#' Title
+#'
+#' @param QcConfigFeatures 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setMethod("featuresOverlaps", "QcConfigFeatures", 
+          definition = function(object){
+              object = featuresList(object)
+              if(length(object@overlap_gr) == 0){
+                  object@overlap_gr = seqsetvis::ssvOverlapIntervalSets(object@loaded_features)
+              }
+              if(length(object@overlap_gr) == 0){
+                  stop("No regions in overlap. Check your input or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+              }
+              object
+          })
+
+setGeneric("featuresQuery", function(object){standardGeneric("featuresQuery")})
+#' Title
+#'
+#' @param QcConfigFeatures 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setMethod("featuresQuery", "QcConfigFeatures", 
+          definition = function(object){
+              # n_peaks = "numeric",
+              # consensus_fraction = "numeric",
+              # consensus_n = "numeric",
+              if(length(object@assessment_gr) == 0){
+                  object = featuresList(object)
+                  object = featuresOverlaps(object)
+                  
+                  feat_list = object@loaded_features
+                  olap_gr = object@overlap_gr
+                  
+                  f_consensus = floor(object@consensus_fraction * length(feat_list))
+                  n_consensus = min(length(feat_list), max(object@consensus_n, f_consensus))
+                  
+                  if(n_consensus == 1){
+                      asses_gr.full = olap_gr
+                  }else{
+                      asses_gr.full = ssvConsensusIntervalSets(feat_list, min_number = object@consensus_n, min_fraction = object@consensus_fraction)
+                  }
+                  object@assessment_gr = sampleCap(asses_gr.full, object@n_peaks)
+              }
+              if(length(object@assessment_gr) == 0){
+                  stop("No regions in assessment. Maybe loosen consensus requirements or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+              }
+              object
+          })
 
 #' QcConfigFeatures
 #'
@@ -109,8 +221,10 @@ QcConfigFeatures = function(config_df,
                             color_mapping = NULL,
                             feature_load_FUN = NULL,
                             n_peaks = 1e3,
+                            overlap_extension = 0,
                             consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
-                            consensus_n = DEFAULT_CONSENSUS_N){
+                            consensus_n = DEFAULT_CONSENSUS_N,
+                            process_features = DEFAULT_PROCESS_FEATURES){
     .enforce_file_var(config_df)
     if(!run_by %in% colnames(config_df)){
         if(run_by == "All"){
@@ -161,17 +275,23 @@ QcConfigFeatures = function(config_df,
     }
     stopifnot(all(to_run_reference %in% config_df[[run_by]]))
     
-    new("QcConfigFeatures",
-        meta_data =  config_df,
-        run_by = run_by,
-        to_run = to_run,
-        to_run_reference = to_run_reference,
-        color_by = color_by,
-        color_mapping = color_mapping,
-        feature_load_FUN = feature_load_FUN,
-        n_peaks = n_peaks,
-        consensus_fraction = consensus_fraction,
-        consensus_n = consensus_n)
+    obj = new("QcConfigFeatures",
+              meta_data =  config_df,
+              run_by = run_by,
+              to_run = to_run,
+              to_run_reference = to_run_reference,
+              color_by = color_by,
+              color_mapping = color_mapping,
+              feature_load_FUN = feature_load_FUN,
+              n_peaks = n_peaks,
+              overlap_extension = overlap_extension,
+              consensus_fraction = consensus_fraction,
+              consensus_n = consensus_n)
+    if(process_features){
+        obj = featuresQuery(obj)
+    }
+    obj
+    
 }
 
 QcConfigFeatures.null = function(){
@@ -204,7 +324,8 @@ QcConfigFeatures.files = function(file_paths,
                                   feature_load_FUN = NULL,
                                   n_peaks = 1e3,
                                   consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
-                                  consensus_n = DEFAULT_CONSENSUS_N){
+                                  consensus_n = DEFAULT_CONSENSUS_N,
+                                  process_features = DEFAULT_PROCESS_FEATURES){
     if(is.null(groups)){
         groups = seq_along(file_paths)
     }
@@ -222,16 +343,20 @@ QcConfigFeatures.files = function(file_paths,
     }
     config_df = data.frame(file = as.character(file_paths), group = group_names[groups])
     
-    new("QcConfigFeatures",
-        meta_data =  config_df,
-        run_by = "group",
-        color_by = "group",
-        color_mapping = group_colors,
-        feature_load_FUN = feature_load_FUN,
-        n_peaks = n_peaks,
-        consensus_fraction = consensus_fraction,
-        consensus_n = consensus_n
+    obj = new("QcConfigFeatures",
+              meta_data =  config_df,
+              run_by = "group",
+              color_by = "group",
+              color_mapping = group_colors,
+              feature_load_FUN = feature_load_FUN,
+              n_peaks = n_peaks,
+              consensus_fraction = consensus_fraction,
+              consensus_n = consensus_n
     )
+    if(process_features){
+        obj = featuresQuery(obj)
+    }
+    obj
 }
 
 .enforce_file_var = function(my_df){
@@ -313,7 +438,7 @@ QcConfigFeatures.files = function(file_paths,
         }
     }
     #numeric: consensus_n, consensus_fraction, n_peaks, view_size
-    for(var in c("consensus_n", "consensus_fraction", "n_peaks", "view_size")){
+    for(var in c("consensus_n", "consensus_fraction", "n_peaks", "view_size", "overlap_extension")){
         if(!is.null(cfg_vals[[var]])){
             cfg_vals[[var]] = as.numeric(cfg_vals[[var]])
         }    
@@ -355,9 +480,11 @@ QcConfigFeatures.files = function(file_paths,
 #' @examples
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' QcConfigFeatures.parse(feature_config_file)
-QcConfigFeatures.parse = function(feature_config_file){
+QcConfigFeatures.parse = function(feature_config_file,
+                                  process_features = DEFAULT_PROCESS_FEATURES){
     peak_config_dt = .parse_config_body(feature_config_file)
-    valid_feature_var = c("main_dir", "n_peaks", "consensus_n", "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run")
+    valid_feature_var = c("main_dir", "overlap_extension", "n_peaks", "consensus_n", 
+                          "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run")
     cfg_vals = .parse_config_header(feature_config_file, valid_feature_var)
     
     if(!is.null(cfg_vals[["main_dir"]])){
@@ -370,12 +497,14 @@ QcConfigFeatures.parse = function(feature_config_file){
         cfg_vals[["main_dir"]] = NULL
     }
     if(!all(file.exists(peak_config_dt$file))){
-        stop(paste(c("Files specified in config do not exist:", peak_config_dt$file[!file.exists(peak_config_dt$file)]), collapse = "\n  "))
+        stop(paste(c("Files specified in config do not exist:", 
+                     peak_config_dt$file[!file.exists(peak_config_dt$file)]), collapse = "\n  "))
     }
     
     tfun = function(config_dt, 
                     main_dir = NULL, 
                     n_peaks = 1e3, 
+                    overlap_extension = 0,
                     consensus_n = 1, consensus_fraction = 0, 
                     color_by = NULL, color_mapping = NULL, 
                     run_by = NULL, to_run = NULL, to_run_reference = NULL){
@@ -386,8 +515,10 @@ QcConfigFeatures.parse = function(feature_config_file){
                          color_by = color_by, 
                          color_mapping = color_mapping, 
                          n_peaks = n_peaks, 
+                         overlap_extension = overlap_extension,
                          consensus_fraction = consensus_fraction,
-                         consensus_n = consensus_n)
+                         consensus_n = consensus_n,
+                         process_features = process_features)
     }
     do.call(tfun, c(list(config_dt = peak_config_dt), cfg_vals))
     
@@ -436,7 +567,11 @@ QcConfigSignal = function(config_df,
                           view_size = DEFAULT_VIEW_SIZE){
     .enforce_file_var(config_df)
     if(!run_by %in% colnames(config_df)){
-        stop("run_by ", run_by, " was not in column names.")
+        if(run_by == "All"){
+            config_df[[run_by]] = run_by
+        }else{
+            stop("run_by ", run_by, " was not in column names.")    
+        }
     }
     if(!color_by %in% colnames(config_df)){
         stop("color_by ", color_by, " was not in column names.")
@@ -469,7 +604,7 @@ QcConfigSignal = function(config_df,
         read_mode = guess_read_mode(config_df$file[1])
     }
     
-    stopifnot(read_mode %in% c("bam_SE", "bam_PE", "bigwig"))
+    stopifnot(read_mode %in% c("bam_SE", "bam_PE", "bigwig", "null"))
     
     if(is.null(to_run)){
         to_run = unique(config_df[[run_by]])   
@@ -512,7 +647,8 @@ QcConfigSignal.null = function(){
 #' QcConfigSignal.parse(bigwig_config_file)
 QcConfigSignal.parse = function(signal_config_file){
     signal_config_dt = .parse_config_body(signal_config_file)
-    valid_feature_var = c("main_dir", "view_size", "read_mode", "color_by", "color_mapping", "run_by", "to_run", "to_run_reference")
+    valid_feature_var = c("main_dir", "view_size", "read_mode", 
+                          "color_by", "color_mapping", "run_by", "to_run", "to_run_reference")
     cfg_vals = .parse_config_header(signal_config_file, valid_feature_var)
     
     if(!is.null(cfg_vals[["main_dir"]])){
@@ -525,7 +661,8 @@ QcConfigSignal.parse = function(signal_config_file){
         cfg_vals[["main_dir"]] = NULL
     }
     if(!all(file.exists(signal_config_dt$file))){
-        stop(paste(c("Files specified in config do not exist:", signal_config_dt$file[!file.exists(signal_config_dt$file)]), collapse = "\n  "))
+        stop(paste(c("Files specified in config do not exist:", 
+                     signal_config_dt$file[!file.exists(signal_config_dt$file)]), collapse = "\n  "))
     }
     
     tfun = function(config_dt, 
@@ -741,3 +878,14 @@ setMethod("show", "QcConfig", definition = function(object).show_QcConfig(object
 # ob3 = QcConfigSignal(LETTERS[1:5], groups = c(rep(1, 3), rep(2, 2)))
 # QcColorMapping(ob3)
 # QcScaleFill(ob3)
+
+if(FALSE){
+    library(ssvQC)
+    feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+    object = QcConfigFeatures.parse(feature_config_file)
+    featuresQuery(object)
+    
+    
+    
+    
+}

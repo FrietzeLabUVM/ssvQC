@@ -1,0 +1,586 @@
+---
+title: "PR_mm10_bcells_cutnrun"
+author: "joe boyd"
+date: "3/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, results='hide')
+```
+
+## Focus on Ikaros
+
+Assess in detail the differences between DF4 and WT Ikaros binding.
+
+Incorporate ATAC-seq data to verify and IGG cut&run to weed out artifacts.
+
+```{r libs}
+options(mc.cores = 10)
+library(seqqc)
+library(seqsetvis)
+library(BiocFileCache)
+bfc = BiocFileCache()
+bfcif = ssvRecipes::bfcif
+wd = "/slipstream/home/joeboyd/R/seqqc/PR_selected/cutnrun"
+wd
+bam_dirs = wd
+peak_dirs = file.path(wd, "peaks_deseq2")
+
+stopifnot(all(dir.exists(wd)))
+stopifnot(all(dir.exists(bam_dirs)))
+stopifnot(all(dir.exists(peak_dirs)))
+```
+
+```{r peak files}
+peak_files = dir(peak_dirs, 
+                 pattern = "narrowPeak$", 
+                 full.names = TRUE)
+peak_files = peak_files[!duplicated(basename(peak_files))]
+```
+
+```{r bam files}
+bam_files = dir(bam_dirs, pattern = "bam$", 
+                full.names = TRUE)
+bam_files = bam_files[!duplicated(basename(bam_files))]
+```
+
+```{r fix names, echo=FALSE}
+fix_names = function(in_f){
+  out_name = basename(in_f)
+  out_name = toupper(out_name)
+  
+  out_name = sapply(strsplit(out_name, "[_\\.]"), function(x)paste(x[1:3], collapse = "_"))
+  out_name = sub("MERGE$", "MERGED", out_name)
+  
+  out_name[out_name == "DF4_H3K9AC_REP1"] = c("DF4_H3K9AC_REP1", "DF4_H3K9AC_REP2")
+  
+  
+  toupper(out_name)
+}
+
+names(bam_files) = fix_names(bam_files)
+names(peak_files) = fix_names(peak_files)
+
+if(any(duplicated(names(bam_files)))){
+  stop()
+  names(bam_files)[duplicated(names(bam_files))]  
+}
+if(any(duplicated(names(peak_files)))){
+  stop()
+  names(peak_files)[duplicated(names(peak_files))]  
+}
+```
+
+```{r filter}
+filter_files = function(f){
+  f #no filtering in this case
+}
+bam_files.f = filter_files(bam_files)
+peak_files.f = filter_files(peak_files)
+```
+
+```{r configs}
+#using rep as treatment here becuase that looks more interesting
+my_make_config_dt = function(files){
+  config_dt = data.table(file = files, name = names(files))
+  config_dt[, c("cell", "mark", "rep") := tstrsplit(name, "_", keep = 1:3)]
+  
+  config_dt[, treatment := mark]
+  config_dt = config_dt[order(rep)][order(treatment)][order(cell)]
+  
+  config_dt$name = factor(config_dt$name, levels = config_dt$name)
+  config_dt$name_split = factor(gsub("_", "\n", config_dt$name), levels = gsub("_", "\n", config_dt$name))
+  config_dt
+}
+peak_config_dt = my_make_config_dt(peak_files.f)
+bam_config_dt = my_make_config_dt(bam_files.f)
+
+stopifnot(file.exists(peak_config_dt$file))
+stopifnot(file.exists(bam_config_dt$file))
+```
+
+Read depth is comparable
+
+```{r mapped reads}
+get_mapped_reads = function(f){
+  stats = Rsamtools::idxstatsBam(f)
+  stats = subset(stats, grepl("chr[0-9XY]+$", seqnames ))
+  sum(stats[,3])
+}
+bam_config_dt[, cell_simple := sub("X", "", cell)]
+
+cell_colors = c("DF4" = "firebrick1", "WT" = "gray20")
+
+bam_config_dt[, mapped_reads := get_mapped_reads(file), .(file)]
+ggplot(bam_config_dt[mark %in% c("IKAROS")], aes(x = name, y = mapped_reads, fill = cell_simple)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = cell_colors) +
+  scale_y_continuous(labels = function(x)x/1e6) +
+  labs(y = "M mapped reads", fill = "Genotype") +
+  theme(panel.background = element_blank())
+
+ggplot(bam_config_dt[mark %in% c("IGG")], aes(x = name, y = mapped_reads, fill = cell_simple)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = cell_colors) +
+  scale_y_continuous(labels = function(x)x/1e6) +
+  labs(y = "M mapped reads", fill = "Genotype") +
+  theme(panel.background = element_blank())
+
+```
+
+```{r ikaros only}
+bam_igg_config_dt = bam_config_dt[mark == "IGG"]
+peak_config_dt = peak_config_dt[mark == "IKAROS"]
+bam_config_dt = bam_config_dt[mark == "IKAROS"]
+```
+
+```{r peak overlaps, fig.width=12, fig.height=12}
+m = "IKAROS"
+message(m)
+main_title = paste("Overlap of", m, "peaks")
+olap_title = paste(m, "peaks by frequency")
+i_peak_config_dt = peak_config_dt[mark == m]
+i_bam_config_dt = bam_config_dt[mark == m]
+
+cell_splits = split(i_peak_config_dt, ifelse(grepl("WT", i_peak_config_dt$cell), "WT", "DF4"))
+WT_cols = safeBrew(length(cell_splits$WT$name)+2, "Greys")[seq(3, length(cell_splits$WT$name)+2)]
+names(WT_cols) = cell_splits$WT$name
+DF_cols = safeBrew(length(cell_splits$DF4$name)+2, "Reds")[seq(3, length(cell_splits$DF4$name)+2)]
+names(DF_cols) = cell_splits$DF4$name
+name_cols = c(WT_cols, DF_cols)
+
+i_peak_config_dt$name = factor(i_peak_config_dt$name, levels = names(name_cols))
+i_bam_config_dt$name = factor(i_bam_config_dt$name, levels = names(name_cols))
+
+peak_grs = easyLoad_narrowPeak(i_peak_config_dt$file, file_names = i_peak_config_dt$name)
+peak_grs = lapply(peak_grs, function(x)x[order(x$pValue, decreasing = TRUE)])
+peak_grs = lapply(peak_grs, function(x){x[nchar(as.character(seqnames(x))) <= 5]})
+olaps_gr = ssvOverlapIntervalSets(peak_grs)
+```
+
+WT rep1 has ~30k unique peaks.  WT has many more peaks generally that are not called in DF4.  600+ peaks called in all 4.
+
+```{r overlap plots}
+p_freq_upset = ssvFeatureUpset(olaps_gr) + labs(title = olap_title)
+p_freq_upset
+```
+
+
+```{r consensus plots}
+cons2_gr = ssvConsensusIntervalSets(peak_grs, min_number = 2, min_fraction = 0)
+p_cons2_upset = ssvFeatureUpset(cons2_gr) + labs(title = paste(m, "consensus in any 2"))
+p_cons2_upset
+```
+
+I want to cast a wide net so I'll carry forward peaks called in any of the 4 samples.
+
+```{r fetch signal}
+qgr = sample(resize(olaps_gr, 3e3, fix = "center"), length(olaps_gr))
+options(mc.cores = 30)
+
+prof_dt = bfcif(bfc, digest::digest(list(i_bam_config_dt, qgr, "signal")), function(){
+  ssvFetchBamPE(i_bam_config_dt, qgr, n_region_splits = 50, return_data.table = TRUE)
+})
+
+prof_dt.igg = bfcif(bfc, digest::digest(list(bam_igg_config_dt, qgr, "igg")), function(){
+  ssvFetchBamPE(bam_igg_config_dt, qgr, n_region_splits = 50, return_data.table = TRUE)
+})
+
+set.seed(0)
+norm_dt = append_ynorm(prof_dt, aggFUN2 = function(x)quantile(x, .99))
+
+sel_id =names(subset(qgr, DF4_IKAROS_REP1 | DF4_IKAROS_REP2))
+```
+
+Keeping in mind that read death is very similar across these 4 samples.  We have 1 very strong WT rep.
+
+```{r raw no DF}
+clust_dt = ssvSignalClustering(norm_dt[!id %in% sel_id], fill_ = "y", max_rows = 2e3)
+ssvSignalHeatmap(clust_dt, facet_ = "name", fill_ = "y", max_rows = Inf, fill_limits = c(0, 80)) +
+  labs(title = "no normalization", subtitle = "no DF4, only WT peaks")
+```
+
+```{r raw yes DF}
+clust_dt = ssvSignalClustering(norm_dt[id %in% sel_id], fill_ = "y", max_rows = 2e3)
+ssvSignalHeatmap(clust_dt, facet_ = "name", fill_ = "y", max_rows = Inf, fill_limits = c(0, 80)) +
+  labs(title = "no normalization", subtitle = "DF4 peaks, can be WT")
+```
+
+If we apply normalization, DF4 looks basically like WT.
+
+```{r normalized no DF}
+clust_dt = ssvSignalClustering(norm_dt[!id %in% sel_id], fill_ = "y_norm", max_rows = 2e3)
+ssvSignalHeatmap(clust_dt, facet_ = "name", fill_ = "y_norm", max_rows = Inf)+
+  labs(title = "normalized", subtitle = "no DF4, only WT peaks")
+
+agg_dt = clust_dt[, .(y = mean(y), y_norm = mean(y_norm)), .(name, x, cluster_id, cell_simple)]
+ggplot(agg_dt, aes(x = x, y = y_norm, color = cell_simple)) +
+  geom_path() +
+  facet_grid(cluster_id~name) +
+  scale_color_manual(values = cell_colors)+
+  labs(title = "normalized", subtitle = "no DF4, only WT peaks")
+```
+
+In broad strokes, all 4 samples seem to have the same profile of enrichment, just at varying strengths.
+
+```{r normalized yes DF}
+clust_dt = ssvSignalClustering(norm_dt[id %in% sel_id], fill_ = "y_norm", max_rows = 2000)
+ssvSignalHeatmap(clust_dt, facet_ = "name", fill_ = "y_norm", max_rows = Inf)
+```
+
+
+
+
+Let's investigate this idea of same profiles at varying strengths further.
+
+First, let's compare the WT replicates by plotting the maximum pileup at each peak region in a scatterplot, rep2 vs rep1.
+
+```{r, slope plot}
+my_scatter = function(x_name, y_name, trim = .002, plot_linear = TRUE){
+  xy_dt = ssvSignalScatterplot(prof_dt, x_name = x_name, y_name = y_name, xy_variable = "name", return_data = TRUE)
+  
+  xy_dt[, trimmed := xval < quantile(xval, trim) | xval > quantile(xval, 1-trim) | yval < quantile(yval, trim) | yval > quantile(yval, 1-trim)]
+  
+  xy_dt[, lg_xval := log2(xval + 1)]
+  xy_dt[, lg_yval := log2(yval + 1)]
+  
+  lm_coef = coef(lm(yval~0+xval, xy_dt[trimmed == FALSE]))
+  
+  xs = c(1, max(xy_dt[trimmed == FALSE]$xval))
+  if(length(lm_coef) == 1){
+    ys = xs*lm_coef[1]
+    slope = lm_coef[1]
+  }else{
+    ys = lm_coef[1] + lm_coef[2]*xs  
+    slope = lm_coef[2]
+  }
+  
+  lg_xs = log2(xs)
+  lg_ys = log2(ys)
+  
+  p_wt_2_vs_1.linear = ggplot(xy_dt[trimmed == FALSE], aes(x = xval, y = yval)) +
+    geom_point(alpha = .2, shape = 19) +
+    labs(x = x_name, y = y_name) +
+    annotate("line", x = xs, y = ys, color = "blue")+
+    labs(subtitle = paste("slope is", round(slope, 3))) +
+    theme(panel.background = element_blank())
+  
+  p_wt_2_vs_1 = ggplot(xy_dt, aes(x = lg_xval, y = lg_yval, color = trimmed)) +
+    geom_point(shape = 19) +
+    labs(x = x_name, y = y_name) +
+    scale_y_continuous(labels = function(x)2^round(x)) +
+    scale_x_continuous(labels = function(x)2^round(x))+
+    annotate("line", x = lg_xs, y = lg_ys, color = "blue")+
+    labs(subtitle = paste("slope is", round(slope, 3))) +
+    scale_color_manual(values = c("TRUE" = "gray80", "FALSE" = "black"))+
+    theme(panel.background = element_blank())
+  # geom_smooth(method = "lm", se = FALSE)
+  
+  if(plot_linear){
+    p_wt_2_vs_1.linear  
+  }else{
+    p_wt_2_vs_1
+  }
+  
+}
+```
+
+
+```{r, fig.width=5, fig.height=5}
+my_scatter(
+  x_name = "WT_IKAROS_REP1",
+  y_name = "WT_IKAROS_REP2"
+)
+
+my_scatter(
+  x_name = "WT_IKAROS_REP1",
+  y_name = "DF4_IKAROS_REP1"
+)
+
+my_scatter(
+  x_name = "WT_IKAROS_REP1",
+  y_name = "DF4_IKAROS_REP2"
+)
+```
+
+Same plots but in log scale
+
+```{r slope plots log, fig.width=5, fig.height=5}
+my_scatter(
+  x_name = "WT_IKAROS_REP1",
+  y_name = "WT_IKAROS_REP2", 
+  plot_linear = FALSE
+)
+
+my_scatter(
+  x_name = "WT_IKAROS_REP1",
+  y_name = "DF4_IKAROS_REP1", 
+  plot_linear = FALSE
+)
+
+my_scatter(
+  x_name = "WT_IKAROS_REP1",
+  y_name = "DF4_IKAROS_REP2", 
+  plot_linear = FALSE
+)
+```
+
+My interpretation of slope here is a that it represents the relative efficiency of these samples.  The lower relative efficiency in the DF4 samples probably has a biological basis but there is a high degree of technical variation too.
+
+```{r, fig.width=10, fig.height=5}
+avg_dt = prof_dt[, .(y = mean(y)), .(cell, mark, id, x)]
+
+df_1 = data.frame(id = names(qgr), group = ifelse(qgr$DF4_IKAROS_REP1, "DF4_IKAROS_REP1", "-"))
+df_2 = data.frame(id = names(qgr), group = ifelse(qgr$DF4_IKAROS_REP2, "DF4_IKAROS_REP2", "-"))
+df_3 = data.frame(id = names(qgr), group = ifelse(qgr$WT_IKAROS_REP1, "WT_IKAROS_REP1", "-"))
+df_4 = data.frame(id = names(qgr), group = ifelse(qgr$WT_IKAROS_REP2, "WT_IKAROS_REP2", "-"))
+
+df_df4 = data.frame(id = names(qgr), group = ifelse(names(qgr) %in% sel_id, "DF4 peaks", "-"))
+
+df_all = ssvFactorizeMembTable(qgr)
+
+p_scatter = ssvSignalScatterplot(avg_dt, x_name = "WT", y_name = "DF4", xy_variable = "cell", fixed_coords = FALSE, color_table = df_df4) +
+  labs(title = "Average DF4 vs WT max pileup")
+p_scatter + #annotate("line", x = c(0, 3e3), y = c(0, 3e3), linetype = 2)
+  coord_cartesian(xlim = c(0, 2e3), ylim = c(0, 2e3)) +
+  labs(subtitle = "showing outliers")
+p_scatter +
+  coord_cartesian(xlim = c(0,150), ylim = c(0, 37.5)) +
+  labs(subtitle = "zoom to main area")
+```
+
+Let's look at that group of peaks that are basically 0 in WT
+
+```{r low wt detail}
+xy_dt = ssvSignalScatterplot(avg_dt, x_name = "WT", y_name = "DF4", xy_variable = "cell", fixed_coords = FALSE, color_table = df_df4, return_data = TRUE)
+
+low_wt_ids = xy_dt[xval < 3]$id
+
+
+ggplot(xy_dt, aes(x = xval, y = yval, color = id %in% low_wt_ids)) + facet_wrap(~group) +
+  geom_point()+
+  coord_cartesian(xlim = c(0,150), ylim = c(0, 37.5))
+
+ssvSignalHeatmap(rbind(prof_dt, prof_dt.igg)[id %in% low_wt_ids], facet_ = "name_split")
+```
+
+Signal only in 1 rep for DF4 Ikaros that matches IGG in WT (but not DF4 oddly. oh it's because peaks were called vs DF4 IGG, duh).
+
+My verdict : artifacts
+
+Next let's look at the really high pileup peaks. Remember, these were ignored in the slope analysis.
+
+
+```{r high either detail}
+high_ids = xy_dt[xval > 350 | yval > 150]$id
+ggplot(xy_dt, aes(x = xval, y = yval, color = id %in% high_ids)) + facet_wrap(~group) +
+  geom_point() +
+  labs(y = "avg DF4 pileup", x = "avg WT pileup")
+ssvSignalHeatmap(rbind(prof_dt, prof_dt.igg)[id %in% high_ids], facet_ = "name_split", fill_limits = c(0, 2000))
+
+```
+
+The peaks consistently have signal in IGG comparable to Ikaros samples.
+
+My verdict : artifacts.
+
+Now we'll look at ATAC-seq after removing these artifact sites.
+
+```{r cleanup}
+prof_dt.cleaned = prof_dt[id %in% names(qgr.cleaned)]
+prof_dt.igg.cleaned = prof_dt.igg[id %in% names(qgr.cleaned)]
+
+qgr.cleaned = qgr[setdiff(names(qgr), c(high_ids, low_wt_ids))]
+```
+
+```{r atac}
+atac_wd = "/slipstream/home/joeboyd/R/seqqc/PR_selected/atac"
+atac_bam_files = dir(atac_wd, pattern = ".bam$", full.names = TRUE)
+atac_config_dt = data.table(file = atac_bam_files)
+atac_config_dt[, c("cell", "time", "treatment", "rep") := tstrsplit(basename(file), "_", keep = 1:4)]
+atac_config_dt[, name := paste(cell, treatment, rep, sep = "_")]
+atac_config_dt[, name_split := paste(cell, treatment, rep, sep = "\n")]
+
+atac_config_dt$name = factor(atac_config_dt$name, levels = atac_config_dt$name)
+atac_config_dt$name_split = factor(atac_config_dt$name_split, levels = atac_config_dt$name_split)
+
+atac_config_dt$name_split = factor(atac_config_dt$name_split, levels = rev(levels(prof_dt.atac$name_split)))
+atac_config_dt$name = factor(atac_config_dt$name, levels = rev(levels(prof_dt.atac$name)))
+
+atac_config_dt[, mapped_reads := get_mapped_reads(file), .(file)]
+```
+
+```{r atac profiles}
+sl_tab =table(seqnames(qgr.cleaned))
+sl = names(sl_tab[sl_tab>0])
+seqlevels(qgr.cleaned) = sl
+
+prof_dt.atac = bfcif(bfc, digest::digest(list(atac_config_dt, qgr.cleaned, "igg")), function(){
+  ssvFetchBamPE(atac_config_dt, qgr.cleaned, n_region_splits = 50, return_data.table = TRUE)
+})
+
+qgr.cleaned.centered = centerGRangesAtMax(prof_dt.atac, qgr.cleaned, width = 3e3)
+
+prof_dt.atac = bfcif(bfc, digest::digest(list(atac_config_dt, qgr.cleaned.centered, "igg")), function(){
+  ssvFetchBamPE(atac_config_dt, qgr.cleaned.centered, n_region_splits = 50, return_data.table = TRUE)
+})
+
+clust_dt.atac = ssvSignalClustering(prof_dt.atac, facet_ = "name_split")
+ssvSignalHeatmap(clust_dt.atac, facet_ = "name_split", fill_limits = c(0, 500))
+
+cap_dt = atac_config_dt[, .(name, mapped_reads)]
+cap_dt[, y_cap_value := mapped_reads/1e6]
+
+norm_dt.atac = append_ynorm(prof_dt.atac, cap_dt = cap_dt, by2 = "name", do_not_cap = TRUE)
+
+ssvSignalHeatmap(norm_dt.atac, facet_ = "name_split", fill_ = "y_norm", fill_limits = c(0, 20))
+
+norm_dt.atac[, y_relative := y_norm / max(y_norm, 1), .(id)]
+
+ssvSignalHeatmap(norm_dt.atac, facet_ = "name_split", fill_ = "y_relative", fill_limits = c(0, 1))
+```
+
+
+
+Nothing convincing there. Let's look at the diff results.
+
+```{r}
+diff_files = dir(dir(dir(atac_wd, full.names = TRUE), full.names = TRUE), pattern = "sig", full.names = TRUE)
+names(diff_files) = sub(".res.+", "", basename(diff_files))
+dff_dtl = lapply(diff_files, fread)
+diff_grs = lapply(dff_dtl, GRanges)
+
+ssvFeatureUpset(list(IKAROS = qgr.cleaned.centered, ATAC_diff = reduce(unlist(GRangesList(diff_grs)))))
+
+memb.atac = ssvOverlapIntervalSets(c(list(IKAROS = qgr.cleaned.centered), diff_grs), use_first = TRUE)
+any_diff = rowSums(as.data.frame(mcols(memb.atac))[,-1]) > 0
+memb.atac.diff = memb.atac[any_diff]
+any_diff_ids = names(subsetByOverlaps(qgr.cleaned.centered, memb.atac[any_diff]))
+ssvFeatureUpset(memb.atac) + labs(title = "IKAROS sites with diff ATAC results")
+```
+
+
+
+So there are a few hundred Ikaros sites with diff ATAC.
+
+Let's look at them.
+
+
+
+
+```{r, fig.width = 14, fig.height=12}
+set.seed(0)
+clust_dt.diff = ssvSignalClustering(norm_dt.atac[id %in% any_diff_ids], nclust = 6,
+                 facet_ = "name_split", 
+                 fill_ = "y_relative")
+
+agg_dt.diff = clust_dt.diff[, .(y = mean(y), y_norm = mean(y_norm), y_relative = mean(y_relative)), .(x, name, name_split, cluster_id, cell, treatment)]
+p_cell = ggplot(agg_dt.diff, aes(x = x, y = y_relative, color = cell, group = name_split)) +
+  geom_path() +
+  facet_grid(cluster_id~treatment) +
+  scale_color_manual(values = cell_colors)
+
+p_treat = ggplot(agg_dt.diff, aes(x = x, y = y_relative, color = treatment, group = name_split)) +
+  geom_path() +
+  facet_grid(cluster_id~cell) +
+  scale_color_brewer(palette = "Dark2")
+
+
+assign_dt.diff = unique(clust_dt.diff[, .(id, cluster_id)])
+
+diff_dt = ssvFetchGRanges(diff_grs, qgr.cleaned.centered[any_diff_ids], return_data.table = TRUE)
+
+diff_dt = merge(diff_dt, assign_dt.diff, by = "id")
+diff_dt$id = factor(diff_dt$id, levels = levels(assign_dt.diff$id))
+
+p_heat_atac = ssvSignalHeatmap(clust_dt.diff, 
+                 facet_ = "name_split", 
+                 fill_ = "y_relative", 
+                 fill_limits = c(0, 1), show_cluster_bars = TRUE) +
+  labs(title = "ATAC reads at IKAROS sites that have diff ATAC")
+
+p_heat_diff = ssvSignalHeatmap.ClusterBars(diff_dt, 
+                 facet_ = "sample", 
+                 fill_ = "y", 
+                 fill_limits = c(0, 1))+
+  labs(title = "diff ATAC call at IKAROS sites that have diff ATAC")
+
+pg = cowplot::plot_grid(p_heat_atac, p_heat_diff, p_cell, p_treat)
+ggsave("tmp.png", pg, width = 14, height = 12)
+```
+
+
+```{r, fig.width=16, fig.height=8}
+prof_dt.all = rbind(prof_dt, prof_dt.igg, prof_dt.atac, fill = TRUE)
+norm_dt.all = append_ynorm(prof_dt.all)
+norm_dt.all[, y_relative := y_norm / max(y_norm, 1), .(id)]
+norm_dt.all$name_split = droplevels(norm_dt.all$name_split)
+# clust_dt.all = ssvSignalClustering(norm_dt.all[id %in% any_diff_ids], facet_ = "name_split", fill_ = "y")
+
+clust_dt.all = norm_dt.all[id %in% diff_dt$id]
+clust_dt.all = merge(clust_dt.all, assign_dt.diff, by = "id")
+clust_dt.all$id = factor(clust_dt.all$id, levels = levels(assign_dt.diff$id))
+
+ssvSignalHeatmap(clust_dt.all, fill_ = "y", facet_ = "name_split", fill_limits = c(0, 50)) +
+  labs(fill = "read pileup", title = "")
+```
+
+
+```{r}
+diff_olaps = ssvOverlapIntervalSets(diff_grs)
+ssvFeatureUpset(diff_olaps)
+qgr.no_ik = subsetByOverlaps(diff_olaps, qgr, invert = TRUE)
+
+prof_dt.atac.no_ik.raw = bfcif(bfc, digest::digest(list(atac_config_dt, qgr.no_ik, "igg")), function(){
+  ssvFetchBamPE(atac_config_dt, qgr.no_ik, n_region_splits = 50, return_data.table = TRUE)
+})
+
+qgr.no_ik.centered = centerGRangesAtMax(prof_dt.atac.no_ik.raw, qgr.no_ik, width = 3e3)
+
+prof_dt.atac.no_ik.raw = bfcif(bfc, digest::digest(list(atac_config_dt, qgr.no_ik.centered, "igg")), function(){
+  ssvFetchBamPE(atac_config_dt, qgr.no_ik.centered, n_region_splits = 50, return_data.table = TRUE)
+})
+
+prof_dt.no_ik = bfcif(bfc, digest::digest(list(i_bam_config_dt, qgr.no_ik.centered, "signal")), function(){
+  ssvFetchBamPE(i_bam_config_dt, qgr.no_ik.centered, n_region_splits = 50, return_data.table = TRUE)
+})
+
+prof_dt.igg.no_id = bfcif(bfc, digest::digest(list(bam_igg_config_dt, qgr.no_ik.centered, "igg")), function(){
+  ssvFetchBamPE(bam_igg_config_dt, qgr.no_ik.centered, n_region_splits = 50, return_data.table = TRUE)
+})
+
+```
+
+```{r no ik heatmaps}
+prof_dt.atac.no_ik = append_ynorm(prof_dt.atac.no_ik.raw)
+prof_dt.atac.no_ik[,y_relative := y_norm / max(y_norm, 1), .(id)]
+atac_clust_dt.no_ik = ssvSignalClustering(prof_dt.atac.no_ik, fill_ = "y_relative", nclust = 4)
+
+atac_assign_dt.no_ik = unique(atac_clust_dt.no_ik[, .(id, cluster_id)])
+
+ssvSignalHeatmap.ClusterBars(prof_dt.atac.no_ik, fill_ = "y_relative", facet_ = "name_split")
+
+prof_dt.no_ik = merge(prof_dt.no_ik, atac_assign_dt.no_ik, by = "id")
+prof_dt.no_ik$id = factor(prof_dt.no_ik$id, levels = levels(atac_assign_dt.no_ik$id))
+
+prof_dt.igg.no_id = merge(prof_dt.igg.no_id, atac_assign_dt.no_ik, by = "id")
+prof_dt.igg.no_id$id = factor(prof_dt.igg.no_id$id, levels = levels(atac_assign_dt.no_ik$id))
+
+ssvSignalHeatmap.ClusterBars(prof_dt.no_ik, fill_ = "y", facet_ = "name_split", fill_limits = c(0, 50))
+ssvSignalHeatmap.ClusterBars(prof_dt.igg.no_id, fill_ = "y", facet_ = "name_split", fill_limits = c(0, 50))
+
+agg_dt.no_ik = rbind(atac_clust_dt.no_ik, prof_dt.no_ik, prof_dt.igg.no_id, fill = TRUE)
+
+agg_dt.no_ik = agg_dt.no_ik[, .(y = mean(y)), .(cluster_id, x, name_split, cell, mark, treatment)]
+agg_dt.no_ik[is.na(mark), mark := paste("ATAC", treatment)]
+
+agg_dt.no_ik[, cell := sub("X", "", cell)]
+
+agg_dt.no_ik[, y_plot := y]
+agg_dt.no_ik[!grepl("ATAC", mark), y_plot := y * 20]
+
+ggplot(agg_dt.no_ik, aes(x = x, y = y_plot, color = cell, group = name_split)) + geom_path() +
+  facet_grid(cluster_id~mark, scales = "free_y")
+```
+Next steps?

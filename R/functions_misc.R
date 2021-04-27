@@ -137,6 +137,9 @@ guess_feature_file_format = function(feature_files){
 #'
 #' @examples
 guess_read_mode = function(signal_file){
+  if(signal_file[1] == "null"){
+    return("null")
+  }
   if(grepl(".bam$", signal_file[1])){
     mode = "bam_SE"
   }else{

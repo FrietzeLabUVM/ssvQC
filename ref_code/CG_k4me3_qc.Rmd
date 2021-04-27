@@ -1,0 +1,190 @@
+---
+title: "CG_k4me3_qc"
+author: "joe boyd"
+date: "3/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, results='hide')
+```
+
+## seqqc overview
+
+This is still pretty rough, but what it does is generate qc figures as long as you can generate data.tables that define file paths with "name" attributes and "treatment" attributes for those files.
+
+Currently, definitions for fastq, bam, bigwig, and peak files are required but this will eventually be more flexible.
+
+```{r libs}
+options(mc.cores = 10)
+library(seqqc)
+library(seqsetvis)
+library(BiocFileCache)
+bfc = BiocFileCache()
+bfcif = ssvRecipes::bfcif
+wd = "/slipstream/galaxy/uploads/working/qc_framework/output"
+```
+
+```{r fastq fles}
+fastq_dir = dir(wd, full.names = TRUE)
+fastq_files = dir(fastq_dir, 
+                  pattern = "fastq.gz$", 
+                  full.names = TRUE)
+```
+
+```{r peak fles}
+peak_dir = dir(file.path(wd), full.names = "TRUE")
+peak_files = dir(peak_dir, 
+                 pattern = "passIDR.05.+Peak$", 
+                 full.names = TRUE)
+```
+
+```{r bam files}
+bam_dir = peak_dir
+bam_files = dir(bam_dir, pattern = "bam$", 
+                full.names = TRUE)
+```
+
+```{r bw files}
+bw_dir = peak_dir
+bw_files = dir(bw_dir, pattern = "ed_FE.bw$", 
+               full.names = TRUE)
+```
+
+```{r fix names, echo=FALSE}
+fix_names = function(in_f){
+  f = basename(in_f)
+  # if(grepl("fastq", f)){
+  #   # f = sapply(strsplit(f, "_"), function(x){
+  #   #   paste0(x[1], "_", x[2], "_rep", x[3])
+  #   # })
+  # }else{
+    f = sub("\\..+", "", f)  
+  # }
+  f = sub("_peaks_passIDR", "", f)
+  # f = sub("Frietze_Cohrs_11497_180409_SNL128_0174_ACC3JAACXX_", "", f)
+  # f = sub("Control_HFL_AntiCTCF_S31_L005.+", "HFL_con_CTCF_set1", f)
+  # f = sub("Control_HFL_Input_S30_L005.+", "HFL_con_in_set1", f)
+  # f = sub("VZV_AntiCTCF_S33_L005.+", "HFL_VZV_CTCF_set1", f)
+  # f = sub("VZV_Input_S32_L005.+", "HFL_VZV_in_set1", f)
+  # #look behind (?<=set[0-9])_.+
+  # f = sub("(?<=set[0-9])_.+", "", f, perl = TRUE)
+  
+  f
+}
+
+names(bw_files) = fix_names(bw_files)
+names(bam_files) = fix_names(bam_files)
+names(peak_files) = fix_names(peak_files)
+names(fastq_files) = fix_names(fastq_files)
+
+filter_files = function(f){
+  f[grepl("K4ME3", f)]
+}
+
+bw_files = filter_files(bw_files)
+bam_files = filter_files(bam_files)
+peak_files = filter_files(peak_files)
+fastq_files = filter_files(fastq_files)
+```
+
+```{r configs}
+#using rep as treatment here becuase that looks more interesting
+my_make_config_dt = function(files){
+  config_dt = data.table(file = files, name = names(files))
+  config_dt[, c("cell", "mark", "rep") := tstrsplit(name, "_", keep = 1:3)]
+  config_dt[, treatment := cell]
+  config_dt = config_dt[order(rep)][order(treatment)][order(cell)]
+  config_dt$name = factor(config_dt$name, levels = config_dt$name)
+  config_dt
+}
+fastq_config_dt = my_make_config_dt(fastq_files)
+peak_config_dt = my_make_config_dt(peak_files)
+bam_config_dt = my_make_config_dt(bam_files)
+bw_config_dt = my_make_config_dt(bw_files)
+
+stopifnot(file.exists(fastq_config_dt$file))
+stopifnot(file.exists(peak_config_dt$file))
+stopifnot(file.exists(bam_config_dt$file))
+stopifnot(file.exists(bw_config_dt$file))
+```
+
+Nothing beyond here should need to be edited.
+
+```{r fastq}
+fq_dt = bfcif(bfc, rname = paste("fastq_dt", digest::digest(list(fastq_config_dt))), function(){
+  make_fq_dt(fastq_config_dt, cache_counts = F)
+})
+
+plot_fq_dt(fq_dt)
+```
+```{r}
+peak_grs = easyLoad_narrowPeak(peak_config_dt$file, file_names = peak_config_dt$name)
+olaps_gr = ssvOverlapIntervalSets(peak_grs)
+cons2_gr = ssvConsensusIntervalSets(peak_grs, min_number = 3, min_fraction = 0)
+set.seed(0)
+asses_gr = resize(sample(cons2_gr, 5e3), 600, fix = "center")
+asses_gr = prepare_fetch_GRanges_names(asses_gr)
+```
+
+```{r peaks, fig.width=12, fig.height=12}
+feature_plots = plot_feature_comparison(peak_grs)
+cowplot::plot_grid(plotlist = feature_plots$all)
+cowplot::plot_grid(plotlist = feature_plots$consensus)
+```
+
+For paired end data, you should add flag = Rsamtools::scanBamFlag(isFirstMateRead = TRUE) to the make_scc_dt call.  This flag will cause results to be empty for SE data though.
+
+```{r scc, fig.height=8.5, fig.width=7}
+scc_dt = make_scc_dt(bam_config_dt, query_gr = asses_gr)
+fl = round(mean(scc_dt$fragment_length[grepl("CTCF", name)]$fragment_length))
+
+scc_plots = plot_scc_dt(scc_dt)
+
+scc_plots$scc_curves + facet_wrap("~name", ncol = 3)
+scc_plots$scc_dots + facet_wrap("~name", ncol = 3)
+```
+
+```{r center}
+view_size = 3e3
+asses_gr.c = bfcif(bfc, rname = paste("center_qgr", digest::digest(list(bw_config_dt, asses_gr, view_size, fl))), function(){
+  make_centered_query_gr(bw_config_dt, asses_gr, view_size = view_size)
+})
+```
+
+```{r frip}
+frip_dt = bfcif(bfc, rname = paste("frip_dt", digest::digest(list(bam_config_dt, asses_gr.c))), function(){
+  make_frip_dt(bam_config_dt, asses_gr.c)
+})
+frip_dt$name = factor(frip_dt$name, levels = levels(bam_config_dt$name))
+plot_frip_dt(frip_dt, name_lev = levels(bam_config_dt$name))
+
+```
+
+```{r annotation overlap}
+anno_grs = make_anno_grs("/slipstream//home/joeboyd/gencode.v35.annotation.gtf.gz")
+anno_dt = make_anno_dt(peak_grs, anno_grs)
+plot_anno_overlap(anno_dt)
+```
+
+
+
+```{r clustering bams, fig.width=16, fig.height=8}
+prof_dt.bam = ssvFetchBam(bam_config_dt, asses_gr.c, return_data.table = TRUE, n_region_splits = 20, fragLens = 120)
+clust_dt.bam = ssvSignalClustering(prof_dt.bam, nclust = 6, max_cols = Inf)
+assign_dt.bam = make_assign_dt(clust_dt.bam)
+
+signal_plots.bam = plot_signals(prof_dt.bam, asses_gr.c, assign_dt = assign_dt.bam, frip_dt = frip_dt, scc_dt = scc_dt, anno_grs = anno_grs)
+signal_plots.bam[-1]
+```
+
+```{r clustering bigwigs, fig.width=16, fig.height=8}
+prof_dt.bw = ssvFetchBigwig(bw_config_dt, asses_gr.c, return_data.table = TRUE, n_region_splits = 20)
+# clust_dt.bw = ssvSignalClustering(prof_dt.bw, nclust = 6, max_cols = Inf)
+# assign_dt.bw = make_assign_dt(clust_dt.bw)
+```
+```{r clustering plots, fig.width=16, fig.height=8}
+signal_plots.bw = plot_signals(prof_dt.bw, assign_dt = assign_dt.bam)
+signal_plots.bw[2]
+```
+
