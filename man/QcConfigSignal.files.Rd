@@ -9,7 +9,7 @@ QcConfigSignal.files(
   groups = NULL,
   group_names = NULL,
   group_colors = NULL,
-  view_size = DEFAULT_VIEW_SIZE,
+  view_size = getOption("SQC_VIEW_SIZE", 3000),
   read_mode = NULL
 )
 }

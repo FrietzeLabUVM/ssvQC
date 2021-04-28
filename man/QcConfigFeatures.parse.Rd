@@ -4,7 +4,10 @@
 \alias{QcConfigFeatures.parse}
 \title{QcConfigFeatures.parse}
 \usage{
-QcConfigFeatures.parse(feature_config_file)
+QcConfigFeatures.parse(
+  feature_config_file,
+  process_features = getOption("SQC_PROCESS_FEATURES", TRUE)
+)
 }
 \arguments{
 \item{feature_config_file}{}

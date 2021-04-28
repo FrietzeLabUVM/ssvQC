@@ -12,7 +12,7 @@ QcConfigSignal(
   color_by = "file",
   color_mapping = NULL,
   read_mode = NULL,
-  view_size = DEFAULT_VIEW_SIZE
+  view_size = getOption("SQC_VIEW_SIZE", 3000)
 )
 }
 \arguments{

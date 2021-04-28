@@ -1,14 +1,13 @@
-DEFAULT_CONSENSUS_N = 1
-DEFAULT_CONSENSUS_FRACTION = 0
-DEFAULT_VIEW_SIZE = 3e3
-DEFAULT_PROCESS_FEATURES = TRUE
-
 .onAttach <- function(libname, pkgname) {
     packageStartupMessage("Attaching ssvQC version ",
                           packageDescription("ssvQC")$Version, ".")
-    options("SQC_DEFAULT_COLORS" = seqsetvis::safeBrew(8, "Dark2"))
+    options("SQC_COLORS" = seqsetvis::safeBrew(8, "Dark2"))
+    options("SQC_CONSENSUS_N" = 1)
+    options("SQC_CONSENSUS_FRACTION" = 0)
+    options("SQC_VIEW_SIZE" = 3e3)
+    options("SQC_PROCESS_FEATURES" = TRUE)
 }
-# getOption("SQC_DEFAULT_COLORS")
+# getOption("SQC_COLORS")
 
 #' QcConfig
 #'
@@ -150,8 +149,8 @@ setReplaceMethod("$", "QcConfigFeatures",
                              },
                              color_by = {
                                  x@color_by = value
-                                 message("Applying option SQC_DEFAULT_COLORS for updated color_mapping.")
-                                 x$color_mapping = getOption("SQC_DEFAULT_COLORS")
+                                 message("Applying option SQC_COLORS for updated color_mapping.")
+                                 x$color_mapping = getOption("SQC_COLORS")
                              },
                              color_mapping = {
                                  col_lev = unique(x@meta_data[[x@color_by]])
@@ -283,9 +282,9 @@ QcConfigFeatures = function(config_df,
                             feature_load_FUN = NULL,
                             n_peaks = 1e3,
                             overlap_extension = 0,
-                            consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
-                            consensus_n = DEFAULT_CONSENSUS_N,
-                            process_features = DEFAULT_PROCESS_FEATURES){
+                            consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
+                            consensus_n = getOption("SQC_CONSENSUS_N", 1),
+                            process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
     .enforce_file_var(config_df)
     if(!run_by %in% colnames(config_df)){
         if(run_by == "All"){
@@ -384,9 +383,9 @@ QcConfigFeatures.files = function(file_paths,
                                   group_colors = NULL,
                                   feature_load_FUN = NULL,
                                   n_peaks = 1e3,
-                                  consensus_fraction = DEFAULT_CONSENSUS_FRACTION,
-                                  consensus_n = DEFAULT_CONSENSUS_N,
-                                  process_features = DEFAULT_PROCESS_FEATURES){
+                                  consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
+                                  consensus_n = getOption("SQC_CONSENSUS_N", 1),
+                                  process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
     if(is.null(groups)){
         groups = seq_along(file_paths)
     }
@@ -542,7 +541,7 @@ QcConfigFeatures.files = function(file_paths,
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' QcConfigFeatures.parse(feature_config_file)
 QcConfigFeatures.parse = function(feature_config_file,
-                                  process_features = DEFAULT_PROCESS_FEATURES){
+                                  process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
     peak_config_dt = .parse_config_body(feature_config_file)
     valid_feature_var = c("main_dir", "overlap_extension", "n_peaks", "consensus_n", 
                           "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run")
@@ -625,7 +624,7 @@ QcConfigSignal = function(config_df,
                           color_by = "file",
                           color_mapping = NULL,
                           read_mode = NULL,
-                          view_size = DEFAULT_VIEW_SIZE){
+                          view_size = getOption("SQC_VIEW_SIZE", 3e3)){
     .enforce_file_var(config_df)
     if(!run_by %in% colnames(config_df)){
         if(run_by == "All"){
@@ -729,7 +728,7 @@ QcConfigSignal.parse = function(signal_config_file){
     tfun = function(config_dt, 
                     main_dir = NULL, 
                     read_mode = NULL,
-                    view_size = DEFAULT_VIEW_SIZE,
+                    view_size = getOption("SQC_VIEW_SIZE", 3e3),
                     color_by = NULL, color_mapping = NULL, 
                     run_by = NULL, to_run = NULL, to_run_reference = NULL){
         QcConfigSignal(config_df = config_dt, 
@@ -766,7 +765,7 @@ QcConfigSignal.files = function(file_paths,
                                 groups = NULL,
                                 group_names = NULL,
                                 group_colors = NULL,
-                                view_size = DEFAULT_VIEW_SIZE, 
+                                view_size = getOption("SQC_VIEW_SIZE", 3e3), 
                                 read_mode = NULL){
     if(is.null(groups)){
         groups = seq_along(file_paths)
@@ -956,7 +955,7 @@ if(FALSE){
     plot(object)
     object$color_by = "cell"
     plot(object)
-    options("SQC_DEFAULT_COLORS" = seqsetvis::safeBrew(8, "blues"))
+    options("SQC_COLORS" = seqsetvis::safeBrew(8, "blues"))
     object$color_by = "cell"
     plot(object)
 }
