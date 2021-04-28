@@ -3,6 +3,13 @@ DEFAULT_CONSENSUS_FRACTION = 0
 DEFAULT_VIEW_SIZE = 3e3
 DEFAULT_PROCESS_FEATURES = TRUE
 
+.onAttach <- function(libname, pkgname) {
+    packageStartupMessage("Attaching ssvQC version ",
+                          packageDescription("ssvQC")$Version, ".")
+    options("SQC_DEFAULT_COLORS" = seqsetvis::safeBrew(8, "Dark2"))
+}
+# getOption("SQC_DEFAULT_COLORS")
+
 #' QcConfig
 #'
 #' @slot file_paths character.
@@ -101,7 +108,8 @@ setMethod("initialize","QcConfigFeatures", function(.Object,...){
 setMethod("names", "QcConfigFeatures",
           function(x)
           {
-              c("loaded_features", "overlapped_features", "assessment_features")
+              c("loaded_features", "overlapped_features", "assessment_features", "meta_data", "run_by", "to_run", "to_run_reference", "color_by", "color_mapping")
+              
           })
 
 
@@ -111,9 +119,62 @@ setMethod("$", "QcConfigFeatures",
               switch (name,
                       loaded_features = x@loaded_features,
                       overlapped_features = x@overlap_gr,
-                      assessment_features = x@assessment_gr
+                      assessment_features = x@assessment_gr,
+                      meta_data = x@meta_data,
+                      run_by = x@run_by,
+                      to_run = x@to_run,
+                      to_run_reference = x@to_run_reference,
+                      color_by = x@color_by,
+                      color_mapping = x@color_mapping
               )
           })
+
+setReplaceMethod("$", "QcConfigFeatures",
+                 function(x, name, value)
+                 {
+                     warn_msg = "This assignment is not supported.  No effect."
+                     switch (name,
+                             loaded_features = warning(warn_msg),
+                             overlapped_features = warning(warn_msg),
+                             assessment_features = warning(warn_msg),
+                             meta_data = warning(warn_msg),
+                             #TODO add checks, call validity?
+                             run_by = {
+                                 x@run_by = value
+                             },
+                             to_run = {
+                                 x@to_run = value
+                             },
+                             to_run_reference = {
+                                 x@to_run_reference = value
+                             },
+                             color_by = {
+                                 x@color_by = value
+                                 message("Applying option SQC_DEFAULT_COLORS for updated color_mapping.")
+                                 x$color_mapping = getOption("SQC_DEFAULT_COLORS")
+                             },
+                             color_mapping = {
+                                 col_lev = unique(x@meta_data[[x@color_by]])
+                                 if(is.null(names(value))){
+                                     if(length(value) >= length(col_lev)){
+                                         value = value[seq_along(col_lev)]
+                                     }else{
+                                         stop("Insufficient colors supplied. Mapping requires at least ", length(col_lev), ".")
+                                     }
+                                     names(value) = col_lev
+                                 }else{
+                                     if(!all(names(value) %in% col_lev)){
+                                         stop(paste(collapse = "\n",
+                                             c("Missing name values from color mapping. Required:", 
+                                             setdiff(col_lev, names(value)))))
+                                     }
+                                 }
+                                 x@color_mapping = value
+                             },
+                             {warning(warn_msg)}
+                     )
+                     x
+                 })
 
 
 setGeneric("featuresList", function(object){standardGeneric("featuresList")})
@@ -883,9 +944,19 @@ if(FALSE){
     library(ssvQC)
     feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
     object = QcConfigFeatures.parse(feature_config_file)
-    featuresQuery(object)
-    
-    
-    
-    
+    plot(object)
+    object$loaded_features = "asdf"
+    object$run_by = "mark"
+    object$run_by
+    plot(object)
+    object$run_by = "cell"
+    object$run_by
+    plot(object)
+    object$color_by = "mark"
+    plot(object)
+    object$color_by = "cell"
+    plot(object)
+    options("SQC_DEFAULT_COLORS" = seqsetvis::safeBrew(8, "blues"))
+    object$color_by = "cell"
+    plot(object)
 }
