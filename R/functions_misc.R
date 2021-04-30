@@ -19,7 +19,7 @@ sync_width = function(my_plots){
       ggplotGrob(x)
     }
   })
-
+  
   my_widths = lapply(my_grobs, function(gt){
     gt$widths
   })
@@ -56,7 +56,7 @@ sync_height = function(my_plots){
       ggplotGrob(x)
     }
   })
-
+  
   my_widths = lapply(my_grobs, function(gt){
     gt$heights
   })
@@ -177,6 +177,147 @@ get_feature_file_load_function = function(feature_files){
   }
   
   sapply(file_types, .get_feature_file_load_function)
+}
+
+.enforce_file_var = function(my_df){
+  if(!"file" %in% colnames(my_df)){
+    file_var = colnames(my_df)[1]
+    message("Guessing file paths are in first column, ", file_var)
+    colnames(my_df)[colnames(my_df) == file_var] = "file"
+  }
+  my_df
+}
+
+.enforce_name_var = function(my_df){
+  if(!"name" %in% colnames(my_df)){
+    cn = setdiff(colnames(my_df), c("file", "name", "name_split"))
+    nams = apply(my_df[, cn, with = FALSE], 1, function(x)paste(x, collapse = "_"))
+    my_df$name = nams
+  }
+  if(!"name_split" %in% colnames(my_df)){
+    cn = setdiff(colnames(my_df), c("file", "name", "name_split"))
+    nams = apply(my_df[, cn, with = FALSE], 1, function(x)paste(x, collapse = "\n"))
+    my_df$name_split = nams
+  }
+  my_df$name = factor(my_df$name, levels = my_df$name)
+  my_df$name_split = factor(my_df$name_split, levels = my_df$name_split)
+  my_df
+}
+
+
+#' Title
+#'
+#' @param f 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+.parse_config_body = function(f){
+  config_dt = as.data.table(read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE))
+  config_dt = .enforce_file_var(config_dt)
+  config_dt = .enforce_name_var(config_dt)
+  #move file to first column
+  config_dt = config_dt[, colnames(config_dt)[order(colnames(config_dt) != "file")], with = FALSE]
+  config_dt
+}
+
+
+#' Title
+#'
+#' @param fop 
+#'
+#' @return
+#' 
+#' @examples
+#' fop = "win_size:10,win_method:\"summary\",summary_FUN:mean"
+parse_fetch_options = function(fop){
+  fop = strsplit(fop, ",")[[1]]
+  fop = strsplit(fop, ":")
+  fop_names = sapply(fop, function(x)x[1])
+  fop_opts = sapply(fop, function(x)x[2])
+  names(fop_opts) = fop_names
+  lapply(fop_opts, function(x){
+    #check if number
+    if(suppressWarnings({!is.na(as.numeric(x))})){
+      x = as.numeric(x)
+    }else if(grepl('"', x)){
+      x = gsub('"', "", x)
+    }else{
+      x = get(x)
+    }
+    x
+  })
+}
+
+#' Title
+#'
+#' @param f 
+#' @param valid_feature_var 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+.parse_config_header = function(f, valid_feature_var){
+  cfg_txt = fread(f, sep = "\n", header = FALSE)[grepl("^#CFG", V1)]
+  cfg_txt = paste(sub("#CFG ?", "", cfg_txt$V1), collapse = " ")
+  sp = strsplit(cfg_txt, " +")[[1]]
+  sp = strsplit(sp, "=")
+  sp
+  cfg_names = sapply(sp, function(x){
+    x[1]
+  })
+  cfg_vals = sapply(sp, function(x){
+    x[2]
+  })
+  names(cfg_vals) = cfg_names
+  cfg_vals = as.list(cfg_vals)
   
+  bad_var = setdiff(cfg_names, valid_feature_var)
+  if(length(bad_var) > 0){
+    stop("Unrecogized variables in config file: ", paste(bad_var, collapse = ", "))
+  }
   
+  ### special cases
+  if(!is.null(cfg_vals[["main_dir"]])){
+    if(cfg_vals[["main_dir"]] == "$SSVQC_DATA"){
+      cfg_vals[["main_dir"]] = system.file("extdata", package = "ssvQC")
+    }
+  }
+  #numeric: consensus_n, consensus_fraction, n_peaks, view_size
+  for(var in c("consensus_n", "consensus_fraction", "n_peaks", "view_size", "overlap_extension")){
+    if(!is.null(cfg_vals[[var]])){
+      cfg_vals[[var]] = as.numeric(cfg_vals[[var]])
+    }    
+  }
+  #parsing the color mapping
+  if(!is.null(cfg_vals[["color_mapping"]])){
+    cmap = cfg_vals[["color_mapping"]]
+    if(grepl(":", cmap)){
+      cmap = strsplit(strsplit(cmap, ",")[[1]], ":")
+      color_mapping = sapply(cmap, function(x)x[2])
+      names(color_mapping) = sapply(cmap, function(x)x[1])
+      cfg_vals[["color_mapping"]] = color_mapping    
+    }else{
+      color_mapping = strsplit(cmap, ",")[[1]]
+      cfg_vals[["color_mapping"]] = color_mapping
+    }
+  }
+  #read mode synonym
+  if(!is.null(cfg_vals[["read_mode"]])){
+    read_mode = cfg_vals[["read_mode"]]
+    if(read_mode == "SE") read_mode = "bam_SE"
+    if(read_mode == "PE") read_mode = "bam_PE"
+    if(!read_mode %in% c("bam_SE", "bam_PE", "bigwig")){
+      stop("read_mode '", read_mode, "' is not recognized as a valid choice from 'bam_SE', 'bam_PE', or 'bigwig'")
+    }
+    cfg_vals[["read_mode"]] = read_mode
+  }
+  #fetch_options
+  if(!is.null(cfg_vals[["fetch_options"]])){
+    cfg_vals[["fetch_options"]] = parse_fetch_options(cfg_vals[["fetch_options"]])
+  }
+  
+  cfg_vals
 }
