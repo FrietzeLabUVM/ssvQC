@@ -137,6 +137,7 @@ setMethod("featuresOverlaps", "QcConfigFeatures",
             object = featuresList(object)
             if(length(object@overlap_gr) == 0){
               object@overlap_gr = seqsetvis::ssvOverlapIntervalSets(object@loaded_features)
+              object@overlap_gr = seqsetvis::prepare_fetch_GRanges_names(object@overlap_gr)
             }
             if(length(object@overlap_gr) == 0){
               stop("No regions in overlap. Check your input or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
