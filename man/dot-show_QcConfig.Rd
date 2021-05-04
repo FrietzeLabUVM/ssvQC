@@ -2,21 +2,21 @@
 % Please edit documentation in R/QcConfig.R
 \name{.show_QcConfig}
 \alias{.show_QcConfig}
-\title{Title}
+\title{.show_QcConfig}
 \usage{
 .show_QcConfig(qc)
 }
 \arguments{
-\item{qc}{}
+\item{qc}{A QcConfig object}
 }
 \value{
 
 }
 \description{
-Title
+used by show
 }
 \examples{
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-config_df = .parse_config_body(feature_config_file)
-qc = QcConfigFeatures(config_df)
+qc = QcConfigFeatures.parse(feature_config_file)
+qc
 }

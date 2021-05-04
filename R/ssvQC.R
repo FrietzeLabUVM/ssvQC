@@ -4,6 +4,7 @@ setClass("ssvQC",
          representation = list(
            feature_config = "QcConfigFeatures",
            signal_config = "QcConfigSignal",
+           signal_profile = "data.table",
            out_dir = "character",
            bfc = "BiocFileCache",
            saving_enabled = "logical",
@@ -20,6 +21,7 @@ setMethod("initialize","ssvQC", function(.Object,...){
   validObject(.Object)
   .Object@plot_post_FUN = function(p)p
   .Object@plots = list()
+  .Object@signal_profile = data.table()
   .Object
 })
 
@@ -59,6 +61,13 @@ setMethod("initialize","ssvQC", function(.Object,...){
 #' ssvQC.runAll(sqc.feature)
 #' 
 #' sqc = sqc.complete
+#' object = sqc
+#' 
+#' sqc = ssvQC.prepMappedReads(sqc)
+#' 
+#' p_reads = ssvQC.plotMappedReads(sqc)
+#' 
+#' sqc = ssvQC.prepSignal(sqc)
 #' 
 ssvQC = function(feature_config = NULL,
                  signal_config = NULL,
@@ -101,6 +110,7 @@ ssvQC = function(feature_config = NULL,
     new("ssvQC.complete",
         feature_config = feature_config,
         signal_config = signal_config,
+        signal_profile = data.table(),
         out_dir = out_dir,
         bfc = bfc,
         saving_enabled = TRUE
@@ -109,6 +119,7 @@ ssvQC = function(feature_config = NULL,
     new("ssvQC.featureOnly",
         feature_config = feature_config,
         signal_config = QcConfigSignal.null(),
+        signal_profile = data.table(),
         out_dir = out_dir,
         bfc = bfc,
         saving_enabled = TRUE
@@ -117,6 +128,7 @@ ssvQC = function(feature_config = NULL,
     new("ssvQC.signalOnly",
         feature_config = QcConfigFeatures.null(),
         signal_config = signal_config,
+        signal_profile = data.table(),
         out_dir = out_dir,
         bfc = bfc,
         saving_enabled = TRUE
@@ -128,6 +140,14 @@ ssvQC = function(feature_config = NULL,
   
 }
 
+#' Title
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 setGeneric("ssvQC.runAll", function(object){standardGeneric("ssvQC.runAll")})
 setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
   message("complete")
@@ -139,73 +159,83 @@ setMethod("ssvQC.runAll", "ssvQC.signalOnly", function(object){
   message("signalOnly")
 })
 
+##MappedReads
 
-.run_mapped_reads = function(sqc){
-  out_dir = sqc@out_dir
-  res_file = function(f)file.path(out_dir, f)
-  
-  #bam specific independent of peaks
-  if(!grepl("bam", sqc@signal_config@read_mode)){
-    stop("Read mode must be bam to assess mapped reads.") 
-  }
-  
-  bam_config_dt = sqc@signal_config@meta_data
-  if(is.null(bam_config_dt$mapped_reads)){
-    bam_config_dt$mapped_reads = sapply(bam_config_dt$file, get_mapped_reads)
-  }
-  
-  color_var = sqc@signal_config@color_by
-  group_var = sqc@signal_config@run_by
-  color_mapping = sqc@signal_config@color_mapping
-  
-  p_mapped_reads = ggplot(bam_config_dt, aes_string(x = "mark", y = "mapped_reads", fill = color_var)) +
-    geom_bar(stat = "identity", position = "dodge") +
-    scale_fill_manual(values = color_mapping) +
-    scale_y_continuous(labels = function(x)x/1e6) +
-    labs(y = "M mapped reads", fill = color_var, x= "") +
-    labs(title = "Mapped reads") +
-    theme(panel.background = element_blank(), axis.text.x = element_text(size = 8))
-  
-  sqc@plots[["mapped_reads"]] = p_mapped_reads
-  
-  if(sqc@saving_enabled){
-    ggsave(res_file("mapped_reads.pdf"), p_mapped_reads, width = 2+.5*nrow(bam_config_dt), height = 3)  
-  }
-  
-  p_mapped_reads
-}
-
-
-
-#' Title
+#' ssvQC.prepMappedReads
 #'
-#' @param sqc 
+#' @param object 
 #'
 #' @return
 #' @export
 #'
 #' @examples
-#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-#' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
-#' 
-#' sqc = ssvQC(feature_config_file, bam_config_file)
-#' 
-#' ssvQC(feature_config_file)
-ssvQC.runAll = function(sqc){
-  out_dir = sqc@out_dir
+setGeneric("ssvQC.prepMappedReads", function(object){standardGeneric("ssvQC.prepMappedReads")})
+setMethod("ssvQC.prepMappedReads", "ssvQC.complete", function(object){
+  message("complete")
+  object@signal_config = ssvQC.prepMappedReads(object@signal_config)
+  object
+})
+setMethod("ssvQC.prepMappedReads", "ssvQC.featureOnly", function(object){
+  stop("Cannot run mapped reads on ssvQC with no QcConfigSignal component")
+  message("featureOnly")
+})
+setMethod("ssvQC.prepMappedReads", "ssvQC.signalOnly", function(object){
+  message("signalOnly")
+  object@signal_config = ssvQC.prepMappedReads(object@signal_config)
+  object
+})
+setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
+  message("QcConfigSignal")
+  #bam specific independent of peaks
+  if(grepl("bam", object@read_mode)){
+    object@meta_data$mapped_reads = sapply(object@meta_data$file, get_mapped_reads)
+  }else{
+    object@meta_data$mapped_reads = NA
+  }
+  object
+})
+
+#' ssvQC.plotMappedReads
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setGeneric("ssvQC.plotMappedReads", function(object, out_dir){standardGeneric("ssvQC.plotMappedReads")})
+setMethod("ssvQC.plotMappedReads", "ssvQC.complete", function(object){
+  message("complete")
+  ssvQC.plotMappedReads(object@signal_config, ifelse(object@saving_enabled, object@out_dir, "SKIP_SAVING"))
+})
+setMethod("ssvQC.plotMappedReads", "ssvQC.featureOnly", function(object){
+  stop("Cannot run mapped reads on ssvQC with no QcConfigSignal component")
+  message("featureOnly")
+})
+setMethod("ssvQC.plotMappedReads", "ssvQC.signalOnly", function(object){
+  message("signalOnly")
+  ssvQC.plotMappedReads(object@signal_config, ifelse(object@saving_enabled, object@out_dir, "SKIP_SAVING"))
+  
+})
+setMethod("ssvQC.plotMappedReads", c("QcConfigSignal"), function(object){
+  message("QcConfigSignal")
+  ssvQC.plotMappedReads(object, "SKIP_SAVING")
+})
+setMethod("ssvQC.plotMappedReads", c("QcConfigSignal", "character"), function(object, out_dir){
+  message("QcConfigSignal, character")
   res_file = function(f)file.path(out_dir, f)
   
   #bam specific independent of peaks
-  if(grepl("bam", sqc@signal_config@read_mode)){
+  if(grepl("bam", object@read_mode)){
     
-    bam_config_dt = sqc@signal_config@meta_data
+    bam_config_dt = object@meta_data
     if(is.null(bam_config_dt$mapped_reads)){
-      bam_config_dt$mapped_reads = sapply(bam_config_dt$file, get_mapped_reads)
+      stop("ssvQC.prepMappedReads has not been called.")
     }
     
-    color_var = sqc@signal_config@color_by
-    group_var = sqc@signal_config@run_by
-    color_mapping = sqc@signal_config@color_mapping
+    color_var = object@color_by
+    group_var = object@run_by
+    color_mapping = object@color_mapping
     
     theme_set(theme(panel.background = element_blank(), axis.text.x = element_text(size = 8)))
     
@@ -217,15 +247,36 @@ ssvQC.runAll = function(sqc){
       labs(title = "Mapped reads")
     
     
-    ggsave(res_file("mapped_reads.pdf"), p_mapped_reads, width = 2+.5*nrow(bam_config_dt), height = 3)
+    if(!out_dir == "SKIP_SAVING") ggsave(res_file("mapped_reads.pdf"), p_mapped_reads, width = 2+.5*nrow(bam_config_dt), height = 3)
+    p_mapped_reads
+  }else{
+    warning("Could not run mapped reads on ")
+    NULL
   }
-  
-  
-  
-  #feature overlaps independendent of signal
-  # todo = sqc@feature_config@
-}
+})
 
-# qcAssessPeaks = function(){
-#   signal_config
-# }
+##Signal
+#' ssvQC.prepSignal
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
+setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+  message("complete")
+  prof_dt = fetch_signal_at_features(object@signal_config, object@feature_config@assessment_gr)
+  object@signal_profile = prof_dt
+  object
+})
+setMethod("ssvQC.prepSignal", "ssvQC.featureOnly", function(object){
+  message("featureOnly")
+  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.prepSignal", "ssvQC.signalOnly", function(object){
+  message("signalOnly")
+  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+})
+

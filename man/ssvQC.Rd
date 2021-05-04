@@ -51,5 +51,12 @@ ssvQC.runAll(sqc.signal)
 ssvQC.runAll(sqc.feature)
 
 sqc = sqc.complete
+object = sqc
+
+sqc = ssvQC.prepMappedReads(sqc)
+
+p_reads = ssvQC.plotMappedReads(sqc)
+
+sqc = ssvQC.prepSignal(sqc)
 
 }

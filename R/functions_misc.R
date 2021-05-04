@@ -236,6 +236,12 @@ parse_fetch_options = function(fop){
   fop = strsplit(fop, ":")
   fop_names = sapply(fop, function(x)x[1])
   fop_opts = sapply(fop, function(x)x[2])
+  if(any(is.na(fop_names))){
+    stop("problem parsing fetch_options, verify fetch_options=key1:val1,key2:val2,... syntax")
+  }
+  if(any(is.na(fop_opts))){
+    stop("problem parsing fetch_options, verify fetch_options=key1:val1,key2:val2,... syntax")
+  }
   names(fop_opts) = fop_names
   lapply(fop_opts, function(x){
     #check if number

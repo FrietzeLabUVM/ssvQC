@@ -40,7 +40,8 @@ QcConfigSignal = function(config_df,
                           color_by = "file",
                           color_mapping = NULL,
                           read_mode = NULL,
-                          view_size = getOption("SQC_VIEW_SIZE", 3e3)){
+                          view_size = getOption("SQC_VIEW_SIZE", 3e3), 
+                          fetch_options = list()){
   .enforce_file_var(config_df)
   if(!run_by %in% colnames(config_df)){
     if(run_by == "All"){
@@ -99,7 +100,8 @@ QcConfigSignal = function(config_df,
       color_by = color_by,
       color_mapping = color_mapping,
       read_mode = read_mode,
-      view_size = view_size)
+      view_size = view_size, 
+      fetch_options = fetch_options)
 }
 
 QcConfigSignal.null = function(){
@@ -146,7 +148,10 @@ QcConfigSignal.parse = function(signal_config_file){
                   read_mode = NULL,
                   view_size = getOption("SQC_VIEW_SIZE", 3e3),
                   color_by = NULL, color_mapping = NULL, 
-                  run_by = NULL, to_run = NULL, to_run_reference = NULL){
+                  run_by = NULL, 
+                  to_run = NULL, 
+                  to_run_reference = NULL,
+                  fetch_options = list()){
     QcConfigSignal(config_df = config_dt, 
                    run_by = run_by, 
                    to_run = to_run,
@@ -154,7 +159,8 @@ QcConfigSignal.parse = function(signal_config_file){
                    color_by = color_by, 
                    color_mapping = color_mapping, 
                    read_mode = read_mode, 
-                   view_size = view_size)
+                   view_size = view_size, 
+                   fetch_options = fetch_options)
   }
   do.call(tfun, c(list(config_dt = signal_config_dt), cfg_vals))
 }
@@ -230,7 +236,7 @@ get_fetch_fun = function(read_mode){
 #' fetch_signal_at_features(qc_signal, query_gr)
 fetch_signal_at_features = function(qc_signal, query_gr){
   extra_args = qc_signal@fetch_options
-  call_args = c(list(file_paths = qc_signal@meta_data, qgr = query_gr, return_data.table = TRUE, fragLen = 180), extra_args)
+  call_args = c(list(file_paths = qc_signal@meta_data, qgr = query_gr, return_data.table = TRUE), extra_args)
   fetch_FUN = get_fetch_fun(qc_signal@read_mode)
   do.call(fetch_FUN, call_args)
   
