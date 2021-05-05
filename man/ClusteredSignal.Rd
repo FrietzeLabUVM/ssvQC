@@ -2,10 +2,10 @@
 % Please edit documentation in R/ClusteredSignal.R
 \name{ClusteredSignal}
 \alias{ClusteredSignal}
-\title{ClusteredSignal}
+\title{Title}
 \usage{
 ClusteredSignal(
-  signal_data,
+  signal_profile_dt,
   query_gr,
   manual_assigned = list(),
   nclust = 6,
@@ -14,14 +14,24 @@ ClusteredSignal(
   extra_var = character()
 )
 }
+\arguments{
+\item{signal_profile_dt}{}
+
+\item{query_gr}{}
+
+\item{manual_assigned}{}
+
+\item{nclust}{}
+
+\item{signal_var}{}
+
+\item{facet_var}{}
+
+\item{extra_var}{}
+}
 \value{
 
 }
 \description{
-ClusteredSignal
-}
-\examples{
-signal_data = sqc@signal_profile
-query_gr = sqc@feature_config$assessment_features
-
+Title
 }

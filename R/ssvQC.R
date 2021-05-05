@@ -4,7 +4,7 @@ setClass("ssvQC",
          representation = list(
            feature_config = "QcConfigFeatures",
            signal_config = "QcConfigSignal",
-           signal_profile = "data.table",
+           signal_data = "ClusteredSignal",
            out_dir = "character",
            bfc = "BiocFileCache",
            saving_enabled = "logical",
@@ -21,7 +21,7 @@ setMethod("initialize","ssvQC", function(.Object,...){
   validObject(.Object)
   .Object@plot_post_FUN = function(p)p
   .Object@plots = list()
-  .Object@signal_profile = data.table()
+  .Object@signal_data = ClusteredSignal.null()
   .Object
 })
 
@@ -68,7 +68,7 @@ setMethod("initialize","ssvQC", function(.Object,...){
 #' p_reads = ssvQC.plotMappedReads(sqc)
 #' 
 #' sqc = ssvQC.prepSignal(sqc)
-#' 
+#' object = sqc
 ssvQC = function(feature_config = NULL,
                  signal_config = NULL,
                  out_dir = getwd(),
@@ -110,7 +110,7 @@ ssvQC = function(feature_config = NULL,
     new("ssvQC.complete",
         feature_config = feature_config,
         signal_config = signal_config,
-        signal_profile = data.table(),
+        signal_data = ClusteredSignal.null(),
         out_dir = out_dir,
         bfc = bfc,
         saving_enabled = TRUE
@@ -119,7 +119,7 @@ ssvQC = function(feature_config = NULL,
     new("ssvQC.featureOnly",
         feature_config = feature_config,
         signal_config = QcConfigSignal.null(),
-        signal_profile = data.table(),
+        signal_data = ClusteredSignal.null(),
         out_dir = out_dir,
         bfc = bfc,
         saving_enabled = TRUE
@@ -128,7 +128,7 @@ ssvQC = function(feature_config = NULL,
     new("ssvQC.signalOnly",
         feature_config = QcConfigFeatures.null(),
         signal_config = signal_config,
-        signal_profile = data.table(),
+        signal_data = ClusteredSignal.null(),
         out_dir = out_dir,
         bfc = bfc,
         saving_enabled = TRUE
@@ -267,8 +267,7 @@ setMethod("ssvQC.plotMappedReads", c("QcConfigSignal", "character"), function(ob
 setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
 setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
   message("complete")
-  prof_dt = fetch_signal_at_features(object@signal_config, object@feature_config@assessment_gr)
-  object@signal_profile = prof_dt
+  object@signal_data = ClusteredSignal.fromConfig(object@signal_config, object@feature_config$assessment_features, signal_var = "y", facet_var = "name_split", extra_var = union(object@signal_config@color_by, object@signal_config@run_by))
   object
 })
 setMethod("ssvQC.prepSignal", "ssvQC.featureOnly", function(object){

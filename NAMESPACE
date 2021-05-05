@@ -3,6 +3,8 @@
 export(.parse_config_body)
 export(.parse_config_header)
 export(ClusteredSignal)
+export(ClusteredSignal.fromConfig)
+export(ClusteredSignal.null)
 export(QcColorMapping)
 export(QcConfig.files)
 export(QcConfigFeatures)

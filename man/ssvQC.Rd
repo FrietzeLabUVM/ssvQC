@@ -58,5 +58,5 @@ sqc = ssvQC.prepMappedReads(sqc)
 p_reads = ssvQC.plotMappedReads(sqc)
 
 sqc = ssvQC.prepSignal(sqc)
-
+object = sqc
 }
