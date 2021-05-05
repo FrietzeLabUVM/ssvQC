@@ -14,9 +14,9 @@ setClass("QcConfigFeatures", contains = "QcConfig",
            consensus_fraction = "numeric",
            consensus_n = "numeric",
            loaded_features = "list",
-           overlap_gr = "GRanges",
+           overlap_gr = "list",
            overlap_extension = "numeric",
-           assessment_gr = "GRanges"
+           assessment_gr = "list"
            
          ))
 
@@ -24,8 +24,8 @@ setMethod("initialize","QcConfigFeatures", function(.Object,...){
   .Object <- callNextMethod()
   validObject(.Object)
   .Object@loaded_features = list()
-  .Object@overlap_gr = GRanges()
-  .Object@assessment_gr = GRanges()
+  .Object@overlap_gr = list()
+  .Object@assessment_gr = list()
   
   .Object
 })
@@ -145,6 +145,75 @@ setMethod("featuresOverlaps", "QcConfigFeatures",
             object
           })
 
+.process_features = function(meta_dt){
+  loaded_features = feature_load_FUN(meta_dt$file)
+  names(loaded_features) = meta_dt$name_split
+  
+  if(length(loaded_features) == 0){
+    stop("Somehow, no files were loaded. Report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+  }
+  loaded_features
+}
+
+.process_overlaps = function(loaded_features, overlap_extension){
+  if(length(overlap_gr) == 0){
+    overlap_gr = seqsetvis::ssvOverlapIntervalSets(loaded_features, ext = overlap_extension)
+    overlap_gr = seqsetvis::prepare_fetch_GRanges_names(overlap_gr)
+  }
+  if(length(overlap_gr) == 0){
+    stop("No regions in overlap. Check your input or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+  }
+  overlap_gr
+}
+
+.process_assessment = function(feat_list, olap_gr, overlap_extension, n_peaks, consensus_fraction, consensus_n){
+  f_consensus = floor(consensus_fraction * length(feat_list))
+  n_consensus = min(length(feat_list), max(consensus_n, f_consensus))
+  
+  if(n_consensus == 1){
+    asses_gr.full = olap_gr
+  }else{
+    asses_gr.full = ssvConsensusIntervalSets(feat_list, min_number = consensus_n, min_fraction = consensus_fraction, ext = overlap_extension)
+  }
+  assessment_gr = sampleCap(asses_gr.full, n_peaks)
+  
+  if(length(assessment_gr) == 0){
+    stop("No regions in assessment. Maybe loosen consensus requirements or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+  }
+  
+  assessment_gr
+}
+
+prepFeatures = function(object){
+  object@meta_data[[object@run_by]]
+  to_run = object@to_run
+  for(tr in to_run){
+    rb = object@meta_data[[object@run_by]]
+    sel_dt = object@meta_data[rb %in% union(tr, object@to_run_reference)]
+    
+    if(is.null(object@loaded_features[[tr]])){
+      object@loaded_features[[tr]] = .process_features(sel_dt)
+    }
+    
+    if(is.null(object@overlap_gr[[tr]])){
+      object@overlap_gr[[tr]] = .process_overlaps(
+        loaded_features = object@loaded_features[[tr]], 
+        overlap_extension = object@overlap_extension)
+    }
+    
+    if(is.null(object@assessment_gr[[tr]])){
+      object@assessment_gr[[tr]] = .process_assessment(
+        feat_list = object@loaded_features[[tr]], 
+        olap_gr = object@overlap_gr[[tr]], 
+        overlap_extension = object@overlap_extension, 
+        n_peaks = object@n_peaks, 
+        consensus_fraction = object@consensus_fraction, 
+        consensus_n = object@consensus_n)
+    }
+  }
+  object
+}
+
 setGeneric("featuresQuery", function(object){standardGeneric("featuresQuery")})
 #' Title
 #'
@@ -199,7 +268,8 @@ setMethod("featuresQuery", "QcConfigFeatures",
 #' @examples
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' config_df = .parse_config_body(feature_config_file)
-#' QcConfigFeatures(config_df)
+#' config_df$file = file.path(system.file(package = "ssvQC", "extdata"), config_df$file)
+#' object = QcConfigFeatures(config_df, process_features = FALSE)
 QcConfigFeatures = function(config_df,
                             run_by = "All",
                             to_run = NULL,
@@ -275,7 +345,7 @@ QcConfigFeatures = function(config_df,
             consensus_fraction = consensus_fraction,
             consensus_n = consensus_n)
   if(process_features){
-    obj = featuresQuery(obj)
+    obj = prepFeatures(obj)
   }
   obj
   
