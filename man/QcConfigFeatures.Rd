@@ -45,5 +45,6 @@ QcConfigFeatures
 \examples{
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 config_df = .parse_config_body(feature_config_file)
-QcConfigFeatures(config_df)
+config_df$file = file.path(system.file(package = "ssvQC", "extdata"), config_df$file)
+object = QcConfigFeatures(config_df, process_features = TRUE)
 }

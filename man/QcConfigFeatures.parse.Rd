@@ -20,5 +20,6 @@ QcConfigFeatures.parse
 }
 \examples{
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-QcConfigFeatures.parse(feature_config_file)
+object = QcConfigFeatures.parse(feature_config_file)
+plot(object)
 }

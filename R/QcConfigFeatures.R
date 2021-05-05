@@ -101,51 +101,7 @@ setReplaceMethod("$", "QcConfigFeatures",
                    x
                  })
 
-
-setGeneric("featuresList", function(object){standardGeneric("featuresList")})
-#' Title
-#'
-#' @param QcConfigFeatures 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-setMethod("featuresList", "QcConfigFeatures", 
-          definition = function(object){
-            if(length(object@loaded_features) == 0){
-              object@loaded_features = object@feature_load_FUN(object@meta_data$file)
-              names(object@loaded_features) = object@meta_data$name_split
-            }
-            if(length(object@loaded_features) == 0){
-              stop("Somehow, no files were loaded. Report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
-            }
-            object
-          })
-
-setGeneric("featuresOverlaps", function(object){standardGeneric("featuresOverlaps")})
-#' Title
-#'
-#' @param QcConfigFeatures 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-setMethod("featuresOverlaps", "QcConfigFeatures", 
-          definition = function(object){
-            object = featuresList(object)
-            if(length(object@overlap_gr) == 0){
-              object@overlap_gr = seqsetvis::ssvOverlapIntervalSets(object@loaded_features)
-              object@overlap_gr = seqsetvis::prepare_fetch_GRanges_names(object@overlap_gr)
-            }
-            if(length(object@overlap_gr) == 0){
-              stop("No regions in overlap. Check your input or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
-            }
-            object
-          })
-
-.process_features = function(meta_dt){
+.process_features = function(meta_dt, feature_load_FUN){
   loaded_features = feature_load_FUN(meta_dt$file)
   names(loaded_features) = meta_dt$name_split
   
@@ -156,10 +112,8 @@ setMethod("featuresOverlaps", "QcConfigFeatures",
 }
 
 .process_overlaps = function(loaded_features, overlap_extension){
-  if(length(overlap_gr) == 0){
-    overlap_gr = seqsetvis::ssvOverlapIntervalSets(loaded_features, ext = overlap_extension)
-    overlap_gr = seqsetvis::prepare_fetch_GRanges_names(overlap_gr)
-  }
+  overlap_gr = seqsetvis::ssvOverlapIntervalSets(loaded_features, ext = overlap_extension)
+  overlap_gr = seqsetvis::prepare_fetch_GRanges_names(overlap_gr)
   if(length(overlap_gr) == 0){
     stop("No regions in overlap. Check your input or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
   }
@@ -184,15 +138,22 @@ setMethod("featuresOverlaps", "QcConfigFeatures",
   assessment_gr
 }
 
+#' Title
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 prepFeatures = function(object){
   object@meta_data[[object@run_by]]
   to_run = object@to_run
   for(tr in to_run){
     rb = object@meta_data[[object@run_by]]
-    sel_dt = object@meta_data[rb %in% union(tr, object@to_run_reference)]
-    
+    sel_dt = object@meta_data[rb %in% union(tr, object@to_run_reference),]
     if(is.null(object@loaded_features[[tr]])){
-      object@loaded_features[[tr]] = .process_features(sel_dt)
+      object@loaded_features[[tr]] = .process_features(sel_dt, object@feature_load_FUN)
     }
     
     if(is.null(object@overlap_gr[[tr]])){
@@ -214,43 +175,6 @@ prepFeatures = function(object){
   object
 }
 
-setGeneric("featuresQuery", function(object){standardGeneric("featuresQuery")})
-#' Title
-#'
-#' @param QcConfigFeatures 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-setMethod("featuresQuery", "QcConfigFeatures", 
-          definition = function(object){
-            # n_peaks = "numeric",
-            # consensus_fraction = "numeric",
-            # consensus_n = "numeric",
-            if(length(object@assessment_gr) == 0){
-              object = featuresList(object)
-              object = featuresOverlaps(object)
-              
-              feat_list = object@loaded_features
-              olap_gr = object@overlap_gr
-              
-              f_consensus = floor(object@consensus_fraction * length(feat_list))
-              n_consensus = min(length(feat_list), max(object@consensus_n, f_consensus))
-              
-              if(n_consensus == 1){
-                asses_gr.full = olap_gr
-              }else{
-                asses_gr.full = ssvConsensusIntervalSets(feat_list, min_number = object@consensus_n, min_fraction = object@consensus_fraction)
-              }
-              object@assessment_gr = sampleCap(asses_gr.full, object@n_peaks)
-            }
-            if(length(object@assessment_gr) == 0){
-              stop("No regions in assessment. Maybe loosen consensus requirements or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
-            }
-            object
-          })
-
 #' QcConfigFeatures
 #'
 #' @param config_df 
@@ -269,7 +193,7 @@ setMethod("featuresQuery", "QcConfigFeatures",
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' config_df = .parse_config_body(feature_config_file)
 #' config_df$file = file.path(system.file(package = "ssvQC", "extdata"), config_df$file)
-#' object = QcConfigFeatures(config_df, process_features = FALSE)
+#' object = QcConfigFeatures(config_df, process_features = TRUE)
 QcConfigFeatures = function(config_df,
                             run_by = "All",
                             to_run = NULL,
@@ -351,6 +275,12 @@ QcConfigFeatures = function(config_df,
   
 }
 
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 QcConfigFeatures.null = function(){
   qc = suppressWarnings({QcConfigFeatures(data.frame(file = "null"), process_features = FALSE)})
   qc@is_null = TRUE
@@ -373,13 +303,15 @@ QcConfigFeatures.null = function(){
 #'
 #' @examples
 #' np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
-#' QcConfigFeatures.files(np_files)
+#' object = QcConfigFeatures.files(np_files)
+#' object
 QcConfigFeatures.files = function(file_paths,
                                   group_names = NULL,
                                   groups = NULL,
                                   group_colors = NULL,
                                   feature_load_FUN = NULL,
                                   n_peaks = 1e3,
+                                  overlap_extension = 0,
                                   consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
                                   consensus_n = getOption("SQC_CONSENSUS_N", 1),
                                   process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
@@ -398,20 +330,26 @@ QcConfigFeatures.files = function(file_paths,
   if(is.null(feature_load_FUN)){
     feature_load_FUN = get_feature_file_load_function(file_paths[1])[[1]]
   }
-  config_df = data.frame(file = as.character(file_paths), group = group_names[groups])
+  config_df = data.frame(file = as.character(file_paths), 
+                         group = group_names[groups], All = "All", stringsAsFactors = FALSE)
+  config_df$name = basename(config_df$file)
+  config_df$name_split = gsub("[_\\.]", "\n", config_df$name)
   
   obj = new("QcConfigFeatures",
             meta_data =  config_df,
-            run_by = "group",
+            run_by = "All",
+            to_run = "All",
             color_by = "group",
             color_mapping = group_colors,
             feature_load_FUN = feature_load_FUN,
             n_peaks = n_peaks,
+            overlap_extension = overlap_extension,
             consensus_fraction = consensus_fraction,
             consensus_n = consensus_n
   )
   if(process_features){
-    obj = featuresQuery(obj)
+    obj = prepFeatures(obj)
+    
   }
   obj
 }
@@ -426,7 +364,8 @@ QcConfigFeatures.files = function(file_paths,
 #'
 #' @examples
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-#' QcConfigFeatures.parse(feature_config_file)
+#' object = QcConfigFeatures.parse(feature_config_file)
+#' plot(object)
 QcConfigFeatures.parse = function(feature_config_file,
                                   process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
   peak_config_dt = .parse_config_body(feature_config_file)
