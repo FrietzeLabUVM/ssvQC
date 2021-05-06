@@ -28,6 +28,7 @@ ssvQC
 }
 \examples{
 options(mc.cores = 10)
+set.seed(0)
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 feature_config = QcConfigFeatures.parse(feature_config_file)
 
@@ -59,14 +60,14 @@ sqc = ssvQC.prepMappedReads(sqc)
 p_reads = ssvQC.plotMappedReads(sqc)
 
 sqc = ssvQC.prepSignal(sqc)
-object = sqc
-
 sqc = ssvQC.prepSCC(sqc)
 sqc = ssvQC.prepFRIP(sqc)
 
 sqc = ssvQC.plotSCC(sqc)
-
-sqc@plots$
-
+sqc = ssvQC.plotFRIP(sqc)
+object = sqc
+sqc@plots
+mp = lapply(sqc@plots, function(x){x[[1]][[1]]})
+cowplot::plot_grid(plotlist = mp)
 sqc@other_data
 }

@@ -8,7 +8,9 @@ make_frip_dt(
   query_dt,
   query_gr,
   n_cores = getOption("mc.cores", 1),
-  name_lev = NULL
+  name_lev = NULL,
+  name_var = "name_split",
+  color_var = name_var
 )
 }
 \arguments{

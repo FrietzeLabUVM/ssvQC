@@ -162,10 +162,6 @@ plot_peak_dt = function(peak_dt, name_lev = NULL){
 #' plot_frip_dt
 #'
 #' @param frip_dt output from \code{\link{make_frip_dt}}
-#' @param peak_dt (optional) output from \code{\link{make_peak_dt}}
-#' @param fq_dt (optional) output from \code{\link{make_fq_dt}}
-#' @param query_gr (optional) The GRanges used to create frip_dt, only necessary
-#'   to calculate the fraction of genome covered by peaks.
 #' @param sort_by character. One of "frip" or "reads_in_peak". Should plots be
 #'   sorted by decreasing FRIP ("frip") or total reads ("reads_in_peak")?
 #'   Default is "frip".
@@ -188,85 +184,62 @@ plot_peak_dt = function(peak_dt, name_lev = NULL){
 #' frip_plots = plot_frip_dt(frip_dt)
 #' frip_plots$frip_per_peaks
 #' frip_plots$frip_total
-plot_frip_dt = function(frip_dt, peak_dt = NULL, fq_dt = NULL, query_gr = NULL, sort_by = c("frip", "reads_in_peak")[1], name_lev = NULL){
+plot_frip_dt = function(frip_dt, sort_by = c("none", "frip", "reads_in_peak")[1], name_lev = NULL, name_var = "name_split", color_var = name_var, color_mapping = NULL, main_title = NULL){
   reads_in_peak = name = V1 = frip = fastq_count = treatment = mapped_reads = peak_count = NULL #global binding for data.table
   if(is.null(name_lev)){
-    if(sort_by == "reads_in_peak"){
-      name_lev = as.character(frip_dt[, stats::median(reads_in_peak) , list(name)][rev(order(V1))]$name)
+    if(sort_by == "none"){
+      if(is.factor(frip_dt[[name_var]])){
+        name_lev = levels(frip_dt[[name_var]])  
+      }else{
+        name_lev = sort(frip_dt[[name_var]])
+      }
+    }else if(sort_by == "reads_in_peak"){
+      name_lev = as.character(frip_dt[, stats::median(reads_in_peak) , c(name_var), with = FALSE][rev(order(V1))][[name_var]])
     }else if(sort_by == "frip"){
-      name_lev = as.character(frip_dt[, stats::median(frip) , list(name)][rev(order(V1))]$name)
+      name_lev = as.character(frip_dt[, stats::median(frip) , c(name_var), with = FALSE][rev(order(V1))][[name_var]])
     }else{
       stop("sort_by must be one of frip or reads_in_peak")
     }
   }
-  stopifnot(all(frip_dt$name %in% name_lev))
-  stopifnot(all(name_lev %in% frip_dt$name))
-  frip_dt$name = factor(frip_dt$name, levels = name_lev)
-
-  if(is.null(fq_dt)){
-    p_fq1 = NULL
-  }else{
-    stopifnot(all(fq_dt$name %in% name_lev))
-    fq_dt$name = factor(fq_dt$name, levels = name_lev)
-    p_fq1 = ggplot(fq_dt,
-                   aes(x = name, y = fastq_count, fill = treatment)) +
-      geom_bar(stat = "identity") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
-            plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
-      scale_y_continuous(labels = function(x)x/1e6) +
-      labs(y = "FASTQ reads (M)", x = "")
+  if(!sort_by == "none"){
+    stopifnot(all(frip_dt[[name_var]] %in% name_lev))
+    stopifnot(all(name_lev %in% frip_dt[[name_var]]))
+    frip_dt[[name_var]] = factor(frip_dt[[name_var]], levels = name_lev)  
   }
-  p_input1 = ggplot(unique(frip_dt[, list(name, mapped_reads, treatment)]),
-                    aes(x = name, y = mapped_reads, fill = treatment)) +
-    geom_bar(stat = "identity") +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
-          plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
-    scale_y_continuous(labels = function(x)x/1e6) +
-    labs(y = "BAM mapped reads (M)", x = "")
-
-  if(is.null(peak_dt)){
-    p_peaks1 = NULL
-  }else{
-    stopifnot(all(peak_dt$name %in% name_lev))
-    peak_dt$name = factor(peak_dt$name, levels = name_lev)
-    p_peaks1 = ggplot(peak_dt, aes(x = name, y = peak_count, fill = treatment)) +
-      geom_bar(stat = 'identity') +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
-            plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
-      scale_y_continuous(labels = function(x)x/1e3) +
-      labs(y = "peaks (k)", x = "")
-  }
-
   p_reads1 = ggplot(frip_dt,
-                    aes(x = name, y = reads_in_peak, color = treatment)) +
+                    aes_string(x = name_var, y = "reads_in_peak", color = color_var)) +
     geom_boxplot(outlier.shape = NA) +
     coord_cartesian(ylim = stats::quantile(frip_dt$reads_in_peak, c(0.1, 0.96))) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
-    labs(y = "reads per peak", x = "")
+    labs(y = "Read count per peak", x = "")
 
   p_frip1 = ggplot(frip_dt,
-                   aes(x = name, y = frip, color = treatment)) +
+                   aes_string(x = name_var, y = "frip", color = color_var)) +
     geom_boxplot(outlier.shape = NA) +
     coord_cartesian(ylim = stats::quantile(frip_dt$frip, c(0.1, 0.96))) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
     labs(y = "FRIP per peak", x = "")
 
-  tmp = frip_dt[, list(reads_in_peak = sum(reads_in_peak), mapped_reads = unique(mapped_reads)), list(sample, treatment, name)]
+  tmp = frip_dt[, list(reads_in_peak = sum(reads_in_peak), mapped_reads = unique(mapped_reads)), c("sample", union(color_var, name_var))]
   tmp[, frip := reads_in_peak / mapped_reads]
   p_fripSum1 = ggplot(tmp,
-                      aes(x = name, y = frip, fill = treatment)) +
+                      aes_string(x = name_var, y = "frip", fill = color_var)) +
     geom_bar(stat = "identity") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
     labs(x = "", y = "FRIP")
 
-  if(!is.null(query_gr)){
-    p_fripSum1 = p_fripSum1 + labs(subtitle = paste(sum(width((query_gr)))/3.2e9, "of genome covered by peaks"))
+  if(!is.null(color_mapping)){
+    p_reads1 = p_reads1 + scale_color_manual(values = color_mapping)
+    p_frip1 = p_frip1 + scale_color_manual(values = color_mapping)
+    p_fripSum1 = p_fripSum1 + scale_fill_manual(values = color_mapping)
   }
-
+  if(!is.null(main_title)){
+    p_reads1 = p_reads1 + labs(title = main_title)
+    p_frip1 = p_frip1 + labs(title = main_title)
+    p_fripSum1 = p_fripSum1 + labs(title = main_title)
+  }
+  
   return(list(
-    fastq_reads = p_fq1,
-    aligned_reads = p_input1,
-    peaks = p_peaks1,
     reads_per_peaks = p_reads1,
     frip_per_peaks = p_frip1,
     frip_total = p_fripSum1,
@@ -294,27 +267,44 @@ plot_frip_dt = function(frip_dt, peak_dt = NULL, fq_dt = NULL, query_gr = NULL, 
 #'
 #' scc_dt = make_scc_dt(query_dt.bam, query_gr)
 #' plot_scc_dt(scc_dt)
-plot_scc_dt = function(scc_dt, main_title = NULL){
+plot_scc_dt = function(scc_dt, main_title = NULL, name_var = "name_split", name_lev = NULL){
   correlation = read_length = fragment_length = name = id = read_correlation = fragment_correlation = NULL #global bindings for data.table
   scc_dt_agg = scc_dt$average_correlation
 
+  if(!is.null(name_lev)){
+    stopifnot(name_lev %in% unique(scc_dt_agg[[name_var]]))
+    scc_dt_agg[[name_var]] = factor(scc_dt_agg[[name_var]], levels = name_lev)
+    
+    scc_dt$read_length[[name_var]] = factor(scc_dt$read_length[[name_var]], levels = name_lev)
+    scc_dt$fragment_length[[name_var]] = factor(scc_dt$fragment_length[[name_var]], levels = name_lev)
+  }
+  
   p_scc_correlation = ggplot(scc_dt_agg, aes(x = shift, y = correlation)) +
     geom_path() +
-    facet_wrap(~name) +
+    facet_wrap(paste0("~", name_var)) +
     geom_vline(data = scc_dt$read_length, aes(xintercept = read_length), color = "red", linetype = 2) +
     geom_vline(data = scc_dt$fragment_length, aes(xintercept = fragment_length), color = "blue", linetype = 2) +
     labs(subtitle = "Average Strand Cross Correlation (SCC)", caption = "estimated fragment size in blue, read length in red")
 
-
-  scc_dt_p = merge(scc_dt$read_correlation[, list(name, id, read_correlation = correlation)],
-                   scc_dt$stable_fragment_correlation[, list(name, id, fragment_correlation = correlation)], by = c("name", "id"))
+  tmp = scc_dt$read_correlation[, c(name_var, "id", "correlation"), with = FALSE]
+  setnames(tmp, "correlation", "read_correlation")
+  tmp2 = scc_dt$stable_fragment_correlation[, c(name_var, "id", "correlation"), with = FALSE]
+  setnames(tmp2, "correlation", "fragment_correlation")
+  scc_dt_p = merge(tmp, 
+                   tmp2,
+                   by = c(name_var, "id")
+                   )
+  if(!is.null(name_lev)){
+    stopifnot(name_lev %in% unique(scc_dt_p[[name_var]]))
+    scc_dt_p[[name_var]] = factor(scc_dt_p[[name_var]], levels = name_lev)
+  }
   p_scc_frag_vs_read = ggplot(scc_dt_p, aes(x = read_correlation, y = fragment_correlation)) +
     annotate("rect", xmin = .9, xmax = 1.03,
              ymin = min(scc_dt_p$fragment_correlation),
              ymax = max(scc_dt_p$fragment_correlation), fill = "#FF000015") +
     geom_point(alpha = .1) +
     expand_limits(x = c(0, 1), y = c(0, 1)) +
-    facet_wrap(~name) +
+    facet_wrap(paste0("~", name_var)) +
     theme(panel.background = element_blank(), panel.grid = element_blank()) +
     labs(subtitle = "Strand Cross Correlation (SCC) per Feature", caption = "Features in the red zone have quite high\ncorrelation at read length and are likely artifacts",
          x = "read length SCC",

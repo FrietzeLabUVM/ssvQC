@@ -4,7 +4,12 @@
 \alias{plot_scc_dt}
 \title{plot_scc_dt}
 \usage{
-plot_scc_dt(scc_dt, main_title = NULL)
+plot_scc_dt(
+  scc_dt,
+  main_title = NULL,
+  name_var = "name_split",
+  name_lev = NULL
+)
 }
 \arguments{
 \item{scc_dt}{output from \code{\link{make_scc_dt}}}

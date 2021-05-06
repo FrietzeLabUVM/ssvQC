@@ -12,7 +12,7 @@ make_scc_dt(
   bfc_corr = BiocFileCache("~/.cache_peakrefine"),
   cache_version = "v1",
   force_overwrite = FALSE,
-  name_var = "name",
+  name_var = "name_split",
   n_cores = getOption("mc.cores", 1L),
   ...
 )

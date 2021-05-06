@@ -6,22 +6,16 @@
 \usage{
 plot_frip_dt(
   frip_dt,
-  peak_dt = NULL,
-  fq_dt = NULL,
-  query_gr = NULL,
-  sort_by = c("frip", "reads_in_peak")[1],
-  name_lev = NULL
+  sort_by = c("none", "frip", "reads_in_peak")[1],
+  name_lev = NULL,
+  name_var = "name_split",
+  color_var = name_var,
+  color_mapping = NULL,
+  main_title = NULL
 )
 }
 \arguments{
 \item{frip_dt}{output from \code{\link{make_frip_dt}}}
-
-\item{peak_dt}{(optional) output from \code{\link{make_peak_dt}}}
-
-\item{fq_dt}{(optional) output from \code{\link{make_fq_dt}}}
-
-\item{query_gr}{(optional) The GRanges used to create frip_dt, only necessary
-to calculate the fraction of genome covered by peaks.}
 
 \item{sort_by}{character. One of "frip" or "reads_in_peak". Should plots be
 sorted by decreasing FRIP ("frip") or total reads ("reads_in_peak")?

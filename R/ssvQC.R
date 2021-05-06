@@ -71,15 +71,15 @@ setMethod("initialize","ssvQC", function(.Object,...){
 #' p_reads = ssvQC.plotMappedReads(sqc)
 #' 
 #' sqc = ssvQC.prepSignal(sqc)
-#' object = sqc
-#' 
 #' sqc = ssvQC.prepSCC(sqc)
 #' sqc = ssvQC.prepFRIP(sqc)
 #' 
 #' sqc = ssvQC.plotSCC(sqc)
+#' sqc = ssvQC.plotFRIP(sqc)
 #' object = sqc
 #' sqc@plots
-#' 
+#' mp = lapply(sqc@plots, function(x){x[[1]][[1]]})
+#' cowplot::plot_grid(plotlist = mp)
 #' sqc@other_data
 ssvQC = function(feature_config = NULL,
                  signal_config = NULL,
@@ -324,7 +324,7 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
   FRIP_data = lapply(object@feature_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){
-      make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr)
+      make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
     })
   })
   object@other_data$FRIP = FRIP_data
@@ -354,13 +354,19 @@ setMethod("ssvQC.plotFRIP", "ssvQC.complete", function(object){
     stop("ssvQC.prepFRIP has not been called.")
   }
   FRIP_data = object@other_data$FRIP
-  FRIP_data = lapply(object@feature_config$assessment_features, function(query_gr){
-    sig_configs = .make_query_signal_config(object@signal_config)
-    lapply(sig_configs, function(sel_sig_config){
-      make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr)
-    })
-  })
-  object@other_data$FRIP = FRIP_data
+  
+  wrap_plot_frip_dt = function(frip_dt, main_title){
+    plot_frip_dt(frip_dt, 
+                 color_var = object@signal_config@color_by, 
+                 color_mapping = object@signal_config@color_mapping,
+                 main_title = main_title)
+  }
+  
+  plots = dbl_lapply(FRIP_data, wrap_plot_frip_dt, dbl_names)
+  
+  object@plots$reads_per_peak = dbl_extract(plots, "reads_per_peaks")
+  object@plots$FRIP_per_peak = dbl_extract(plots, "frip_per_peaks")
+  object@plots$FRIP_total = dbl_extract(plots, "frip_total")
   object
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.featureOnly", function(object){
@@ -406,15 +412,15 @@ dbl_names = function(name_1, name_2){
   paste(sub("_signal", " signal", name_2), "at", sub("_features", " features", name_1))
 }
 
-dbl_lapply = function(in_list, FUN, FUN_names = dbl_names){
+dbl_lapply = function(in_list, FUN, FUN_names = NULL){
   out_list = lapply(names(in_list), function(name_1){
     item_1 = in_list[[name_1]]
     out = lapply(names(item_1), function(name_2){
       item_2 = item_1[[name_2]]
-      if(!is.null(FUN_names){
+      if(!is.null(FUN_names)){
         mt = dbl_names(name_1, name_2)
         FUN(item_2, mt)
-      })else{
+      }else{
         FUN(item_2)
       }
     })
@@ -423,6 +429,14 @@ dbl_lapply = function(in_list, FUN, FUN_names = dbl_names){
   })
   names(out_list) = names(in_list)
   out_list
+}
+
+dbl_extract = function(in_list, key){
+  lapply(in_list, function(item_1){
+    lapply(item_1, function(item_2){
+      item_2[[key]]
+    })
+  })
 }
 
 #' ssvQC.plotSCC
@@ -440,27 +454,14 @@ setMethod("ssvQC.plotSCC", "ssvQC.complete", function(object){
     stop("ssvQC.prepSCC has not been called.")
   }
   SCC_data = object@other_data$SCC
-  SCC_plots = lapply(names(SCC_data), function(scc_features_name){
-    scc_features = SCC_data[[scc_features_name]]
-    out = lapply(names(scc_features), function(scc_signal_name){
-      scc_signal = scc_features[[scc_signal_name]]
-      mt = paste(sub("_signal", " signal", scc_signal_name), "at", sub("_features", " features", scc_features_name))
-      plot_scc_dt(scc_signal, main_title = mt)
-    })
-    names(out) = names(scc_features)
-    out
-  })
-  names(SCC_plots) = names(SCC_data)
-  SCC_dots = lapply(SCC_plots, function(scc_features){
-    lapply(scc_features, function(scc_signal){
-      scc_signal$scc_dots
-    })
-  })
-  SCC_curves = lapply(SCC_plots, function(scc_features){
-    lapply(scc_features, function(scc_signal){
-      scc_signal$scc_curves
-    })
-  })
+  
+  wrap_plot_scc_dt = function(scc_dt, main_title){
+    plot_scc_dt(scc_dt, main_title, name_lev = levels(object@signal_config@meta_data$name_split))
+  }
+  
+  SCC_plots = dbl_lapply(SCC_data, FUN = wrap_plot_scc_dt, FUN_names = dbl_names)
+  SCC_dots = dbl_extract(SCC_plots, "scc_dots")
+  SCC_curves = dbl_extract(SCC_plots, "scc_curves")
   
   object@plots$SCC_dots = SCC_dots
   object@plots$SCC_curves = SCC_curves

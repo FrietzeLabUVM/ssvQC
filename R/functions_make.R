@@ -424,8 +424,9 @@ make_centered_query_gr = function(query_dt, query_gr, view_size = NULL, fetch_fu
 #' query_gr = seqsetvis::easyLoad_bed(peak_file)[[1]]
 #'
 #' make_frip_dt(bam_file, query_gr)
-make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), name_lev = NULL, name_var = "name_split"){
+make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), name_lev = NULL, name_var = "name_split", color_var = name_var){
   treatment = qname = id = frip = N = mapped_reads = V1 = NULL#global data.table bindings
+  aes_vars = union(name_var, color_var)
   if(is.character(query_dt)){
     query_dt = data.table(file = query_dt)
   }
@@ -436,8 +437,8 @@ make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), 
     query_dt[[name_var]] = basename(query_dt$file)
   }
   if(!is.null(name_lev)) stopifnot(all(query_dt[[name_var]] %in% name_lev))
-  if(is.null(query_dt$treatment)){
-    query_dt$treatment = query_dt[[name_var]]
+  if(is.null(query_dt[[color_var]])){
+    query_dt[[color_var]] = query_dt[[name_var]]
   }
   
   n_region_splits = max(1, floor(length(query_gr) / 1e3))
@@ -448,7 +449,7 @@ make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), 
   setnames(frip_dt, "y", "N")
   
   frip_dt_filled = melt(dcast(frip_dt, paste0("id~", name_var), value.var = "N", fill = 0), id.vars = "id", value.name = "N", variable.name = name_var)
-  frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(name_var, "treatment", "sample"), with = FALSE]), by = name_var)
+  frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(aes_vars, "sample"), with = FALSE]), by = name_var)
   
   message("fetch total mapped reads...")
   mapped_counts = sapply(query_dt$file, function(f){
