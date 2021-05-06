@@ -239,5 +239,42 @@ fetch_signal_at_features = function(qc_signal, query_gr){
   call_args = c(list(file_paths = qc_signal@meta_data, qgr = query_gr, return_data.table = TRUE), extra_args)
   fetch_FUN = get_fetch_fun(qc_signal@read_mode)
   do.call(fetch_FUN, call_args)
-  
 }
+
+setMethod("split", signature = c("QcConfigSignal"), definition = function(x){
+  f = x@meta_data[[x@run_by]]
+  split(x, f, FALSE)
+})
+setMethod("split", signature = c("QcConfigSignal", "factor"), definition = function(x, f){
+  split(x, f, FALSE)
+})
+setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definition = function(x, f, drop = FALSE){
+  config_df = x@meta_data
+  meta_split = split(config_df, f)
+  refs = config_df[config_df[[x@run_by]] %in% x@to_run_reference,]
+  
+  meta_split = meta_split[x@to_run]
+  meta_split = lapply(meta_split, function(sel_meta_df)rbind(sel_meta_df, refs))
+  
+  message("split QcConfigSignal")
+  
+  lapply(meta_split, function(sel_meta_df){
+    new("QcConfigSignal",
+        meta_data =  sel_meta_df,
+        run_by = x@run_by,
+        to_run = x@to_run,
+        to_run_reference = x@to_run_reference,
+        color_by = x@color_by,
+        color_mapping = x@color_mapping,
+        read_mode = x@read_mode,
+        view_size = x@view_size, 
+        fetch_options = x@fetch_options)
+  })
+})
+setMethod("split", signature = c("QcConfigSignal", "character"), definition = function(x, f){
+  split(x, f, FALSE)
+})
+setMethod("split", signature = c("QcConfigSignal", "character", "logical"), definition = function(x, f, drop = FALSE){
+  split(x, factor(f, levels = unique(f)), FALSE)
+})
+

@@ -9,7 +9,7 @@ make_scc_dt.single(
   query_gr,
   frag_sizes,
   fetch_size = 3 * max(frag_sizes),
-  cache_path = "~/.cache_peakrefine",
+  bfc_corr = BiocFileCache("~/.cache_peakrefine"),
   cache_version = "v1",
   force_overwrite = FALSE,
   n_cores = getOption("mc.cores", 1L),
@@ -29,7 +29,7 @@ default is to count by 10 from 50 to 350.}
 in query_gr to retrieve.  Should be greater than max frag_size. The default
 is 3*max(frag_sizes).}
 
-\item{cache_path}{path to cache location for BiocFileCache to use.}
+\item{bfc_corr}{BiocFileCache object to use.}
 
 \item{cache_version}{Modifying the cache version will force recalulation of
 all results going forward. Default is v1.}

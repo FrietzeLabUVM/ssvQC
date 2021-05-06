@@ -103,7 +103,7 @@ setReplaceMethod("$", "QcConfigFeatures",
 
 .process_features = function(meta_dt, feature_load_FUN){
   loaded_features = feature_load_FUN(meta_dt$file)
-  names(loaded_features) = meta_dt$name_split
+  names(loaded_features) = as.character(meta_dt$name_split)
   
   if(length(loaded_features) == 0){
     stop("Somehow, no files were loaded. Report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
@@ -113,6 +113,7 @@ setReplaceMethod("$", "QcConfigFeatures",
 
 .process_overlaps = function(loaded_features, overlap_extension){
   overlap_gr = seqsetvis::ssvOverlapIntervalSets(loaded_features, ext = overlap_extension)
+  overlap_gr = sort(overlap_gr)
   overlap_gr = seqsetvis::prepare_fetch_GRanges_names(overlap_gr)
   if(length(overlap_gr) == 0){
     stop("No regions in overlap. Check your input or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
@@ -150,22 +151,23 @@ prepFeatures = function(object){
   object@meta_data[[object@run_by]]
   to_run = object@to_run
   for(tr in to_run){
+    tr_name = paste0(tr, "_features")
     rb = object@meta_data[[object@run_by]]
     sel_dt = object@meta_data[rb %in% union(tr, object@to_run_reference),]
-    if(is.null(object@loaded_features[[tr]])){
-      object@loaded_features[[tr]] = .process_features(sel_dt, object@feature_load_FUN)
+    if(is.null(object@loaded_features[[tr_name]])){
+      object@loaded_features[[tr_name]] = .process_features(sel_dt, object@feature_load_FUN)
     }
     
-    if(is.null(object@overlap_gr[[tr]])){
-      object@overlap_gr[[tr]] = .process_overlaps(
-        loaded_features = object@loaded_features[[tr]], 
+    if(is.null(object@overlap_gr[[tr_name]])){
+      object@overlap_gr[[tr_name]] = .process_overlaps(
+        loaded_features = object@loaded_features[[tr_name]], 
         overlap_extension = object@overlap_extension)
     }
     
-    if(is.null(object@assessment_gr[[tr]])){
-      object@assessment_gr[[tr]] = .process_assessment(
-        feat_list = object@loaded_features[[tr]], 
-        olap_gr = object@overlap_gr[[tr]], 
+    if(is.null(object@assessment_gr[[tr_name]])){
+      object@assessment_gr[[tr_name]] = .process_assessment(
+        feat_list = object@loaded_features[[tr_name]], 
+        olap_gr = object@overlap_gr[[tr_name]], 
         overlap_extension = object@overlap_extension, 
         n_peaks = object@n_peaks, 
         consensus_fraction = object@consensus_fraction, 
@@ -334,6 +336,9 @@ QcConfigFeatures.files = function(file_paths,
                          group = group_names[groups], All = "All", stringsAsFactors = FALSE)
   config_df$name = basename(config_df$file)
   config_df$name_split = gsub("[_\\.]", "\n", config_df$name)
+  
+  config_df$name = factor(config_df$name, levels = unique(config_df$name))
+  config_df$name_split = factor(config_df$name_split, levels = unique(config_df$name_split))
   
   obj = new("QcConfigFeatures",
             meta_data =  config_df,

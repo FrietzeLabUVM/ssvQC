@@ -27,6 +27,7 @@ ssvQC(
 ssvQC
 }
 \examples{
+options(mc.cores = 10)
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 feature_config = QcConfigFeatures.parse(feature_config_file)
 
@@ -59,4 +60,13 @@ p_reads = ssvQC.plotMappedReads(sqc)
 
 sqc = ssvQC.prepSignal(sqc)
 object = sqc
+
+sqc = ssvQC.prepSCC(sqc)
+sqc = ssvQC.prepFRIP(sqc)
+
+sqc = ssvQC.plotSCC(sqc)
+
+sqc@plots$
+
+sqc@other_data
 }

@@ -4,7 +4,7 @@
 \alias{plot_scc_dt}
 \title{plot_scc_dt}
 \usage{
-plot_scc_dt(scc_dt)
+plot_scc_dt(scc_dt, main_title = NULL)
 }
 \arguments{
 \item{scc_dt}{output from \code{\link{make_scc_dt}}}

@@ -28,9 +28,9 @@ make_dt = function(files, group_lev = NULL, max_name_len = 30){
   p_dt = data.table(file = files)
   p_dt[, sample := sub("\\..+", "", basename(file))]
   p_dt[, sample := sub("(?<=rep[0-9])_.+", "", sample, perl = TRUE)]
-
+  
   p_dt[, file_dir := file]
-
+  
   if(is.null(group_lev)){
     p_dt$group = "none"
     p_dt$batch = factor("A")
@@ -131,27 +131,27 @@ make_anno_dt =  function(peak_grs, anno_grs, name_lev = NULL){
   if(is.null(name_lev)){
     name_lev = names(peak_grs)
   }
-
+  
   message("features overlap")
   .apply_annotation = function(x){
     x$anno = "intergenic"
     for(i in seq_along(anno_grs)){
       overlaps_gr = findOverlaps(x, anno_grs[[i]])
       x$anno[S4Vectors::queryHits(overlaps_gr)] = names(anno_grs)[i]
-
+      
     }
     x
   }
-
+  
   peak_grs.anno = lapply(peak_grs, .apply_annotation)
-
+  
   .dt_count_anno = function(x){
     tab = table(x$anno)
     data.table(feature = names(tab), count = as.numeric(tab))
   }
-
+  
   peak_grs.anno_cnt = lapply(peak_grs.anno, .dt_count_anno)
-
+  
   anno_cnt = rbindlist(peak_grs.anno_cnt, idcol = "sample")
   anno_cnt[, sample_cnt := paste0(sample, "\n", sum(count)), list(sample)]
   anno_cnt[, fraction := count / sum(count), list(sample)]
@@ -254,7 +254,7 @@ make_fq_dt = function(fastq_files, fastq_names = basename(fastq_files), fastq_tr
     fastq_files = .get_files(.config_dt)
     .config_dt$file = fastq_files
   }
-
+  
   stopifnot(length(fastq_files) == length(fastq_names))
   stopifnot(length(fastq_files) == length(fastq_treatments))
   .cnt_fq = function(f){
@@ -265,7 +265,7 @@ make_fq_dt = function(fastq_files, fastq_names = basename(fastq_files), fastq_tr
       }else{
         cnt = system(paste0("cat ", f, "| wc -l"), intern = TRUE)
       }
-
+      
       cnt_dt = data.table(f, as.numeric(cnt)/4)
       if(cache_counts){
         fwrite(cnt_dt, cnt_f, sep = "\t", col.names = FALSE)
@@ -276,10 +276,10 @@ make_fq_dt = function(fastq_files, fastq_names = basename(fastq_files), fastq_tr
     # message(class(cnt_dt))
     cnt_dt
   }
-
+  
   fq_dt = data.table::rbindlist(pbmcapply::pbmclapply(fastq_files, mc.cores = n_cores, .cnt_fq))
   setnames(fq_dt, c("file", "count"))
-
+  
   if(dt_mode){
     fq_dt = merge(fq_dt, .config_dt, by = "file")
   }else{
@@ -369,7 +369,7 @@ make_centered_query_gr = function(query_dt, query_gr, view_size = NULL, fetch_fu
   if(is.null(fetch_fun)){
     fetch_fun = .get_fetch_fun(files)
   }
-
+  
   stopifnot("GRanges" %in% class(query_gr))
   if(is.null(view_size)){
     view_size = median(width(query_gr))
@@ -393,7 +393,7 @@ make_centered_query_gr = function(query_dt, query_gr, view_size = NULL, fetch_fu
                            win_size = 1, win_method = "sample",
                            return_data.table = TRUE,
                            n_region_splits = n_region_splits, ...)
-
+  
   centered_gr = unique(resize(centerGRangesAtMax(prof_dt.fine, query_gr), view_size, fix = 'center'))
   centered_gr
 }
@@ -424,32 +424,32 @@ make_centered_query_gr = function(query_dt, query_gr, view_size = NULL, fetch_fu
 #' query_gr = seqsetvis::easyLoad_bed(peak_file)[[1]]
 #'
 #' make_frip_dt(bam_file, query_gr)
-make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), name_lev = NULL){
-  name = treatment = qname = id = frip = N = mapped_reads = V1 = NULL#global data.table bindings
+make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), name_lev = NULL, name_var = "name_split"){
+  treatment = qname = id = frip = N = mapped_reads = V1 = NULL#global data.table bindings
   if(is.character(query_dt)){
     query_dt = data.table(file = query_dt)
   }
   if(is.null(query_dt$file)){
     stop("query_dt must contain file variable")
   }
-  if(is.null(query_dt$name)){
-    query_dt[, name := basename(file)]
+  if(is.null(query_dt[[name_var]])){
+    query_dt[[name_var]] = basename(query_dt$file)
   }
-  if(!is.null(name_lev)) stopifnot(all(query_dt$name %in% name_lev))
+  if(!is.null(name_lev)) stopifnot(all(query_dt[[name_var]] %in% name_lev))
   if(is.null(query_dt$treatment)){
-    query_dt[, treatment := name]
+    query_dt$treatment = query_dt[[name_var]]
   }
-
+  
   n_region_splits = max(1, floor(length(query_gr) / 1e3))
   message("fetch read counts...")
   # reads_dt = seqsetvis::ssvFetchBam(query_dt, query_gr, fragLens = NA, return_unprocessed = TRUE, n_region_splits = n_region_splits, n_cores = n_cores)
   # frip_dt = reads_dt[, list(N = length(unique(qname))), list(id, name, treatment, sample)]
   frip_dt = seqsetvis::ssvFetchBam(query_dt, query_gr, fragLens = 1, win_size = 1, win_method = "summary", summary_FUN = function(x,w){sum(x)}, n_region_splits = n_region_splits, n_cores = n_cores, return_data.table = TRUE)
   setnames(frip_dt, "y", "N")
-
-  frip_dt_filled = melt(dcast(frip_dt, id~name, value.var = "N", fill = 0), id.vars = "id", value.name = "N", variable.name = "name")
-  frip_dt = merge(frip_dt_filled, unique(frip_dt[, list(name, treatment, sample)]), by = "name")
-
+  
+  frip_dt_filled = melt(dcast(frip_dt, paste0("id~", name_var), value.var = "N", fill = 0), id.vars = "id", value.name = "N", variable.name = name_var)
+  frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(name_var, "treatment", "sample"), with = FALSE]), by = name_var)
+  
   message("fetch total mapped reads...")
   mapped_counts = sapply(query_dt$file, function(f){
     stats = Rsamtools::idxstatsBam(f)
@@ -458,16 +458,17 @@ make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), 
   })
   frip_dt$mapped_reads = mapped_counts[frip_dt$sample]
   frip_dt[, frip := N/mapped_reads]
-
-  if(is.null(name_lev)){
-    name_lev = frip_dt[, stats::median(N) , list(name)][rev(order(V1))]$name
+  
+  if(!is.null(name_lev)){
+    # name_lev = frip_dt[, stats::median(N) , list(name)][rev(order(V1))]$name
+    stopifnot(all(frip_dt[[name_var]] %in% name_lev))
+    frip_dt[[name_var]] = factor(frip_dt[[name_var]], levels = name_lev)
   }
-
-  stopifnot(all(frip_dt$name %in% name_lev))
-  frip_dt$name = factor(frip_dt$name, levels = name_lev)
+  
+  
   setnames(frip_dt, "N", "reads_in_peak")
   frip_dt
-
+  
 }
 
 #' make_peak_dt
@@ -502,13 +503,15 @@ make_peak_dt = function(peak_grs, treatments = NULL){
   peak_dt
 }
 
-.get_files = function(query_dt){
+.get_files = function(query_dt, name_var = "name_split"){
   if(!is.null(query_dt$file)){
     files = query_dt$file
   }else{
     files = query_dt[[1]]
   }
-  if(!is.null(query_dt$name)){
+  if(!is.null(query_dt[[name_var]])){
+    uniq_names = query_dt[[name_var]]
+  }else if(!is.null(query_dt$name)){
     uniq_names = query_dt$name
   }else if(!is.null(query_dt$sample)){
     uniq_names = query_dt$sample
@@ -534,7 +537,7 @@ make_peak_dt = function(peak_grs, treatments = NULL){
 #' @param fetch_size optional numeric. Size in bp centered around each interval
 #'   in query_gr to retrieve.  Should be greater than max frag_size. The default
 #'   is 3*max(frag_sizes).
-#' @param cache_path path to cache location for BiocFileCache to use.
+#' @param bfc_corr BiocFileCache object to use.
 #' @param cache_version Modifying the cache version will force recalulation of
 #'   all results going forward. Default is v1.
 #' @param force_overwrite Logical, if TRUE, cache contents will be overwritten.
@@ -566,13 +569,13 @@ make_scc_dt = function(query_dt,
                        query_gr,
                        frag_sizes = seq(50, 350, 10),
                        fetch_size = 3*max(frag_sizes),
-                       cache_path = "~/.cache_peakrefine",
+                       bfc_corr = BiocFileCache("~/.cache_peakrefine"),
                        cache_version = "v1",
                        force_overwrite = FALSE,
-                       name_var = "name",
+                       name_var = "name_split",
                        n_cores = getOption("mc.cores", 1L),
                        ...){
-
+  
   if(is.character(query_dt)) query_dt = data.table(file = query_dt, name = basename(query_dt))
   if(!name_var %in% colnames(query_dt)){
     stop(
@@ -589,15 +592,15 @@ make_scc_dt = function(query_dt,
     make_scc_dt.single(f, query_gr,
                        frag_sizes = frag_sizes,
                        fetch_size = fetch_size,
-                       cache_path = cache_path,
+                       bfc_corr = bfc_corr,
                        cache_version = cache_version,
                        force_overwrite = force_overwrite,
                        n_cores = n_cores,
                        ...)
   })
-
+  
   vnames = names(scc_res_l[[1]])
-
+  
   scc_res = lapply(vnames, function(nam){
     part = lapply(scc_res_l, function(x){
       xv = x[[nam]]
@@ -626,7 +629,7 @@ make_scc_dt = function(query_dt,
 #' @param fetch_size optional numeric. Size in bp centered around each interval
 #'   in query_gr to retrieve.  Should be greater than max frag_size. The default
 #'   is 3*max(frag_sizes).
-#' @param cache_path path to cache location for BiocFileCache to use.
+#' @param bfc_corr BiocFileCache object to use.
 #' @param cache_version Modifying the cache version will force recalulation of
 #'   all results going forward. Default is v1.
 #' @param force_overwrite Logical, if TRUE, cache contents will be overwritten.
@@ -650,7 +653,7 @@ make_scc_dt.single = function(bam_file,
                               query_gr,
                               frag_sizes,
                               fetch_size = 3*max(frag_sizes),
-                              cache_path = "~/.cache_peakrefine",
+                              bfc_corr = BiocFileCache("~/.cache_peakrefine"),
                               cache_version = "v1",
                               force_overwrite = FALSE,
                               n_cores = getOption("mc.cores", 1L),
@@ -673,7 +676,7 @@ make_scc_dt.single = function(bam_file,
          "\ntry running:\nsamtools index ", bam_file)
   }
   stopifnot(n_cores >= 1)
-
+  
   query_gr = resize(query_gr, fetch_size, fix = 'center')
   if(is.null(query_gr$name)){
     if(is.null(names(query_gr))){
@@ -689,8 +692,7 @@ make_scc_dt.single = function(bam_file,
     }
   }
   stopifnot(!any(duplicated(names(query_gr))))
-
-  bfc_corr = BiocFileCache::BiocFileCache(cache_path, ask = FALSE)
+  
   corr_key = paste(qgr_md5, bam_md5, digest::digest(frag_sizes), fetch_size, cache_version, sep = "_")
   corr_res = bfcif(bfc_corr, corr_key, function(){
     message("cached results not found, gathering correlation info.")
@@ -706,7 +708,7 @@ make_scc_dt.single = function(bam_file,
     peak_strand_corr = rbindlist(lres)
     gather_metrics(peak_strand_corr, rl)
   }, force_overwrite = force_overwrite)
-
+  
   #make everything a data.table
   vnames = names(corr_res)
   corr_res = lapply(vnames, function(nam){
@@ -765,28 +767,28 @@ make_feature_overlap_signal_profiles = function(query_dt,
   y = rnk_ = id = NULL #global binding for data.table
   if(is.character(query_dt)) query_dt = data.table(file = query_dt)
   if(is.null(view_size)) view_size = median(width(overlaps_gr))
-
+  
   if(group_var %in% colnames(query_dt)) stop("group_var \"", group_var, "\" cannot be in colnames of query_dt.")
   if(rank_var %in% colnames(query_dt)) stop("rank_var \"", rank_var, "\" cannot be in colnames of query_dt.")
-
+  
   if(is.null(feature_groups)){
     feature_groups = as.data.table(seqsetvis::ssvFactorizeMembTable(overlaps_gr))
   }else{
     stopifnot(c("id", "group") %in% colnames(feature_groups))
   }
-
+  
   # hist(width(overlaps_gr))
   qgr = resize(overlaps_gr, view_size, fix = "center")
   qgr_l = split(qgr[feature_groups$id], feature_groups$group)
   qgr_l$none = NULL
-
+  
   sm_len = max(min(lengths(qgr_l)), min_group_size)
   qgr_l.sample = lapply(qgr_l, function(x){sample(x, min(max_group_size, sm_len, length(x)))})
   qgr_l.sample = qgr_l.sample[!lengths(qgr_l.sample) < discard_group_below]
-
+  
   files = .get_files(query_dt)
   fetch_fun = .get_fetch_fun(files)
-
+  
   fetch_list_profiles = function(qgr_list){
     prof_dt_l = lapply(qgr_list, function(x){
       prof_dt = suppressMessages({
@@ -796,16 +798,16 @@ make_feature_overlap_signal_profiles = function(query_dt,
                   return_data.table = TRUE,
                   ...)
       })
-
+      
       prof_dt
     })
-
+    
     prof_dt = rbindlist(prof_dt_l, idcol = group_var)
     rnk_dt = prof_dt[, list(y = max(y)), c("id", group_var)]
     rnk_dt[, rnk_ := frank(-y, ties.method = "first"), c(group_var)]
     prof_dt = merge(prof_dt, rnk_dt[, list(id, rnk_)], by = "id")
     setnames(prof_dt, "rnk_", rank_var)
-
+    
     prof_dt
   }
   prof_dt = fetch_list_profiles(qgr_l.sample)

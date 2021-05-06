@@ -294,7 +294,7 @@ plot_frip_dt = function(frip_dt, peak_dt = NULL, fq_dt = NULL, query_gr = NULL, 
 #'
 #' scc_dt = make_scc_dt(query_dt.bam, query_gr)
 #' plot_scc_dt(scc_dt)
-plot_scc_dt = function(scc_dt){
+plot_scc_dt = function(scc_dt, main_title = NULL){
   correlation = read_length = fragment_length = name = id = read_correlation = fragment_correlation = NULL #global bindings for data.table
   scc_dt_agg = scc_dt$average_correlation
 
@@ -303,7 +303,7 @@ plot_scc_dt = function(scc_dt){
     facet_wrap(~name) +
     geom_vline(data = scc_dt$read_length, aes(xintercept = read_length), color = "red", linetype = 2) +
     geom_vline(data = scc_dt$fragment_length, aes(xintercept = fragment_length), color = "blue", linetype = 2) +
-    labs(title = "Strand Cross Correlation (SCC)", subtitle = "estimated fragment size in blue, read length in red")
+    labs(subtitle = "Average Strand Cross Correlation (SCC)", caption = "estimated fragment size in blue, read length in red")
 
 
   scc_dt_p = merge(scc_dt$read_correlation[, list(name, id, read_correlation = correlation)],
@@ -316,9 +316,14 @@ plot_scc_dt = function(scc_dt){
     expand_limits(x = c(0, 1), y = c(0, 1)) +
     facet_wrap(~name) +
     theme(panel.background = element_blank(), panel.grid = element_blank()) +
-    labs(title = "Peaks in the red zone have quite high\ncorrelation at read length and are likely artifacts",
+    labs(subtitle = "Strand Cross Correlation (SCC) per Feature", caption = "Features in the red zone have quite high\ncorrelation at read length and are likely artifacts",
          x = "read length SCC",
          y = "fragment length estimate SCC")
+  
+  if(!is.null(main_title)){
+    p_scc_correlation = p_scc_correlation + labs(title = main_title)
+    p_scc_frag_vs_read = p_scc_frag_vs_read + labs(title = main_title)
+  }
   return(list(
     scc_curves = p_scc_correlation,
     scc_dots = p_scc_frag_vs_read
