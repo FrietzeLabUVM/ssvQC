@@ -50,7 +50,7 @@ setMethod("$", "QcConfigFeatures",
                     to_run = x@to_run,
                     to_run_reference = x@to_run_reference,
                     color_by = x@color_by,
-                    color_mapping = x@color_mapping
+                    color_mapping = as.list(x@color_mapping)
             )
           })
 
@@ -79,6 +79,7 @@ setReplaceMethod("$", "QcConfigFeatures",
                              x$color_mapping = getOption("SQC_COLORS")
                            },
                            color_mapping = {
+                             value = unlist(value)
                              col_lev = unique(x@meta_data[[x@color_by]])
                              if(is.null(names(value))){
                                if(length(value) >= length(col_lev)){
@@ -306,7 +307,7 @@ QcConfigFeatures.null = function(){
 #' @examples
 #' np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
 #' object = QcConfigFeatures.files(np_files)
-#' object
+#' plot(object)
 QcConfigFeatures.files = function(file_paths,
                                   group_names = NULL,
                                   groups = NULL,
@@ -321,8 +322,13 @@ QcConfigFeatures.files = function(file_paths,
     groups = seq_along(file_paths)
   }
   if(is.null(group_names)){
-    group_names = LETTERS[seq_along(unique(groups))]
-  }
+    if(!any(duplicated(basename(file_paths)))){
+      group_names = basename(file_paths)
+    }else{
+      group_names = LETTERS[seq_along(unique(groups))]  
+      message("non-unique file basenames, resorting to A,B,C... names.")
+    }
+  }  
   if(is.null(group_colors)){
     group_colors = seqsetvis::safeBrew(length(group_names))
   }
@@ -412,5 +418,4 @@ QcConfigFeatures.parse = function(feature_config_file,
                      process_features = process_features)
   }
   do.call(tfun, c(list(config_dt = peak_config_dt), cfg_vals))
-  
 }

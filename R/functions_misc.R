@@ -327,3 +327,19 @@ parse_fetch_options = function(fop){
   
   cfg_vals
 }
+
+.test_suff = function(files, suff){
+  sapply(files, function(f){
+    any(sapply(suff, function(s){
+      grepl(paste0(s, "$"), f)
+    }))
+  })
+}
+
+is_feature_file = function(files, suff = getOption("SQC_FEATURE_FILE_SUFF", c("narrowPeak", "broadPeak", "bed", "txt", "tab"))){
+  .test_suff(files, suff)
+}
+
+is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam", "bigwig", "bw", "bigWig", "BigWig"))){
+  .test_suff(files, suff)
+}

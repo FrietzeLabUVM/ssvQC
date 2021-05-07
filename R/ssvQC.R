@@ -59,27 +59,15 @@ setMethod("initialize","ssvQC", function(.Object,...){
 #' 
 #' sqc.feature = ssvQC(feature_config = feature_config)
 #' 
-#' ssvQC.runAll(sqc.complete)
 #' ssvQC.runAll(sqc.signal)
 #' ssvQC.runAll(sqc.feature)
 #' 
-#' sqc = sqc.complete
-#' object = sqc
 #' 
-#' sqc = ssvQC.prepMappedReads(sqc)
+#' sqc.complete = ssvQC.runAll(sqc.complete)
 #' 
-#' p_reads = ssvQC.plotMappedReads(sqc)
-#' 
-#' sqc = ssvQC.prepSignal(sqc)
-#' sqc = ssvQC.prepSCC(sqc)
-#' sqc = ssvQC.prepFRIP(sqc)
-#' 
-#' sqc = ssvQC.plotFeatures(sqc)
-#' sqc = ssvQC.plotSignal(sqc)
-#' sqc = ssvQC.plotSCC(sqc)
-#' sqc = ssvQC.plotFRIP(sqc)
-#' object = sqc
-#' sqc@plots
+#' pdf("tmp.pdf")
+#' sqc.complete$plots
+#' dev.off()
 #' mp = lapply(sqc@plots, function(x){x[[1]][[1]]})
 #' cowplot::plot_grid(plotlist = mp)
 #' sqc@other_data
@@ -93,9 +81,13 @@ ssvQC = function(feature_config = NULL,
   
   if(!is.null(feature_config)){
     if(is.character(feature_config)){
-      if(file.exists(feature_config)){
+      if(!any(is_feature_file(feature_config))){
         feature_config = QcConfigFeatures.parse(feature_config)
+      }else{
+        feature_config = QcConfigFeatures.files(feature_config)
       }
+    }else if(is.data.frame(feature_config)){
+      feature_config = QcConfigFeatures(feature_config)
     }
     if(!"QcConfigFeatures" %in% class(feature_config)){
       stop("feature_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
@@ -104,9 +96,13 @@ ssvQC = function(feature_config = NULL,
   }
   if(!is.null(signal_config)){
     if(is.character(signal_config)){
-      if(file.exists(signal_config)){
+      if(!any(is_signal_file(signal_config))){
         signal_config = QcConfigSignal.parse(signal_config)
+      }else{
+        signal_config = QcConfigSignal.files(signal_config)
       }
+    }else if(is.data.frame(signal_config)){
+      signal_config = QcConfigSignal(signal_config)
     }
     if(!"QcConfigSignal" %in% class(signal_config)){
       stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
@@ -173,13 +169,22 @@ ssvQC = function(feature_config = NULL,
 #' @examples
 setGeneric("ssvQC.runAll", function(object){standardGeneric("ssvQC.runAll")})
 setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
-  message("complete")
+  object = ssvQC.plotMappedReads(object)
+  
+  object = ssvQC.plotFeatures(object)
+  
+  object = ssvQC.plotSignal(object)
+  object = ssvQC.plotSCC(object)
+  object = ssvQC.plotFRIP(object)
+  object
 })
 setMethod("ssvQC.runAll", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
+  object = ssvQC.plotFeatures(object)
+  object
 })
 setMethod("ssvQC.runAll", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
+  object = ssvQC.plotMappedReads(object)
+  object
 })
 
 ##MappedReads
@@ -218,6 +223,41 @@ setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
   object
 })
 
+.ssvQC.plotMappedReads = function(object){
+  todo = .make_query_signal_config(object@signal_config)
+  plots = lapply(todo, function(sig_config){
+    if(grepl("bam", sig_config@read_mode)){
+      bam_config_dt = sig_config@meta_data
+      
+      if(is.null(bam_config_dt$mapped_reads)){
+        sig_config = ssvQC.prepMappedReads(sig_config)
+        object@signal_config = sig_config
+        bam_config_dt = sig_config@meta_data
+      }
+      
+      color_var = sig_config@color_by
+      group_var = sig_config@run_by
+      color_mapping = sig_config@color_mapping
+      
+      p_mapped_reads = ggplot(bam_config_dt, aes_string(x = "name_split", y = "mapped_reads", fill = color_var)) +
+        geom_bar(stat = "identity", position = "dodge", color = "black") +
+        scale_fill_manual(values = color_mapping) +
+        scale_y_continuous(labels = function(x)x/1e6) +
+        labs(y = "M mapped reads", fill = color_var, x= "") +
+        labs(title = "Mapped reads")
+      
+      if(is.null(object@plots$reads)) object@plots$reads = list()
+      
+    }else{
+      p_mapped_reads = ggplot() + theme_void() + labs(title = "Could not run mapped reads on non-bam")
+    }
+    p_mapped_reads
+  })
+  object@plots$reads = plots
+  
+  object
+}
+
 #' ssvQC.plotMappedReads
 #'
 #' @param object 
@@ -226,55 +266,13 @@ setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
 #' @export
 #'
 #' @examples
-setGeneric("ssvQC.plotMappedReads", function(object, out_dir){standardGeneric("ssvQC.plotMappedReads")})
-setMethod("ssvQC.plotMappedReads", "ssvQC.complete", function(object){
-  message("complete")
-  ssvQC.plotMappedReads(object@signal_config, ifelse(object@saving_enabled, object@out_dir, "SKIP_SAVING"))
-})
+setGeneric("ssvQC.plotMappedReads", function(object){standardGeneric("ssvQC.plotMappedReads")})
+setMethod("ssvQC.plotMappedReads", "ssvQC.complete", .ssvQC.plotMappedReads)
 setMethod("ssvQC.plotMappedReads", "ssvQC.featureOnly", function(object){
   stop("Cannot run mapped reads on ssvQC with no QcConfigSignal component")
   message("featureOnly")
 })
-setMethod("ssvQC.plotMappedReads", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
-  ssvQC.plotMappedReads(object@signal_config, ifelse(object@saving_enabled, object@out_dir, "SKIP_SAVING"))
-  
-})
-setMethod("ssvQC.plotMappedReads", c("QcConfigSignal"), function(object){
-  ssvQC.plotMappedReads(object, "SKIP_SAVING")
-})
-setMethod("ssvQC.plotMappedReads", c("QcConfigSignal", "character"), function(object, out_dir){
-  res_file = function(f)file.path(out_dir, f)
-  
-  #bam specific independent of peaks
-  if(grepl("bam", object@read_mode)){
-    
-    bam_config_dt = object@meta_data
-    if(is.null(bam_config_dt$mapped_reads)){
-      object = ssvQC.prepMappedReads(object)
-    }
-    
-    color_var = object@color_by
-    group_var = object@run_by
-    color_mapping = object@color_mapping
-    
-    theme_set(theme(panel.background = element_blank(), axis.text.x = element_text(size = 8)))
-    
-    p_mapped_reads = ggplot(bam_config_dt, aes_string(x = "mark", y = "mapped_reads", fill = color_var)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_manual(values = color_mapping) +
-      scale_y_continuous(labels = function(x)x/1e6) +
-      labs(y = "M mapped reads", fill = color_var, x= "") +
-      labs(title = "Mapped reads")
-    
-    
-    if(!out_dir == "SKIP_SAVING") ggsave(res_file("mapped_reads.pdf"), p_mapped_reads, width = 2+.5*nrow(bam_config_dt), height = 3)
-    p_mapped_reads
-  }else{
-    warning("Could not run mapped reads on ")
-    NULL
-  }
-})
+setMethod("ssvQC.plotMappedReads", "ssvQC.signalOnly", .ssvQC.plotMappedReads)
 
 ##FRIP
 #' ssvQC.prepFRIP
@@ -403,7 +401,7 @@ dbl_extract = function(in_list, key){
 
 single_extract = function(in_list, key){
   lapply(in_list, function(item_1){
-      item_1[[key]]
+    item_1[[key]]
   })
 }
 
@@ -572,6 +570,7 @@ setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
      length(feat_config$overlapped_features) == 0 |
      length(feat_config$assessment_features) == 0){
     object = ssvQC.prepFeatures(object)
+    feat_config = object@feature_config
   }
   
   
@@ -626,7 +625,6 @@ setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
   if(is.null(object@plots$features)){
     object@plots$features = list()
   }
-  
   object@plots$features$count = single_extract(feature_plots, "peak_count")
   object@plots$features$binary_heatmap = single_extract(feature_plots, "binary_heatmap")
   object@plots$features$UpSet = single_extract(feature_plots, "UpSet")
@@ -657,3 +655,47 @@ setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly"), function(object){
   ssvQC.plotFeatures(object, force_euler = FALSE)
 })
 setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly", "logical"), .plotFeatures)
+
+
+### $ Accessor
+setMethod("names", "ssvQC",
+          function(x)
+          {
+            c("plots", "signal_data", "signal_config", "features_config", "SCC", "FRIP")
+            
+          })
+
+
+setMethod("$", "ssvQC",
+          function(x, name)
+          {
+            switch (name,
+                    plots = x@plots,
+                    signal_data = x@signal_data,
+                    SCC = x@other_data$SCC,
+                    FRIP = x@other_data$FRIP,
+                    bfc = x@bfc,
+                    feature_config = x@feature_config,
+                    signal_config = x@signal_config
+                    
+            )
+          })
+
+setReplaceMethod("$", "ssvQC",
+                 function(x, name, value)
+                 {
+                   warn_msg = "This assignment is not supported.  No effect."
+                   switch (name,
+                           feature_config = {
+                             x@feature_config = value
+                           },
+                           signal_config = {
+                             x@signal_config = value
+                           },
+                           {warning(warn_msg)}
+                           
+                   )
+                   
+                   #TODO, some assignments may be appropriate
+                   x
+                 })

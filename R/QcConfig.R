@@ -1,12 +1,4 @@
-.onAttach <- function(libname, pkgname) {
-    packageStartupMessage("Attaching ssvQC version ",
-                          packageDescription("ssvQC")$Version, ".")
-    options("SQC_COLORS" = seqsetvis::safeBrew(8, "Dark2"))
-    options("SQC_CONSENSUS_N" = 1)
-    options("SQC_CONSENSUS_FRACTION" = 0)
-    options("SQC_VIEW_SIZE" = 3e3)
-    options("SQC_PROCESS_FEATURES" = TRUE)
-}
+
 # getOption("SQC_COLORS")
 
 #' QcConfig

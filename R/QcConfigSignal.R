@@ -190,7 +190,12 @@ QcConfigSignal.files = function(file_paths,
     groups = seq_along(file_paths)
   }
   if(is.null(group_names)){
-    group_names = LETTERS[seq_along(unique(groups))]
+    if(!any(duplicated(basename(file_paths)))){
+      group_names = basename(file_paths)
+    }else{
+      group_names = LETTERS[seq_along(unique(groups))]  
+      message("non-unique file basenames, resorting to A,B,C... names.")
+    }
   }
   if(is.null(group_colors)){
     group_colors = seqsetvis::safeBrew(length(group_names))
@@ -199,9 +204,19 @@ QcConfigSignal.files = function(file_paths,
     names(group_colors) = group_names
   }
   
+
+  
   config_df = data.frame(file = as.character(file_paths), group = group_names[groups], stringsAsFactors = FALSE)
   
-  QcConfigSignal(config_df, run_by = "group", color_mapping = group_colors)
+  config_df$name = basename(config_df$file)
+  config_df$name_split = gsub("[_\\.]", "\n", config_df$name)
+  
+  config_df$name = factor(config_df$name, levels = unique(config_df$name))
+  config_df$name_split = factor(config_df$name_split, levels = unique(config_df$name_split))
+  
+  config_df$All = "All"
+  
+  QcConfigSignal(config_df, run_by = "All", color_by = "group", color_mapping = group_colors)
 }
 
 get_fetch_fun = function(read_mode){
