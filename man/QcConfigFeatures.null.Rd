@@ -2,13 +2,16 @@
 % Please edit documentation in R/QcConfigFeatures.R
 \name{QcConfigFeatures.null}
 \alias{QcConfigFeatures.null}
-\title{Title}
+\title{QcConfigFeatures null placeholder}
 \usage{
 QcConfigFeatures.null()
 }
 \value{
-
+QcConfigFeatures object
 }
 \description{
-Title
+QcConfigFeatures null placeholder
+}
+\examples{
+QcConfigFeatures.null()
 }

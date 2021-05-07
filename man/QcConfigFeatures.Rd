@@ -20,24 +20,27 @@ QcConfigFeatures(
 )
 }
 \arguments{
-\item{config_df}{}
+\item{config_df}{data.frame defining configuration parameters. At a minimum,
+paths to valid files in either the first column or a column named "file".
+Additional columns defined by color_by and run_by parameters have a big
+impact on the configuration.}
 
-\item{run_by}{}
+\item{run_by}{character that defines the column of config_df that groups the features.  The default of "All" will simply group all features into a single comparison.}
 
-\item{color_by}{}
+\item{color_by}{character that defines the column of config_df that controls color mapping. The default of "file" will assign a unique color to every feature set.}
 
-\item{color_mapping}{}
+\item{color_mapping}{named character vector that maps values of color_by to valid R colors, i.e. "red" or "#FF0000".}
 
-\item{feature_load_FUN}{}
+\item{feature_load_FUN}{function that takes a vector of file paths and returns list of GRanges.}
 
-\item{n_peaks}{}
+\item{n_peaks}{Number of features to sample from full overlap of feature sets for use in fetching signal.}
 
-\item{consensus_fraction}{}
+\item{consensus_fraction}{number [0,1] to adjust number of overlap required for consensus dynamically.}
 
-\item{consensus_n}{}
+\item{consensus_n}{number from 1 to number of feature sets to statically set threshold for consensus.}
 }
 \value{
-
+QcConfigFeatures object
 }
 \description{
 QcConfigFeatures

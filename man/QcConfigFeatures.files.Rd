@@ -2,7 +2,7 @@
 % Please edit documentation in R/QcConfigFeatures.R
 \name{QcConfigFeatures.files}
 \alias{QcConfigFeatures.files}
-\title{QcConfigFeatures}
+\title{QcConfigFeatures for files}
 \usage{
 QcConfigFeatures.files(
   file_paths,
@@ -36,7 +36,7 @@ QcConfigFeatures.files(
 a QcConfigFeatures object
 }
 \description{
-QcConfigFeatures
+QcConfigFeatures for files
 }
 \examples{
 np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)

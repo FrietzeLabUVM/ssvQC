@@ -160,17 +160,8 @@ ssvQC = function(feature_config = NULL,
   out
 }
 
-#' ssvQC.runAll
-#' 
-#' Runs all appropriated ssvQC.prep* and ssvQC.plot* functions for the ssvQC object.
-#'
-#' @param object ssvQC object
-#'
-#' @return ssvQC object
 #' @export
-#' 
 #' @rdname ssvQC
-#' @examples
 setGeneric("ssvQC.runAll", function(object){standardGeneric("ssvQC.runAll")})
 setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
   object = ssvQC.plotMappedReads(object)
@@ -267,14 +258,8 @@ setMethod("ssvQC.plotMappedReads", "ssvQC.featureOnly", function(object){
 setMethod("ssvQC.plotMappedReads", "ssvQC.signalOnly", .ssvQC.plotMappedReads)
 
 ##FRIP
-#' ssvQC.prepFRIP
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.prepFRIP", function(object){standardGeneric("ssvQC.prepFRIP")})
 setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
   FRIP_data = lapply(object@feature_config$assessment_features, function(query_gr){
@@ -293,14 +278,8 @@ setMethod("ssvQC.prepFRIP", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
-#' ssvQC.plotFRIP
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.plotFRIP", function(object){standardGeneric("ssvQC.plotFRIP")})
 setMethod("ssvQC.plotFRIP", "ssvQC.complete", function(object){
   if(is.null(object@other_data$FRIP)){
@@ -334,14 +313,8 @@ setMethod("ssvQC.plotFRIP", "ssvQC.signalOnly", function(object){
 })
 
 ##SCC
-#' ssvQC.prepSCC
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.prepSCC", function(object){standardGeneric("ssvQC.prepSCC")})
 setMethod("ssvQC.prepSCC", "ssvQC.complete", function(object){
   SCC_data = lapply(object@feature_config$assessment_features, function(query_gr){
@@ -397,14 +370,8 @@ single_extract = function(in_list, key){
   })
 }
 
-#' ssvQC.plotSCC
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.plotSCC", function(object){standardGeneric("ssvQC.plotSCC")})
 setMethod("ssvQC.plotSCC", "ssvQC.complete", function(object){
   if(is.null(object@other_data$SCC)){
@@ -436,14 +403,8 @@ setMethod("ssvQC.plotSCC", "ssvQC.signalOnly", function(object){
 })
 
 ##Signal
-#' ssvQC.prepSignal
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
 setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
   object@signal_data = lapply(object@feature_config$assessment_features, function(query_gr){
@@ -465,14 +426,8 @@ setMethod("ssvQC.prepSignal", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
-#' ssvQC.plotSignal
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.plotSignal", function(object){standardGeneric("ssvQC.plotSignal")})
 setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
   if(length(object@signal_data) == 0){
@@ -535,14 +490,8 @@ setMethod("ssvQC.plotSignal", "ssvQC.signalOnly", function(object){
 })
 
 ### Features
-#' ssvQC.prepFeatures
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.prepFeatures", function(object){standardGeneric("ssvQC.prepFeatures")})
 setMethod("ssvQC.prepFeatures", "ssvQC.complete", function(object){
   object@feature_config = prepFeatures(object@feature_config)
@@ -626,14 +575,9 @@ setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
   object
 }
 
-#' ssvQC.plotFeatures
-#'
-#' @param object 
-#'
-#' @return
+#' @param force_euler If TRUE forces Euler plots to be generated for a list of feature sets longer than 8.  Euler plots can take quite a long time to generate as more feature sets are generated.
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.plotFeatures", function(object, force_euler){standardGeneric("ssvQC.plotFeatures")})
 
 setMethod("ssvQC.plotFeatures", c("ssvQC.complete"), function(object){

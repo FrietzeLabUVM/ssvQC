@@ -145,7 +145,6 @@ setReplaceMethod("$", "QcConfigFeatures",
 #' @param object 
 #'
 #' @return
-#' @export
 #'
 #' @examples
 prepFeatures = function(object){
@@ -180,16 +179,19 @@ prepFeatures = function(object){
 
 #' QcConfigFeatures
 #'
-#' @param config_df 
-#' @param run_by 
-#' @param color_by 
-#' @param color_mapping 
-#' @param feature_load_FUN 
-#' @param n_peaks 
-#' @param consensus_fraction 
-#' @param consensus_n 
+#' @param config_df data.frame defining configuration parameters. At a minimum,
+#'   paths to valid files in either the first column or a column named "file".
+#'   Additional columns defined by color_by and run_by parameters have a big
+#'   impact on the configuration.
+#' @param run_by character that defines the column of config_df that groups the features.  The default of "All" will simply group all features into a single comparison.
+#' @param color_by character that defines the column of config_df that controls color mapping. The default of "file" will assign a unique color to every feature set.
+#' @param color_mapping named character vector that maps values of color_by to valid R colors, i.e. "red" or "#FF0000". 
+#' @param feature_load_FUN function that takes a vector of file paths and returns list of GRanges.
+#' @param n_peaks Number of features to sample from full overlap of feature sets for use in fetching signal.
+#' @param consensus_fraction number [0,1] to adjust number of overlap required for consensus dynamically.
+#' @param consensus_n number from 1 to number of feature sets to statically set threshold for consensus.
 #'
-#' @return
+#' @return QcConfigFeatures object
 #' @export
 #'
 #' @examples
@@ -278,12 +280,13 @@ QcConfigFeatures = function(config_df,
   
 }
 
-#' Title
+#' QcConfigFeatures null placeholder
 #'
-#' @return
+#' @return QcConfigFeatures object
 #' @export
 #'
 #' @examples
+#' QcConfigFeatures.null()
 QcConfigFeatures.null = function(){
   qc = suppressWarnings({QcConfigFeatures(data.frame(file = "null"), process_features = FALSE)})
   qc@is_null = TRUE
@@ -291,7 +294,7 @@ QcConfigFeatures.null = function(){
 }
 
 
-#' QcConfigFeatures
+#' QcConfigFeatures for files
 #'
 #' @param file_paths character paths to files
 #' @param groups numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)

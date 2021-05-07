@@ -4,6 +4,15 @@
 \alias{ssvQC}
 \alias{ssvQC.runAll}
 \alias{ssvQC.prepMappedReads}
+\alias{ssvQC.plotMappedReads}
+\alias{ssvQC.prepFRIP}
+\alias{ssvQC.plotFRIP}
+\alias{ssvQC.prepSCC}
+\alias{ssvQC.plotSCC}
+\alias{ssvQC.prepSignal}
+\alias{ssvQC.plotSignal}
+\alias{ssvQC.prepFeatures}
+\alias{ssvQC.plotFeatures}
 \title{ssvQC}
 \usage{
 ssvQC(
@@ -17,6 +26,24 @@ ssvQC(
 ssvQC.runAll(object)
 
 ssvQC.prepMappedReads(object)
+
+ssvQC.plotMappedReads(object)
+
+ssvQC.prepFRIP(object)
+
+ssvQC.plotFRIP(object)
+
+ssvQC.prepSCC(object)
+
+ssvQC.plotSCC(object)
+
+ssvQC.prepSignal(object)
+
+ssvQC.plotSignal(object)
+
+ssvQC.prepFeatures(object)
+
+ssvQC.plotFeatures(object, force_euler)
 }
 \arguments{
 \item{feature_config}{Controls features configuration.  May be a:
@@ -34,15 +61,13 @@ to QcConfigSignal.}
 \item{bfc}{BiocFileCache object to use for caching. If NULL, default
 BiocFileCache::BiocFileCache() will be used.}
 
-\item{object}{ssvQC object}
+\item{force_euler}{If TRUE forces Euler plots to be generated for a list of feature sets longer than 8.  Euler plots can take quite a long time to generate as more feature sets are generated.}
 }
 \value{
 A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods ssvQC.plot*.
-
-ssvQC object
 }
 \description{
-Runs all appropriated ssvQC.prep\* and ssvQC.plot\* functions for the ssvQC object.
+ssvQC
 }
 \examples{
 options(mc.cores = 10)
