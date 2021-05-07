@@ -63,6 +63,8 @@ sqc = ssvQC.prepSignal(sqc)
 sqc = ssvQC.prepSCC(sqc)
 sqc = ssvQC.prepFRIP(sqc)
 
+sqc = ssvQC.plotFeatures(sqc)
+sqc = ssvQC.plotSignal(sqc)
 sqc = ssvQC.plotSCC(sqc)
 sqc = ssvQC.plotFRIP(sqc)
 object = sqc

@@ -74,6 +74,8 @@ setMethod("initialize","ssvQC", function(.Object,...){
 #' sqc = ssvQC.prepSCC(sqc)
 #' sqc = ssvQC.prepFRIP(sqc)
 #' 
+#' sqc = ssvQC.plotFeatures(sqc)
+#' sqc = ssvQC.plotSignal(sqc)
 #' sqc = ssvQC.plotSCC(sqc)
 #' sqc = ssvQC.plotFRIP(sqc)
 #' object = sqc
@@ -276,39 +278,6 @@ setMethod("ssvQC.plotMappedReads", c("QcConfigSignal", "character"), function(ob
   }
 })
 
-##Signal
-#' ssvQC.prepSignal
-#'
-#' @param object 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
-setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
-  message("complete")
-  object@signal_data = lapply(object@feature_config$assessment_features, function(query_gr){
-    sig_configs = .make_query_signal_config(object@signal_config)
-    lapply(sig_configs, function(sel_sig_config){
-      ClusteredSignal.fromConfig(sel_sig_config, 
-                                 query_gr, 
-                                 signal_var = "y", 
-                                 facet_var = "name_split", 
-                                 extra_var = union(object@signal_config@color_by, object@signal_config@run_by))
-    })
-  })
-  object
-})
-setMethod("ssvQC.prepSignal", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
-})
-setMethod("ssvQC.prepSignal", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
-})
-
 ##FRIP
 #' ssvQC.prepFRIP
 #'
@@ -364,9 +333,13 @@ setMethod("ssvQC.plotFRIP", "ssvQC.complete", function(object){
   
   plots = dbl_lapply(FRIP_data, wrap_plot_frip_dt, dbl_names)
   
-  object@plots$reads_per_peak = dbl_extract(plots, "reads_per_peaks")
-  object@plots$FRIP_per_peak = dbl_extract(plots, "frip_per_peaks")
-  object@plots$FRIP_total = dbl_extract(plots, "frip_total")
+  if(is.null(object@plots$FRIP)){
+    object@plots$FRIP = list()
+  }
+  
+  object@plots$FRIP$reads_per_peak = dbl_extract(plots, "reads_per_peaks")
+  object@plots$FRIP$per_peak = dbl_extract(plots, "frip_per_peaks")
+  object@plots$FRIP$total = dbl_extract(plots, "frip_total")
   object
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.featureOnly", function(object){
@@ -439,6 +412,12 @@ dbl_extract = function(in_list, key){
   })
 }
 
+single_extract = function(in_list, key){
+  lapply(in_list, function(item_1){
+      item_1[[key]]
+  })
+}
+
 #' ssvQC.plotSCC
 #'
 #' @param object 
@@ -463,8 +442,12 @@ setMethod("ssvQC.plotSCC", "ssvQC.complete", function(object){
   SCC_dots = dbl_extract(SCC_plots, "scc_dots")
   SCC_curves = dbl_extract(SCC_plots, "scc_curves")
   
-  object@plots$SCC_dots = SCC_dots
-  object@plots$SCC_curves = SCC_curves
+  if(is.null(object@plots$SCC)){
+    object@plots$SCC = list()
+  }
+  
+  object@plots$SCC$dots = SCC_dots
+  object@plots$SCC$curves = SCC_curves
   object
 })
 setMethod("ssvQC.plotSCC", "ssvQC.featureOnly", function(object){
@@ -476,5 +459,225 @@ setMethod("ssvQC.plotSCC", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
+##Signal
+#' ssvQC.prepSignal
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
+setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+  message("complete")
+  object@signal_data = lapply(object@feature_config$assessment_features, function(query_gr){
+    sig_configs = .make_query_signal_config(object@signal_config)
+    lapply(sig_configs, function(sel_sig_config){
+      ClusteredSignal.fromConfig(sel_sig_config, 
+                                 query_gr, 
+                                 signal_var = "y", 
+                                 facet_var = "name_split", 
+                                 extra_var = union(object@signal_config@color_by, object@signal_config@run_by))
+    })
+  })
+  object
+})
+setMethod("ssvQC.prepSignal", "ssvQC.featureOnly", function(object){
+  message("featureOnly")
+  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.prepSignal", "ssvQC.signalOnly", function(object){
+  message("signalOnly")
+  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+})
 
+#' ssvQC.plotSignal
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setGeneric("ssvQC.plotSignal", function(object){standardGeneric("ssvQC.plotSignal")})
+setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
+  message("complete")
+  if(length(object@signal_data) == 0){
+    stop("ssvQC.prepSignal has not been called.")
+  }
+  signal_data = object@signal_data
+  sig_dt = signal_data[[1]][[1]]
+  sig_config = object@signal_config
+  
+  wrap_plot_signal_dt = function(sig_dt, main_title = NULL){
+    is_bam = grepl("bam", sig_config@read_mode)
+    value_label = ifelse(is_bam, "read\npileup", "bigWig\nsignal")
+    x_label =  paste(sig_config@view_size, "bp view")
+    extra_vars = unique(c(sig_config@color_by, sig_config@run_by, "name_split"))
+    
+    p_heatmap = seqsetvis::ssvSignalHeatmap.ClusterBars(sig_dt@signal_data, facet_ = "name_split", rel_widths = c(1, 20),
+                                                        FUN_format_heatmap = function(p){
+                                                          p + labs(x = x_label, fill = value_label, title = main_title)
+                                                        })
+    sig_dt.agg = sig_dt@signal_data[, .(y = mean(y)), c("x", extra_vars)]
+    sig_dt.agg_per_cluster = sig_dt@signal_data[, .(y = mean(y)), c("x", "cluster_id", extra_vars)]
+    
+    p_line = ggplot(sig_dt.agg, aes_string(x = "x", y = "y", color = sig_config@color_by, group = "name_split")) +
+      geom_path() +
+      facet_grid(paste0(".~", sig_config@run_by)) +
+      labs(x = x_label, y = value_label, subtitle = "mean at assessed features", title = main_title) +
+      scale_color_manual(values = sig_config@color_mapping)
+    
+    p_heatmap.line = ggplot(sig_dt.agg_per_cluster, aes_string(x = "x", y = "y", color = sig_config@color_by, group = "name_split")) +
+      geom_path() +
+      facet_grid(paste0("cluster_id~", sig_config@run_by)) +
+      labs(x = x_label, y = value_label, subtitle = "mean per cluster", title = main_title)+
+      scale_color_manual(values = sig_config@color_mapping)
+    return(list(
+      heatmap = p_heatmap,
+      heatmap.lines = p_heatmap.line,
+      lines = p_line
+    ))
+  }
+  
+  signal_plots = dbl_lapply(signal_data, FUN = wrap_plot_signal_dt, FUN_names = dbl_names)
+  signal_heatmaps = dbl_extract(signal_plots, "heatmap")
+  signal_heatmaps.lines = dbl_extract(signal_plots, "heatmap.lines")
+  signal_lines = dbl_extract(signal_plots, "lines")
+  
+  if(is.null(object@plots$signal)){
+    object@plots$signal = list()
+  }
+  
+  object@plots$signal$heatmaps = signal_heatmaps
+  object@plots$signal$heatmaps.lines = signal_heatmaps.lines
+  object@plots$signal$lines = signal_lines
+  object
+})
+setMethod("ssvQC.plotSignal", "ssvQC.featureOnly", function(object){
+  message("featureOnly")
+  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.plotSignal", "ssvQC.signalOnly", function(object){
+  message("signalOnly")
+  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+})
 
+### Features
+#' ssvQC.prepFeatures
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setGeneric("ssvQC.prepFeatures", function(object){standardGeneric("ssvQC.prepFeatures")})
+setMethod("ssvQC.prepFeatures", "ssvQC.complete", function(object){
+  message("complete")
+  object@feature_config = prepFeatures(object@feature_config)
+  object
+})
+setMethod("ssvQC.prepFeatures", "ssvQC.featureOnly", function(object){
+  message("featureOnly")
+  object@feature_config = prepFeatures(object@feature_config)
+  object
+})
+setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
+  message("signalOnly")
+  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+})
+
+.plotFeatures = function(object, force_euler = FALSE){
+  feat_config = object@feature_config
+  if(length(feat_config$loaded_features) == 0 |
+     length(feat_config$overlapped_features) == 0 |
+     length(feat_config$assessment_features) == 0){
+    stop("ssvQC.prepFeatures has not been called.")
+  }
+  
+  
+  feature_plots =lapply(names(feat_config$loaded_features), function(feat_nam){
+    feat_nam = names(feat_config$loaded_features)
+    feat_label = sub("_features", " features", feat_nam)
+    peak_grs = feat_config$loaded_features[[feat_nam]]
+    peak_dt = data.table(N = lengths(peak_grs), name_split = names(peak_grs))
+    peak_dt = merge(peak_dt, feat_config@meta_data, by = "name_split")
+    
+    out = list()
+    
+    p_peak_count = ggplot(peak_dt, aes_string(x = "name_split", y = "N", fill = feat_config@color_by)) +
+      geom_bar(stat = "identity", color = "black") +
+      scale_fill_manual(values = feat_config@color_mapping) +
+      labs(x = "", y = "feature count", title = feat_label)
+    
+    olap_gr = feat_config$overlapped_features[[feat_nam]]
+    n_feature_sets = ncol(mcols(olap_gr))
+    
+    p_binary_heatmap = seqsetvis::ssvFeatureBinaryHeatmap(olap_gr)
+    p_upset = seqsetvis::ssvFeatureUpset(olap_gr)
+    
+    if(n_feature_sets < 4){
+      p_venn = seqsetvis::ssvFeatureVenn(olap_gr, circle_colors = feat_config@color_mapping[peak_dt[[feat_config@color_by]]])  
+      
+    }else{
+      venn_msg = "Venn diagrams not supported for more than 3 feature sets."
+      p_venn = ggplot() + theme_void() + labs(title = venn_msg)
+      message(venn_msg)
+    }
+    
+    if(n_feature_sets < 9 | force_euler){
+      p_euler = seqsetvis::ssvFeatureEuler(olap_gr, circle_colors = feat_config@color_mapping[peak_dt[[feat_config@color_by]]])  
+      
+    }else{
+      euler_msg = "Euler diagrams not generated for more than 8 feature sets by default due to slow computation speed.  You may override this behavior by calling ssvQC.plotFeatures with force_euler = TRUE."
+      p_euler = ggplot() + theme_void() + labs(title = euler_msg)
+      message(euler_msg)
+    }
+    
+    out$peak_count = p_peak_count
+    out$binary_heatmap = p_binary_heatmap
+    out$UpSet = p_upset
+    out$venn = p_venn
+    out$euler = p_euler
+    
+    out
+  })
+  names(feature_plots) = names(feat_config$loaded_features)
+  
+  if(is.null(object@plots$features)){
+    object@plots$features = list()
+  }
+  
+  object@plots$features$count = single_extract(feature_plots, "peak_count")
+  object@plots$features$binary_heatmap = single_extract(feature_plots, "binary_heatmap")
+  object@plots$features$UpSet = single_extract(feature_plots, "UpSet")
+  object@plots$features$venn = single_extract(feature_plots, "venn")
+  object@plots$features$euler = single_extract(feature_plots, "euler")
+  
+  object
+}
+
+#' ssvQC.plotFeatures
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setGeneric("ssvQC.plotFeatures", function(object, force_euler){standardGeneric("ssvQC.plotFeatures")})
+
+setMethod("ssvQC.plotFeatures", c("ssvQC.complete"), function(object){
+  ssvQC.plotFeatures(object, force_euler = FALSE)
+})
+setMethod("ssvQC.plotFeatures", c("ssvQC.complete", "logical"), .plotFeatures)
+setMethod("ssvQC.plotFeatures", "ssvQC.signalOnly", function(object){
+  message("signalOnly")
+  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+})
+setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly"), function(object){
+  ssvQC.plotFeatures(object, force_euler = FALSE)
+})
+setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly", "logical"), .plotFeatures)
