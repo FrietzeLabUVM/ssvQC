@@ -241,11 +241,9 @@ setMethod("ssvQC.plotMappedReads", "ssvQC.signalOnly", function(object){
   
 })
 setMethod("ssvQC.plotMappedReads", c("QcConfigSignal"), function(object){
-  message("QcConfigSignal")
   ssvQC.plotMappedReads(object, "SKIP_SAVING")
 })
 setMethod("ssvQC.plotMappedReads", c("QcConfigSignal", "character"), function(object, out_dir){
-  message("QcConfigSignal, character")
   res_file = function(f)file.path(out_dir, f)
   
   #bam specific independent of peaks
@@ -253,7 +251,7 @@ setMethod("ssvQC.plotMappedReads", c("QcConfigSignal", "character"), function(ob
     
     bam_config_dt = object@meta_data
     if(is.null(bam_config_dt$mapped_reads)){
-      stop("ssvQC.prepMappedReads has not been called.")
+      object = ssvQC.prepMappedReads(object)
     }
     
     color_var = object@color_by
@@ -289,7 +287,6 @@ setMethod("ssvQC.plotMappedReads", c("QcConfigSignal", "character"), function(ob
 #' @examples
 setGeneric("ssvQC.prepFRIP", function(object){standardGeneric("ssvQC.prepFRIP")})
 setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
-  message("complete")
   FRIP_data = lapply(object@feature_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){
@@ -300,11 +297,9 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.prepFRIP", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.prepFRIP", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
@@ -318,9 +313,8 @@ setMethod("ssvQC.prepFRIP", "ssvQC.signalOnly", function(object){
 #' @examples
 setGeneric("ssvQC.plotFRIP", function(object){standardGeneric("ssvQC.plotFRIP")})
 setMethod("ssvQC.plotFRIP", "ssvQC.complete", function(object){
-  message("complete")
   if(is.null(object@other_data$FRIP)){
-    stop("ssvQC.prepFRIP has not been called.")
+    object = ssvQC.prepFRIP(object)
   }
   FRIP_data = object@other_data$FRIP
   
@@ -343,11 +337,9 @@ setMethod("ssvQC.plotFRIP", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
@@ -362,7 +354,6 @@ setMethod("ssvQC.plotFRIP", "ssvQC.signalOnly", function(object){
 #' @examples
 setGeneric("ssvQC.prepSCC", function(object){standardGeneric("ssvQC.prepSCC")})
 setMethod("ssvQC.prepSCC", "ssvQC.complete", function(object){
-  message("complete")
   SCC_data = lapply(object@feature_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){
@@ -373,11 +364,9 @@ setMethod("ssvQC.prepSCC", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.prepSCC", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.prepSCC", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
@@ -428,9 +417,8 @@ single_extract = function(in_list, key){
 #' @examples
 setGeneric("ssvQC.plotSCC", function(object){standardGeneric("ssvQC.plotSCC")})
 setMethod("ssvQC.plotSCC", "ssvQC.complete", function(object){
-  message("complete")
   if(is.null(object@other_data$SCC)){
-    stop("ssvQC.prepSCC has not been called.")
+    object = ssvQC.prepSCC(object)
   }
   SCC_data = object@other_data$SCC
   
@@ -451,11 +439,9 @@ setMethod("ssvQC.plotSCC", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.plotSCC", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.plotSCC", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
@@ -470,7 +456,6 @@ setMethod("ssvQC.plotSCC", "ssvQC.signalOnly", function(object){
 #' @examples
 setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
 setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
-  message("complete")
   object@signal_data = lapply(object@feature_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){
@@ -484,11 +469,9 @@ setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.prepSignal", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.prepSignal", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
@@ -502,9 +485,8 @@ setMethod("ssvQC.prepSignal", "ssvQC.signalOnly", function(object){
 #' @examples
 setGeneric("ssvQC.plotSignal", function(object){standardGeneric("ssvQC.plotSignal")})
 setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
-  message("complete")
   if(length(object@signal_data) == 0){
-    stop("ssvQC.prepSignal has not been called.")
+    object = ssvQC.prepSignal(object)
   }
   signal_data = object@signal_data
   sig_dt = signal_data[[1]][[1]]
@@ -556,11 +538,9 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.plotSignal", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.plotSignal", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
@@ -575,17 +555,14 @@ setMethod("ssvQC.plotSignal", "ssvQC.signalOnly", function(object){
 #' @examples
 setGeneric("ssvQC.prepFeatures", function(object){standardGeneric("ssvQC.prepFeatures")})
 setMethod("ssvQC.prepFeatures", "ssvQC.complete", function(object){
-  message("complete")
   object@feature_config = prepFeatures(object@feature_config)
   object
 })
 setMethod("ssvQC.prepFeatures", "ssvQC.featureOnly", function(object){
-  message("featureOnly")
   object@feature_config = prepFeatures(object@feature_config)
   object
 })
 setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 
@@ -594,7 +571,7 @@ setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
   if(length(feat_config$loaded_features) == 0 |
      length(feat_config$overlapped_features) == 0 |
      length(feat_config$assessment_features) == 0){
-    stop("ssvQC.prepFeatures has not been called.")
+    object = ssvQC.prepFeatures(object)
   }
   
   
@@ -674,7 +651,6 @@ setMethod("ssvQC.plotFeatures", c("ssvQC.complete"), function(object){
 })
 setMethod("ssvQC.plotFeatures", c("ssvQC.complete", "logical"), .plotFeatures)
 setMethod("ssvQC.plotFeatures", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
 })
 setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly"), function(object){
