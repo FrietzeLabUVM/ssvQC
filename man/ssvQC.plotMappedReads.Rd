@@ -4,7 +4,7 @@
 \alias{ssvQC.plotMappedReads}
 \title{ssvQC.plotMappedReads}
 \usage{
-ssvQC.plotMappedReads(object, out_dir)
+ssvQC.plotMappedReads(object)
 }
 \arguments{
 \item{object}{}

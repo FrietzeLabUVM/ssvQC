@@ -41,5 +41,5 @@ QcConfigFeatures
 \examples{
 np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
 object = QcConfigFeatures.files(np_files)
-object
+plot(object)
 }

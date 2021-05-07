@@ -196,7 +196,7 @@ prepFeatures = function(object){
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' config_df = .parse_config_body(feature_config_file)
 #' config_df$file = file.path(system.file(package = "ssvQC", "extdata"), config_df$file)
-#' object = QcConfigFeatures(config_df, process_features = TRUE)
+#' feature_conf = QcConfigFeatures(config_df, process_features = TRUE)
 QcConfigFeatures = function(config_df,
                             run_by = "All",
                             to_run = NULL,

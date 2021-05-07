@@ -38,9 +38,9 @@ QcConfigSignal
 \examples{
 bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 bam_config_df = .parse_config_body(bam_config_file)
-QcConfigSignal(bam_config_df)
+sig_conf = QcConfigSignal(bam_config_df)
 
 bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 bigwig_config_df = .parse_config_body(bigwig_config_file)
-QcConfigSignal(bigwig_config_df)
+sig_conf.bw = QcConfigSignal(bigwig_config_df)
 }

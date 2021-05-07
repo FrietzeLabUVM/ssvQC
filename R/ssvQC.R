@@ -28,53 +28,54 @@ setMethod("initialize","ssvQC", function(.Object,...){
 
 #' ssvQC
 #'
-#' @param feature_config 
-#' @param signal_config 
-#' @param out_dir 
-#' @param bfc 
+#' @param feature_config Controls features configuration.  May be a:
+#'   QcConfigFeatures object, path to a file defining configuration via
+#'   QcConfigFeatures.parse, features files to define via
+#'   QcConfigFeatures.files, or a data.frame to pass to QcConfigFeatures.
+#' @param signal_config Controls signal configuration.  May be a: QcConfigSignal
+#'   object, path to a file defining configuration via QcConfigSignal.parse,
+#'   features files to define via QcConfigSignal.files, or a data.frame to pass
+#'   to QcConfigSignal.
+#' @param out_dir NYI
+#' @param bfc BiocFileCache object to use for caching. If NULL, default
+#'   BiocFileCache::BiocFileCache() will be used.
 #'
-#' @return
+#' @return A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods ssvQC.plot*.
 #' @export
 #' @import BiocFileCache
-#'
+#' 
+#' @rdname ssvQC
 #' @examples
 #' options(mc.cores = 10)
 #' set.seed(0)
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' feature_config = QcConfigFeatures.parse(feature_config_file)
-#' 
+#'
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' bam_config = QcConfigSignal.parse(bam_config_file)
-#' 
+#'
 #' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 #' bigwig_config = QcConfigSignal.parse(bigwig_config_file)
-#' 
+#'
 #' sqc.complete.file = ssvQC(feature_config_file, bam_config_file)
-#' 
+#'
 #' sqc.complete = ssvQC(feature_config, bam_config)
-#' 
+#'
 #' sqc.complete.bw = ssvQC(feature_config, bigwig_config_file)
-#' 
+#'
 #' sqc.signal = ssvQC(signal_config = bam_config)
-#' 
+#'
 #' sqc.feature = ssvQC(feature_config = feature_config)
-#' 
+#'
 #' ssvQC.runAll(sqc.signal)
 #' ssvQC.runAll(sqc.feature)
-#' 
-#' 
+#'
 #' sqc.complete = ssvQC.runAll(sqc.complete)
-#' 
-#' pdf("tmp.pdf")
-#' sqc.complete$plots
-#' dev.off()
-#' mp = lapply(sqc@plots, function(x){x[[1]][[1]]})
-#' cowplot::plot_grid(plotlist = mp)
-#' sqc@other_data
 ssvQC = function(feature_config = NULL,
                  signal_config = NULL,
                  out_dir = getwd(),
-                 bfc = NULL){
+                 bfc = NULL, 
+                 ...){
   if(is.null(feature_config) & is.null(signal_config)){
     stop("At least one of feature_config or signal_config must be specified.")
   }
@@ -87,7 +88,7 @@ ssvQC = function(feature_config = NULL,
         feature_config = QcConfigFeatures.files(feature_config)
       }
     }else if(is.data.frame(feature_config)){
-      feature_config = QcConfigFeatures(feature_config)
+      feature_config = QcConfigFeatures(feature_config, ...)
     }
     if(!"QcConfigFeatures" %in% class(feature_config)){
       stop("feature_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
@@ -102,7 +103,7 @@ ssvQC = function(feature_config = NULL,
         signal_config = QcConfigSignal.files(signal_config)
       }
     }else if(is.data.frame(signal_config)){
-      signal_config = QcConfigSignal(signal_config)
+      signal_config = QcConfigSignal(signal_config, ...)
     }
     if(!"QcConfigSignal" %in% class(signal_config)){
       stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
@@ -159,13 +160,16 @@ ssvQC = function(feature_config = NULL,
   out
 }
 
-#' Title
+#' ssvQC.runAll
+#' 
+#' Runs all appropriated ssvQC.prep* and ssvQC.plot* functions for the ssvQC object.
 #'
-#' @param object 
+#' @param object ssvQC object
 #'
-#' @return
+#' @return ssvQC object
 #' @export
-#'
+#' 
+#' @rdname ssvQC
 #' @examples
 setGeneric("ssvQC.runAll", function(object){standardGeneric("ssvQC.runAll")})
 setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
@@ -189,14 +193,8 @@ setMethod("ssvQC.runAll", "ssvQC.signalOnly", function(object){
 
 ##MappedReads
 
-#' ssvQC.prepMappedReads
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.prepMappedReads", function(object){standardGeneric("ssvQC.prepMappedReads")})
 setMethod("ssvQC.prepMappedReads", "ssvQC.complete", function(object){
   message("complete")
@@ -258,14 +256,8 @@ setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
   object
 }
 
-#' ssvQC.plotMappedReads
-#'
-#' @param object 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC
 setGeneric("ssvQC.plotMappedReads", function(object){standardGeneric("ssvQC.plotMappedReads")})
 setMethod("ssvQC.plotMappedReads", "ssvQC.complete", .ssvQC.plotMappedReads)
 setMethod("ssvQC.plotMappedReads", "ssvQC.featureOnly", function(object){

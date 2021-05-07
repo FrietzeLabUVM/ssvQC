@@ -2,29 +2,47 @@
 % Please edit documentation in R/ssvQC.R
 \name{ssvQC}
 \alias{ssvQC}
+\alias{ssvQC.runAll}
+\alias{ssvQC.prepMappedReads}
 \title{ssvQC}
 \usage{
 ssvQC(
   feature_config = NULL,
   signal_config = NULL,
   out_dir = getwd(),
-  bfc = NULL
+  bfc = NULL,
+  ...
 )
+
+ssvQC.runAll(object)
+
+ssvQC.prepMappedReads(object)
 }
 \arguments{
-\item{feature_config}{}
+\item{feature_config}{Controls features configuration.  May be a:
+QcConfigFeatures object, path to a file defining configuration via
+QcConfigFeatures.parse, features files to define via
+QcConfigFeatures.files, or a data.frame to pass to QcConfigFeatures.}
 
-\item{signal_config}{}
+\item{signal_config}{Controls signal configuration.  May be a: QcConfigSignal
+object, path to a file defining configuration via QcConfigSignal.parse,
+features files to define via QcConfigSignal.files, or a data.frame to pass
+to QcConfigSignal.}
 
-\item{out_dir}{}
+\item{out_dir}{NYI}
 
-\item{bfc}{}
+\item{bfc}{BiocFileCache object to use for caching. If NULL, default
+BiocFileCache::BiocFileCache() will be used.}
+
+\item{object}{ssvQC object}
 }
 \value{
+A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods ssvQC.plot*.
 
+ssvQC object
 }
 \description{
-ssvQC
+Runs all appropriated ssvQC.prep\* and ssvQC.plot\* functions for the ssvQC object.
 }
 \examples{
 options(mc.cores = 10)
@@ -48,28 +66,8 @@ sqc.signal = ssvQC(signal_config = bam_config)
 
 sqc.feature = ssvQC(feature_config = feature_config)
 
-ssvQC.runAll(sqc.complete)
 ssvQC.runAll(sqc.signal)
 ssvQC.runAll(sqc.feature)
 
-sqc = sqc.complete
-object = sqc
-
-sqc = ssvQC.prepMappedReads(sqc)
-
-p_reads = ssvQC.plotMappedReads(sqc)
-
-sqc = ssvQC.prepSignal(sqc)
-sqc = ssvQC.prepSCC(sqc)
-sqc = ssvQC.prepFRIP(sqc)
-
-sqc = ssvQC.plotFeatures(sqc)
-sqc = ssvQC.plotSignal(sqc)
-sqc = ssvQC.plotSCC(sqc)
-sqc = ssvQC.plotFRIP(sqc)
-object = sqc
-sqc@plots
-mp = lapply(sqc@plots, function(x){x[[1]][[1]]})
-cowplot::plot_grid(plotlist = mp)
-sqc@other_data
+sqc.complete = ssvQC.runAll(sqc.complete)
 }
