@@ -2,7 +2,9 @@
 ' QcConfigSignal
 #'
 #' @slot view_size numeric.
-#'
+#' @slot read_mode character.
+#' @slot fetch_options list.
+#' @rdname QcConfigSignal
 #' @export
 #'
 setClass("QcConfigSignal", contains = "QcConfig",
@@ -24,7 +26,7 @@ setClass("QcConfigSignal", contains = "QcConfig",
 #'
 #' @return
 #' @export
-#'
+#' @rdname QcConfigSignal
 #' @examples
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' bam_config_df = .parse_config_body(bam_config_file)
@@ -118,7 +120,7 @@ QcConfigSignal.null = function(){
 #'
 #' @return
 #' @export
-#'
+#' @rdname QcConfigSignal
 #' @examples
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' QcConfigSignal.parse(bam_config_file)
@@ -180,7 +182,7 @@ QcConfigSignal.parse = function(signal_config_file){
 #'
 #' @return a QcConfigSignal object
 #' @export
-#'
+#' @rdname QcConfigSignal
 #' @examples
 #' bam_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "CTCF.+bam$", full.names = TRUE)
 #' QcConfigSignal.files(bam_files)
@@ -244,7 +246,7 @@ get_fetch_fun = function(read_mode){
 #'
 #' @return
 #' @export
-#'
+#' @rdname QcConfigSignal
 #' @examples
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' qc_signal = QcConfigSignal.parse(bam_config_file)
@@ -297,3 +299,30 @@ setMethod("split", signature = c("QcConfigSignal", "character", "logical"), defi
   split(x, factor(f, levels = unique(f)), FALSE)
 })
 
+#' Title
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#' @rdname QcConfigSignal
+#' @examples
+#' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+#' bam_config = QcConfigSignal.parse(bam_config_file)
+#'
+#' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
+#' bigwig_config = QcConfigSignal.parse(bigwig_config_file)
+QcConfigSignal.save_config = function(object, file){
+  slots_to_save = c(
+    "view_size",
+    "read_mode",
+    "run_by",
+    "to_run",
+    "to_run_reference",
+    "color_by",
+    "is_null"
+  )
+  kvp_slots = c("color_mapping", "fetch_options")
+  # QcConfigSignal.parse(file)
+  .save_config(object, file, slots_to_save, kvp_slots)
+}

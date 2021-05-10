@@ -5,7 +5,7 @@
 #' @slot n_peaks numeric.
 #' @slot consensus_fraction numeric.
 #' @slot consensus_n numeric.
-#'
+#' @rdname QcConfigFeatures
 #' @export
 setClass("QcConfigFeatures", contains = "QcConfig",
          representation = list(
@@ -145,7 +145,7 @@ setReplaceMethod("$", "QcConfigFeatures",
 #' @param object 
 #'
 #' @return
-#'
+#' @rdname QcConfigFeatures
 #' @examples
 prepFeatures = function(object){
   object@meta_data[[object@run_by]]
@@ -193,7 +193,7 @@ prepFeatures = function(object){
 #'
 #' @return QcConfigFeatures object
 #' @export
-#'
+#' @rdname QcConfigFeatures
 #' @examples
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' config_df = .parse_config_body(feature_config_file)
@@ -286,7 +286,7 @@ QcConfigFeatures = function(config_df,
 #'
 #' @return QcConfigFeatures object
 #' @export
-#'
+#' @rdname QcConfigFeatures
 #' @examples
 #' QcConfigFeatures.null()
 QcConfigFeatures.null = function(){
@@ -308,7 +308,7 @@ QcConfigFeatures.null = function(){
 #'
 #' @return a QcConfigFeatures object
 #' @export
-#'
+#' @rdname QcConfigFeatures
 #' @examples
 #' np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
 #' object = QcConfigFeatures.files(np_files)
@@ -377,7 +377,7 @@ QcConfigFeatures.files = function(file_paths,
 #'
 #' @return
 #' @export
-#'
+#' @rdname QcConfigFeatures
 #' @examples
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' object = QcConfigFeatures.parse(feature_config_file)
@@ -424,4 +424,34 @@ QcConfigFeatures.parse = function(feature_config_file,
                      is_null = is_null)
   }
   do.call(tfun, c(list(config_dt = peak_config_dt), cfg_vals))
+}
+
+
+#' Title
+#'
+#' @param object 
+#' @param file 
+#'
+#' @return
+#' @export
+#' @rdname QcConfigFeatures
+#' @examples
+#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#' feature_config = QcConfigFeatures.parse(feature_config_file)
+QcConfigFeatures.save_config = function(object, file){
+  slots_to_save = c(
+    "n_peaks",
+    "consensus_fraction",
+    "consensus_n",
+    "overlap_extension",
+    "run_by",
+    "to_run",
+    "to_run_reference",
+    "color_by",
+    "is_null"
+  )
+  
+  kvp_slots = "color_mapping"
+  # QcConfigFeatures.parse(file)
+  .save_config(object, file, slots_to_save, kvp_slots)
 }

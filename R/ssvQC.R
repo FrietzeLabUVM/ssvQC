@@ -26,64 +26,17 @@ setMethod("initialize","ssvQC", function(.Object,...){
   .Object
 })
 
-.save_config = function(object, file, slots_to_save, kvp_slots ){
-  hdr1 = sapply(slots_to_save, function(x){
-    val = slot(object, x)
-    ifelse(length(val) > 0,
-           paste0("#CFG ", x, "=", val),
-           character())
-  })
-  hdr1 = hdr1[!is.na(hdr1)]
-  
-  hdr2 = sapply(kvp_slots, function(x){
-    val = slot(object, x)
-    val = paste(names(val), val, sep = ":", collapse = ",")
-    ifelse(length(val) > 0,
-           paste0("#CFG ", x, "=", val),
-           character())
-  })
-  hdr2 = hdr2[!is.na(hdr2)]
-  
-  hdr3 = paste(colnames(object@meta_data), collapse = ",")
-  
-  
-  hdr = c(hdr1, hdr2, hdr3)
-  names(hdr) = NULL
-  
-  writeLines(hdr, file)
-  fwrite(object@meta_data, file, append = TRUE)
-  # QcConfigFeatures.parse(file)
-  invisible(file)
-}
 
 ssvQC.save_config = function(object){
   
 }
 
 
-QcConfig.save_config = function(object){
-  
-}
-QcConfigSignal.save_config = function(object){
-  
-}
-QcConfigFeatures.save_config = function(object, file){
-  slots_to_save = c(
-    "n_peaks",
-    "consensus_fraction",
-    "consensus_n",
-    "overlap_extension",
-    "run_by",
-    "to_run",
-    "to_run_reference",
-    "color_by",
-    "is_null"
-  )
-  
-  kvp_slots = "color_mapping"
-  
-  .save_config(object, file, slots_to_save, kvp_slots)
-}
+
+
+
+
+
 
 #' ssvQC
 #'

@@ -2,12 +2,9 @@
 % Please edit documentation in R/QcConfig.R
 \name{QcScaleColor}
 \alias{QcScaleColor}
-\alias{QcScaleColor,QcConfig-method}
 \title{QcScaleColor}
 \usage{
 QcScaleColor(object)
-
-\S4method{QcScaleColor}{QcConfig}(object)
 }
 \arguments{
 \item{object}{a QcConfig object}
@@ -17,16 +14,4 @@ a ggplot2 scale_fill_manual
 }
 \description{
 QcScaleColor
-
-QcScaleColor for QcConfig
-}
-\examples{
-my_df = data.frame(group = c("A", "B"))
-my_df$x = 1:2
-my_df$y = 1
-library(ggplot2)
-ggplot(my_df, aes(x = x, y = y, color = group)) +
-  geom_point(size = 20) +
-  expand_limits(x = c(0, 3)) +
-  QcScaleColor(QcConfig(my_df$group))
 }

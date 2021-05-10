@@ -7,7 +7,7 @@
 #' @slot groups numeric.
 #' @slot group_names character.
 #' @slot group_colors character.
-#'
+#' @rdname QcConfig
 #' @export
 setClass("QcConfig",
          representation = list(
@@ -37,6 +37,7 @@ setMethod("initialize","QcConfig", function(.Object,...){
 #' @return A QcConfig object
 #' @export
 #' @importFrom methods new
+#' @rdname QcConfig
 #' @examples
 #' QcConfig.files(c("A", "B"))
 QcConfig.files = function(file_paths,
@@ -75,13 +76,13 @@ QcConfig.files = function(file_paths,
 #'
 #' @return a named vector of colors
 #' @export
-#' @rdname QcColorMapping-methods
+#' @rdname QcConfig
 setGeneric("QcColorMapping", function(object){standardGeneric("QcColorMapping")})
 
 #' QcColorMapping for QcConfig
 #'
 #' @export
-#' @rdname QcColorMapping-methods
+#' @rdname QcConfig
 #' @aliases QcColorMapping,QcConfig-method
 #' @examples
 #' QcColorMapping(QcConfig(c("A", "B")))
@@ -104,7 +105,7 @@ setGeneric("QcScaleColor", function(object){standardGeneric("QcScaleColor")})
 #' QcScaleColor for QcConfig
 #'
 #' @export
-#' @rdname QcScaleColor-methods
+#' @rdname QcConfig
 #' @aliases QcScaleColor,QcConfig-method
 #' @examples
 #' my_df = data.frame(group = c("A", "B"))
@@ -126,14 +127,14 @@ setMethod("QcScaleColor", c("QcConfig"), function(object){
 #'
 #' @return a ggplot2 scale_fill_manual
 #' @export
-#' @rdname QcScaleFill-methods
+#' @rdname QcConfig
 setGeneric("QcScaleFill", function(object){standardGeneric("QcScaleFill")})
 
 #' QcScaleFill for QcConfig
 #'
 #' @export
-#' @rdname QcScaleFill-methods
 #' @aliases QcScaleFill,QcConfig-method
+#' @rdname QcConfig
 #' @examples
 #' my_df = data.frame(group = c("A", "B"))
 #' my_df$x = 1:2
@@ -200,7 +201,7 @@ setMethod("QcScaleFill", c("QcConfig"), function(object){
 #'
 #' @return
 #' @export
-#'
+#' @rdname QcConfig
 #' @examples
 setMethod("plot", "QcConfig", definition = function(x).plot_QcConfig(x))
 
@@ -211,27 +212,27 @@ setMethod("plot", "QcConfig", definition = function(x).plot_QcConfig(x))
 #'
 #' @return
 #' @export
-#'
+#' @rdname QcConfig
 #' @examples
 setMethod("show", "QcConfig", definition = function(object).show_QcConfig(object))
 
-if(FALSE){
-    library(ssvQC)
-    feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-    object = QcConfigFeatures.parse(feature_config_file)
-    plot(object)
-    object$loaded_features = "asdf"
-    object$run_by = "mark"
-    object$run_by
-    plot(object)
-    object$run_by = "cell"
-    object$run_by
-    plot(object)
-    object$color_by = "mark"
-    plot(object)
-    object$color_by = "cell"
-    plot(object)
-    options("SQC_COLORS" = seqsetvis::safeBrew(8, "blues"))
-    object$color_by = "cell"
-    plot(object)
+#' Title
+#'
+#' @param object 
+#'
+#' @return
+#' @export
+#' @rdname QcConfig
+#' @examples
+QcConfig.save_config = function(object){
+    slots_to_save = c(
+        "run_by",
+        "to_run",
+        "to_run_reference",
+        "color_by",
+        "is_null"
+    )
+    kvp_slots = c("color_mapping")
+    # QcConfigSignal.parse(file)
+    .save_config(object, file, slots_to_save, kvp_slots)
 }

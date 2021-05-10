@@ -242,6 +242,9 @@ parse_fetch_options = function(fop){
   if(any(is.na(fop_opts))){
     stop("problem parsing fetch_options, verify fetch_options=key1:val1,key2:val2,... syntax")
   }
+  if("summary_FUN" %in% fop_names){
+    warning("summary_FUN is not yet fully supported.  Definitions of summary_FUN should work but its value will not be saved via QcConfigSignal.save_config.")
+  }
   names(fop_opts) = fop_names
   lapply(fop_opts, function(x){
     #check if number
@@ -349,4 +352,35 @@ is_feature_file = function(files, suff = getOption("SQC_FEATURE_FILE_SUFF", c("n
 
 is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam", "bigwig", "bw", "bigWig", "BigWig"))){
   .test_suff(files, suff)
+}
+
+
+.save_config = function(object, file, slots_to_save, kvp_slots, toss_names = "summary_FUN"){
+  hdr1 = sapply(slots_to_save, function(x){
+    val = slot(object, x)
+    ifelse(length(val) > 0,
+           paste0("#CFG ", x, "=", val),
+           character())
+  })
+  hdr1 = hdr1[!is.na(hdr1)]
+  
+  hdr2 = sapply(kvp_slots, function(x){
+    val = slot(object, x)
+    val = val[!names(val) %in% names(toss_names)]
+    val = paste(names(val), val, sep = ":", collapse = ",")
+    ifelse(length(val) > 0,
+           paste0("#CFG ", x, "=", val),
+           character())
+  })
+  hdr2 = hdr2[!is.na(hdr2)]
+  
+  hdr3 = paste(colnames(object@meta_data), collapse = ",")
+  
+  
+  hdr = c(hdr1, hdr2, hdr3)
+  names(hdr) = NULL
+  
+  writeLines(hdr, file)
+  fwrite(object@meta_data, file, append = TRUE)
+  invisible(file)
 }
