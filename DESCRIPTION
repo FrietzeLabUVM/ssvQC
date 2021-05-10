@@ -9,17 +9,17 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Suggests:
-    BiocFileCache,
     BiocManager,
     BiocStyle,
     ChIPpeakAnno,
     covr,
-    cowplot,
     knitr,
     rmarkdown,
     testthat
 Depends: R (>= 3.6), ggplot2, data.table, GenomicRanges
 Imports:
+    BiocFileCache,
+    cowplot,
     digest,
     eulerr,
     GenomeInfoDb,
