@@ -297,6 +297,13 @@ parse_fetch_options = function(fop){
       cfg_vals[[var]] = as.numeric(cfg_vals[[var]])
     }    
   }
+  #logical: is_null
+  for(var in c("is_null")){
+    if(!is.null(cfg_vals[[var]])){
+      cfg_vals[[var]] = as.logical(cfg_vals[[var]])
+    }    
+  }
+  
   #parsing the color mapping
   if(!is.null(cfg_vals[["color_mapping"]])){
     cmap = cfg_vals[["color_mapping"]]

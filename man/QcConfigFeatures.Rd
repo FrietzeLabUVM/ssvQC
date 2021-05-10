@@ -16,7 +16,8 @@ QcConfigFeatures(
   overlap_extension = 0,
   consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
   consensus_n = getOption("SQC_CONSENSUS_N", 1),
-  process_features = getOption("SQC_PROCESS_FEATURES", TRUE)
+  process_features = getOption("SQC_PROCESS_FEATURES", TRUE),
+  is_null = FALSE
 )
 }
 \arguments{

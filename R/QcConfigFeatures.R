@@ -210,7 +210,8 @@ QcConfigFeatures = function(config_df,
                             overlap_extension = 0,
                             consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
                             consensus_n = getOption("SQC_CONSENSUS_N", 1),
-                            process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
+                            process_features = getOption("SQC_PROCESS_FEATURES", TRUE),
+                            is_null = FALSE){
   .enforce_file_var(config_df)
   if(!run_by %in% colnames(config_df)){
     if(run_by == "All"){
@@ -272,7 +273,8 @@ QcConfigFeatures = function(config_df,
             n_peaks = n_peaks,
             overlap_extension = overlap_extension,
             consensus_fraction = consensus_fraction,
-            consensus_n = consensus_n)
+            consensus_n = consensus_n,
+            is_null = is_null)
   if(process_features){
     obj = prepFeatures(obj)
   }
@@ -384,7 +386,7 @@ QcConfigFeatures.parse = function(feature_config_file,
                                   process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
   peak_config_dt = .parse_config_body(feature_config_file)
   valid_feature_var = c("main_dir", "overlap_extension", "n_peaks", "consensus_n", 
-                        "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run")
+                        "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run", "is_null")
   cfg_vals = .parse_config_header(feature_config_file, valid_feature_var)
   
   if(!is.null(cfg_vals[["main_dir"]])){
@@ -407,7 +409,7 @@ QcConfigFeatures.parse = function(feature_config_file,
                   overlap_extension = 0,
                   consensus_n = 1, consensus_fraction = 0, 
                   color_by = NULL, color_mapping = NULL, 
-                  run_by = NULL, to_run = NULL, to_run_reference = NULL){
+                  run_by = NULL, to_run = NULL, to_run_reference = NULL, is_null = FALSE){
     QcConfigFeatures(config_df = config_dt, 
                      run_by = run_by, 
                      to_run = to_run,
@@ -418,7 +420,8 @@ QcConfigFeatures.parse = function(feature_config_file,
                      overlap_extension = overlap_extension,
                      consensus_fraction = consensus_fraction,
                      consensus_n = consensus_n,
-                     process_features = process_features)
+                     process_features = process_features,
+                     is_null = is_null)
   }
   do.call(tfun, c(list(config_dt = peak_config_dt), cfg_vals))
 }

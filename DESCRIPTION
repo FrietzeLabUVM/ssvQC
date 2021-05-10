@@ -41,3 +41,4 @@ Imports:
     stats,
     UpSetR
 RoxygenNote: 7.1.1
+biocViews: Software, ChIPSeq, MultipleComparison, Sequencing, Visualization

@@ -13,7 +13,8 @@ QcConfigSignal(
   color_mapping = NULL,
   read_mode = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
-  fetch_options = list()
+  fetch_options = list(),
+  is_null = FALSE
 )
 }
 \arguments{

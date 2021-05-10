@@ -41,7 +41,8 @@ QcConfigSignal = function(config_df,
                           color_mapping = NULL,
                           read_mode = NULL,
                           view_size = getOption("SQC_VIEW_SIZE", 3e3), 
-                          fetch_options = list()){
+                          fetch_options = list(),
+                          is_null = FALSE){
   .enforce_file_var(config_df)
   if(!run_by %in% colnames(config_df)){
     if(run_by == "All"){
@@ -101,7 +102,8 @@ QcConfigSignal = function(config_df,
       color_mapping = color_mapping,
       read_mode = read_mode,
       view_size = view_size, 
-      fetch_options = fetch_options)
+      fetch_options = fetch_options,
+      is_null = is_null)
 }
 
 QcConfigSignal.null = function(){
@@ -126,7 +128,7 @@ QcConfigSignal.null = function(){
 QcConfigSignal.parse = function(signal_config_file){
   signal_config_dt = .parse_config_body(signal_config_file)
   valid_feature_var = c("main_dir", "view_size", "read_mode", 
-                        "color_by", "color_mapping", "run_by", "to_run", "to_run_reference", "fetch_options")
+                        "color_by", "color_mapping", "run_by", "to_run", "to_run_reference", "fetch_options", "is_null")
   cfg_vals = .parse_config_header(signal_config_file, valid_feature_var)
   
   if(!is.null(cfg_vals[["main_dir"]])){
@@ -151,7 +153,8 @@ QcConfigSignal.parse = function(signal_config_file){
                   run_by = NULL, 
                   to_run = NULL, 
                   to_run_reference = NULL,
-                  fetch_options = list()){
+                  fetch_options = list(), 
+                  is_null = FALSE){
     QcConfigSignal(config_df = config_dt, 
                    run_by = run_by, 
                    to_run = to_run,
@@ -160,7 +163,8 @@ QcConfigSignal.parse = function(signal_config_file){
                    color_mapping = color_mapping, 
                    read_mode = read_mode, 
                    view_size = view_size, 
-                   fetch_options = fetch_options)
+                   fetch_options = fetch_options,
+                   is_null = TRUE)
   }
   do.call(tfun, c(list(config_dt = signal_config_dt), cfg_vals))
 }
