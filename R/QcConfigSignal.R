@@ -1,4 +1,21 @@
 
+check_QcConfigSignal = function(object){
+  errors <- character()
+  
+  if(grepl("bam", object@read_mode)){#bam checks
+    
+  }else{#bigwig checks
+    if(object@cluster_value == "RPM"){
+      errors = c(errors, "cluster_value cannot be RPM for bigwig files.")
+    }
+    if(object@sort_value == "RPM"){
+      errors = c(errors, "sort_value cannot be RPM for bigwig files.")
+    }
+  }
+  
+  if (length(errors) == 0) TRUE else errors
+}
+
 ' QcConfigSignal
 #'
 #' @slot view_size numeric.
@@ -11,9 +28,20 @@ setClass("QcConfigSignal", contains = "QcConfig",
          representation = list(
            view_size = "numeric",
            read_mode = "character",
-           fetch_options = "list"
-         ))
+           fetch_options = "list",
+           cluster_value = "character",
+           linearQuantile_cutoff = "numeric",
+           sort_value = "character",
+           sort_method = "character"
+         ), validity = check_QcConfigSignal)
 
+valid_cluster_vals = c("raw", "RPM", "linearQuantile")
+
+setMethod("initialize","QcConfigSignal", function(.Object,...){
+  .Object <- callNextMethod()
+  validObject(.Object)
+  .Object
+})
 
 #' QcConfigSignal
 #'
@@ -23,6 +51,14 @@ setClass("QcConfigSignal", contains = "QcConfig",
 #' @param color_mapping 
 #' @param read_mode 
 #' @param view_size 
+#' @param to_run 
+#' @param to_run_reference 
+#' @param fetch_options 
+#' @param cluster_value 
+#' @param linearQuantile_cutoff 
+#' @param sort_value 
+#' @param sort_method 
+#' @param is_null 
 #'
 #' @return
 #' @export
@@ -44,6 +80,10 @@ QcConfigSignal = function(config_df,
                           read_mode = NULL,
                           view_size = getOption("SQC_VIEW_SIZE", 3e3), 
                           fetch_options = list(),
+                          cluster_value = valid_cluster_vals[1],
+                          linearQuantile_cutoff = .98,
+                          sort_value = valid_cluster_vals[1],
+                          sort_method = c("hclust", "sort")[2],
                           is_null = FALSE){
   .enforce_file_var(config_df)
   if(!run_by %in% colnames(config_df)){
@@ -55,6 +95,18 @@ QcConfigSignal = function(config_df,
   }
   if(!color_by %in% colnames(config_df)){
     stop("color_by ", color_by, " was not in column names.")
+  }
+  if(!cluster_value %in% valid_cluster_vals){
+    stop("cluster_value of ", cluster_value, " was not one of : ", paste(valid_cluster_vals, collapse = ", "))
+  }
+  if(!sort_value %in% valid_cluster_vals){
+    stop("sort_value of ", sort_value, " was not one of : ", paste(valid_cluster_vals, collapse = ", "))
+  }
+  if(linearQuantile_cutoff <= 0 | linearQuantile_cutoff > 1){
+    stop("linearQuantile_cutoff must be between 0 and 1. Was ", linearQuantile_cutoff)
+  }
+  if(!sort_method %in% c("hclust", "sort")){
+    stop("sort_method of ", sort_method, " was not one of : ", paste(c("hclust", "sort"), collapse = ", "))
   }
   
   if(!is.null(color_mapping)){
@@ -105,6 +157,10 @@ QcConfigSignal = function(config_df,
       read_mode = read_mode,
       view_size = view_size, 
       fetch_options = fetch_options,
+      cluster_value = cluster_value,
+      linearQuantile_cutoff = linearQuantile_cutoff,
+      sort_value = sort_value,
+      sort_method = sort_method,
       is_null = is_null)
 }
 
@@ -114,9 +170,7 @@ QcConfigSignal.null = function(){
   qc
 }
 
-#' Title
-#'
-#' @param signal_config_file 
+#' @param signal_config_file Configuration file for signal data.
 #'
 #' @return
 #' @export
@@ -129,9 +183,21 @@ QcConfigSignal.null = function(){
 #' QcConfigSignal.parse(bigwig_config_file)
 QcConfigSignal.parse = function(signal_config_file){
   signal_config_dt = .parse_config_body(signal_config_file)
-  valid_feature_var = c("main_dir", "view_size", "read_mode", 
-                        "color_by", "color_mapping", "run_by", "to_run", "to_run_reference", "fetch_options", "is_null")
-  cfg_vals = .parse_config_header(signal_config_file, valid_feature_var)
+  valid_signal_var = c("main_dir", 
+                       "view_size", 
+                       "read_mode", 
+                       "color_by", 
+                       "color_mapping", 
+                       "run_by", 
+                       "to_run", 
+                       "to_run_reference", 
+                       "fetch_options", 
+                       "is_null",
+                       "cluster_value",
+                       "linearQuantile_cutoff",
+                       "sort_value",
+                       "sort_method")
+  cfg_vals = .parse_config_header(signal_config_file, valid_signal_var)
   
   if(!is.null(cfg_vals[["main_dir"]])){
     choose_file_path = function(main_dir, files){
@@ -155,6 +221,10 @@ QcConfigSignal.parse = function(signal_config_file){
                   run_by = NULL, 
                   to_run = NULL, 
                   to_run_reference = NULL,
+                  cluster_value = valid_cluster_vals[1],
+                  linearQuantile_cutoff = .98,
+                  sort_value = valid_cluster_vals[1],
+                  sort_method = c("hclust", "sort")[2],
                   fetch_options = list(), 
                   is_null = FALSE){
     QcConfigSignal(config_df = config_dt, 
@@ -166,6 +236,10 @@ QcConfigSignal.parse = function(signal_config_file){
                    read_mode = read_mode, 
                    view_size = view_size, 
                    fetch_options = fetch_options,
+                   cluster_value = cluster_value,
+                   linearQuantile_cutoff = linearQuantile_cutoff,
+                   sort_value = sort_value,
+                   sort_method = sort_method,
                    is_null = TRUE)
   }
   do.call(tfun, c(list(config_dt = signal_config_dt), cfg_vals))
@@ -191,7 +265,12 @@ QcConfigSignal.files = function(file_paths,
                                 group_names = NULL,
                                 group_colors = NULL,
                                 view_size = getOption("SQC_VIEW_SIZE", 3e3), 
-                                read_mode = NULL){
+                                read_mode = NULL,
+                                cluster_value = valid_cluster_vals[1],
+                                linearQuantile_cutoff = .98,
+                                sort_value = valid_cluster_vals[1],
+                                sort_method = c("hclust", "sort")[2]
+){
   if(is.null(groups)){
     groups = seq_along(file_paths)
   }
@@ -210,7 +289,7 @@ QcConfigSignal.files = function(file_paths,
     names(group_colors) = group_names
   }
   
-
+  
   
   config_df = data.frame(file = as.character(file_paths), group = group_names[groups], stringsAsFactors = FALSE)
   
@@ -222,7 +301,11 @@ QcConfigSignal.files = function(file_paths,
   
   config_df$All = "All"
   
-  QcConfigSignal(config_df, run_by = "All", color_by = "group", color_mapping = group_colors)
+  QcConfigSignal(config_df, run_by = "All", color_by = "group", color_mapping = group_colors,
+                 cluster_value = cluster_value,
+                 linearQuantile_cutoff = linearQuantile_cutoff,
+                 sort_value = sort_value,
+                 sort_method = sort_method)
 }
 
 get_fetch_fun = function(read_mode){
@@ -239,8 +322,6 @@ get_fetch_fun = function(read_mode){
          })
 }
 
-#' Title
-#'
 #' @param qc_signal 
 #' @param query_gr 
 #'
@@ -257,9 +338,18 @@ get_fetch_fun = function(read_mode){
 #' fetch_signal_at_features(qc_signal, query_gr)
 fetch_signal_at_features = function(qc_signal, query_gr){
   extra_args = qc_signal@fetch_options
+  if(!is.null(qc_signal@meta_data$fragLens)){
+    if(!is.null(extra_args$fragLens)){
+      if(extra_args$fragLens != "auto"){
+        warning("Overwriting configured fragLens with detected fragLens for fetch call.")  
+      }
+    }
+    extra_args$fragLens = qc_signal@meta_data$fragLens
+  }
   call_args = c(list(file_paths = qc_signal@meta_data, qgr = query_gr, return_data.table = TRUE), extra_args)
   fetch_FUN = get_fetch_fun(qc_signal@read_mode)
-  do.call(fetch_FUN, call_args)
+  prof_dt = do.call(fetch_FUN, call_args)
+  prof_dt
 }
 
 setMethod("split", signature = c("QcConfigSignal"), definition = function(x){
@@ -299,19 +389,17 @@ setMethod("split", signature = c("QcConfigSignal", "character", "logical"), defi
   split(x, factor(f, levels = unique(f)), FALSE)
 })
 
-#' Title
-#'
-#' @param object 
-#'
 #' @return
 #' @export
 #' @rdname QcConfigSignal
 #' @examples
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' bam_config = QcConfigSignal.parse(bam_config_file)
+#' #QcConfigSignal.save_config(bam_config, "bam_config.csv")
 #'
 #' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 #' bigwig_config = QcConfigSignal.parse(bigwig_config_file)
+#' #QcConfigSignal.save_config(bigwig_config, "bigwig_config.csv")
 QcConfigSignal.save_config = function(object, file){
   slots_to_save = c(
     "view_size",
@@ -320,7 +408,11 @@ QcConfigSignal.save_config = function(object, file){
     "to_run",
     "to_run_reference",
     "color_by",
-    "is_null"
+    "is_null",
+    "cluster_value",
+    "linearQuantile_cutoff",
+    "sort_value",
+    "sort_method"
   )
   kvp_slots = c("color_mapping", "fetch_options")
   # QcConfigSignal.parse(file)

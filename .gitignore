@@ -6,3 +6,7 @@ mapped_reads.pdf
 tmp.pdf
 tmp.csv
 tmp.sig.csv
+ik_demo.R
+ik_features_config.csv
+ik_signal_config.csv
+bam_config.csv

@@ -9,7 +9,6 @@ ClusteredSignal.fromConfig(
   query_gr,
   manual_assigned = list(),
   nclust = 6,
-  signal_var = "y",
   facet_var = "name_split",
   extra_var = character()
 )
@@ -21,8 +20,18 @@ ClusteredSignal.fromConfig(
 ClusteredSignal.fromConfig
 }
 \examples{
-signal_data = sqc@signal_profile
-query_gr = sqc@feature_config$assessment_features
+options(mc.cores = 10)
+set.seed(0)
+feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+feature_config = QcConfigFeatures.parse(feature_config_file, process_features= TRUE)
+
+bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+bam_config = QcConfigSignal.parse(bam_config_file)
+
+sqc = ssvQC(feature_config, bam_config)
+
+prepS
+query_gr = feature_config$assessment_features$CTCF_features
 sclust = ClusteredSignal(sqc@signal_profile, sqc@feature_config$assessment_features)
 sclust$
 }

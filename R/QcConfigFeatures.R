@@ -140,8 +140,6 @@ setReplaceMethod("$", "QcConfigFeatures",
   assessment_gr
 }
 
-#' Title
-#'
 #' @param object 
 #'
 #' @return
@@ -427,11 +425,6 @@ QcConfigFeatures.parse = function(feature_config_file,
 }
 
 
-#' Title
-#'
-#' @param object 
-#' @param file 
-#'
 #' @return
 #' @export
 #' @rdname QcConfigFeatures

@@ -20,6 +20,10 @@ QcConfigSignal(
   read_mode = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
   fetch_options = list(),
+  cluster_value = valid_cluster_vals[1],
+  linearQuantile_cutoff = 0.98,
+  sort_value = valid_cluster_vals[1],
+  sort_method = c("hclust", "sort")[2],
   is_null = FALSE
 )
 
@@ -31,7 +35,11 @@ QcConfigSignal.files(
   group_names = NULL,
   group_colors = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
-  read_mode = NULL
+  read_mode = NULL,
+  cluster_value = valid_cluster_vals[1],
+  linearQuantile_cutoff = 0.98,
+  sort_value = valid_cluster_vals[1],
+  sort_method = c("hclust", "sort")[2]
 )
 
 fetch_signal_at_features(qc_signal, query_gr)
@@ -43,6 +51,10 @@ QcConfigSignal.save_config(object, file)
 
 \item{run_by}{}
 
+\item{to_run}{}
+
+\item{to_run_reference}{}
+
 \item{color_by}{}
 
 \item{color_mapping}{}
@@ -51,7 +63,19 @@ QcConfigSignal.save_config(object, file)
 
 \item{view_size}{view size in bp to apply. Defaults to 3000.}
 
-\item{signal_config_file}{}
+\item{fetch_options}{}
+
+\item{cluster_value}{}
+
+\item{linearQuantile_cutoff}{}
+
+\item{sort_value}{}
+
+\item{sort_method}{}
+
+\item{is_null}{}
+
+\item{signal_config_file}{Configuration file for signal data.}
 
 \item{file_paths}{character paths to files}
 
@@ -64,8 +88,6 @@ QcConfigSignal.save_config(object, file)
 \item{qc_signal}{}
 
 \item{query_gr}{}
-
-\item{object}{}
 }
 \value{
 
@@ -81,13 +103,7 @@ a QcConfigSignal object
 \description{
 QcConfigSignal
 
-Title
-
 QcConfigSignal.files
-
-Title
-
-Title
 }
 \section{Slots}{
 
@@ -123,7 +139,9 @@ query_gr = qc_features$assessment_features
 fetch_signal_at_features(qc_signal, query_gr)
 bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 bam_config = QcConfigSignal.parse(bam_config_file)
+#QcConfigSignal.save_config(bam_config, "bam_config.csv")
 
 bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 bigwig_config = QcConfigSignal.parse(bigwig_config_file)
+#QcConfigSignal.save_config(bigwig_config, "bigwig_config.csv")
 }

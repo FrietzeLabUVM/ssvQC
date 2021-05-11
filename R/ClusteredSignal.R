@@ -35,12 +35,16 @@ ClusteredSignal = function(signal_profile_dt,
                            manual_assigned = list(),
                            nclust = 6,
                            signal_var = "y",
+                           signal_var.within = "y",
                            facet_var = "name_split",
                            extra_var = character()){
   query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
   
   if(is.null(signal_profile_dt[[signal_var]])) stop("signal_var \"", signal_var, "\" not found in signal_data." )
   clust_dt = seqsetvis::ssvSignalClustering(signal_profile_dt, nclust = nclust, facet_ = "name_split", max_cols = Inf, max_rows = Inf, fill_ = signal_var)
+  if(signal_var != signal_var.within){
+    clust_dt = within_clust_sort(clust_dt = clust_dt, facet_ = "name_split", fill_ = signal_var.within)
+  }
   
   if(length(manual_assigned) > 0){
     stop("manual_assigned NYI")
@@ -60,28 +64,58 @@ ClusteredSignal = function(signal_profile_dt,
 #' @export
 #'
 #' @examples
-#' signal_data = sqc@signal_profile
-#' query_gr = sqc@feature_config$assessment_features
+#' options(mc.cores = 10)
+#' set.seed(0)
+#' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#' feature_config = QcConfigFeatures.parse(feature_config_file, process_features= TRUE)
+#'
+#' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+#' bam_config = QcConfigSignal.parse(bam_config_file)
+#' 
+#' sqc = ssvQC(feature_config, bam_config)
+#' 
+#' prepS
+#' query_gr = feature_config$assessment_features$CTCF_features
 #' sclust = ClusteredSignal(sqc@signal_profile, sqc@feature_config$assessment_features)
 #' sclust$
 ClusteredSignal.fromConfig = function(signal_config,
                                       query_gr,
                                       manual_assigned = list(),
                                       nclust = 6,
-                                      signal_var = "y",
                                       facet_var = "name_split",
                                       extra_var = character()){
+  if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
+    if(is.null(signal_config@meta_data$mapped_reads)){
+      stop("Call ssvQC.prepMappedReads() on signal_config first.")
+    }
+  }
+  
+  if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
+    if(is.null(signal_config@meta_data$cap_value)){
+      stop("Call ssvQC.prepCapValue() on signal_config first.")
+    }
+  }
+  
   query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
   
   prof_dt = fetch_signal_at_features(signal_config, query_gr)
+  if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
+    prof_dt[, y_RPM := y / mapped_reads * 1e6]
+  }
+  if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
+    prof_dt[, y_linQ := y / cap_value]
+    prof_dt[y_linQ > 1, y_linQ := 1]
+  }
+
   
-  ClusteredSignal(prof_dt, query_gr, 
+  clust_dt = ClusteredSignal(prof_dt, query_gr, 
                   manual_assigned = manual_assigned,
                   nclust = nclust,
-                  signal_var = signal_var,
+                  signal_var = signal_config@cluster_value,
+                  signal_var.within = signal_config@sort_value,
                   facet_var = facet_var,
                   extra_var = extra_var)
-  
+  clust_dt
 }
 
 #' Title

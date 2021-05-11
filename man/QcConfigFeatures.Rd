@@ -82,8 +82,6 @@ impact on the configuration.}
 \item{group_colors}{vector of colors to use per group}
 
 \item{feature_config_file}{}
-
-\item{file}{}
 }
 \value{
 
@@ -101,8 +99,6 @@ a QcConfigFeatures object
 \description{
 QcConfigFeatures
 
-Title
-
 QcConfigFeatures
 
 QcConfigFeatures null placeholder
@@ -110,8 +106,6 @@ QcConfigFeatures null placeholder
 QcConfigFeatures for files
 
 QcConfigFeatures.parse
-
-Title
 }
 \section{Slots}{
 

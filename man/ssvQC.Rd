@@ -3,7 +3,9 @@
 \name{ssvQC}
 \alias{ssvQC}
 \alias{ssvQC.runAll}
+\alias{ssvQC.prepFragLens}
 \alias{ssvQC.prepMappedReads}
+\alias{ssvQC.prepCapValue}
 \alias{ssvQC.plotMappedReads}
 \alias{ssvQC.prepFRIP}
 \alias{ssvQC.plotFRIP}
@@ -25,7 +27,11 @@ ssvQC(
 
 ssvQC.runAll(object)
 
+ssvQC.prepFragLens(object, query)
+
 ssvQC.prepMappedReads(object)
+
+ssvQC.prepCapValue(object, query)
 
 ssvQC.plotMappedReads(object)
 
@@ -84,6 +90,7 @@ bigwig_config = QcConfigSignal.parse(bigwig_config_file)
 sqc.complete.file = ssvQC(feature_config_file, bam_config_file)
 
 sqc.complete = ssvQC(feature_config, bam_config)
+object = sqc.complete
 
 sqc.complete.bw = ssvQC(feature_config, bigwig_config_file)
 
