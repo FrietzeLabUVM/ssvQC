@@ -98,8 +98,8 @@ sqc.signal = ssvQC(signal_config = bam_config)
 
 sqc.feature = ssvQC(feature_config = feature_config)
 
-ssvQC.runAll(sqc.signal)
-ssvQC.runAll(sqc.feature)
+sqc.signal = ssvQC.runAll(sqc.signal)
+sqc.feature = ssvQC.runAll(sqc.feature)
 
 sqc.complete = ssvQC.runAll(sqc.complete)
 }

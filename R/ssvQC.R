@@ -81,6 +81,15 @@ ssvQC.save_config = function(object, file){
 #' sqc.feature = ssvQC.runAll(sqc.feature)
 #'
 #' sqc.complete = ssvQC.runAll(sqc.complete)
+#' 
+#' sqc.complete$plots$signal$heatmaps
+#' sqc.complete$signal_config@plot_value = "RPM"
+#' sqc.complete = ssvQC.plotSignal(sqc.complete)
+#' sqc.complete$plots$signal$heatmaps
+#' 
+#' sqc.complete$signal_config@plot_value = "linearQuantile"
+#' sqc.complete = ssvQC.plotSignal(sqc.complete)
+#' sqc.complete$plots$signal$heatmaps
 ssvQC = function(feature_config = NULL,
                  signal_config = NULL,
                  out_dir = getwd(),
@@ -648,24 +657,28 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
   
   wrap_plot_signal_dt = function(sig_dt, main_title = NULL){
     is_bam = grepl("bam", sig_config@read_mode)
-    value_label = ifelse(is_bam, "read\npileup", "bigWig\nsignal")
+    value_label = ifelse(is_bam, 
+                         val2lab[sig_config@plot_value], 
+                         val2bwlab[sig_config@plot_value])
     x_label =  paste(sig_config@view_size, "bp view")
     extra_vars = unique(c(sig_config@color_by, sig_config@run_by, "name_split"))
-    
-    p_heatmap = seqsetvis::ssvSignalHeatmap.ClusterBars(sig_dt@signal_data, facet_ = "name_split", rel_widths = c(1, 20),
+    p_heatmap = seqsetvis::ssvSignalHeatmap.ClusterBars(sig_dt@signal_data, 
+                                                        fill_ = val2var[sig_config@plot_value],
+                                                        facet_ = "name_split", 
+                                                        rel_widths = c(1, 20),
                                                         FUN_format_heatmap = function(p){
                                                           p + labs(x = x_label, fill = value_label, title = main_title)
                                                         })
     sig_dt.agg = sig_dt@signal_data[, .(y = mean(y)), c("x", extra_vars)]
     sig_dt.agg_per_cluster = sig_dt@signal_data[, .(y = mean(y)), c("x", "cluster_id", extra_vars)]
     
-    p_line = ggplot(sig_dt.agg, aes_string(x = "x", y = "y", color = sig_config@color_by, group = "name_split")) +
+    p_line = ggplot(sig_dt.agg, aes_string(x = "x", y = val2var[sig_config@plot_value], color = sig_config@color_by, group = "name_split")) +
       geom_path() +
       facet_grid(paste0(".~", sig_config@run_by)) +
       labs(x = x_label, y = value_label, subtitle = "mean at assessed features", title = main_title) +
       scale_color_manual(values = sig_config@color_mapping)
     
-    p_heatmap.line = ggplot(sig_dt.agg_per_cluster, aes_string(x = "x", y = "y", color = sig_config@color_by, group = "name_split")) +
+    p_heatmap.line = ggplot(sig_dt.agg_per_cluster, aes_string(x = "x", y = val2var[sig_config@plot_value], color = sig_config@color_by, group = "name_split")) +
       geom_path() +
       facet_grid(paste0("cluster_id~", sig_config@run_by)) +
       labs(x = x_label, y = value_label, subtitle = "mean per cluster", title = main_title)+

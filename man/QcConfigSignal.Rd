@@ -24,6 +24,7 @@ QcConfigSignal(
   linearQuantile_cutoff = 0.98,
   sort_value = valid_cluster_vals[1],
   sort_method = c("hclust", "sort")[2],
+  plot_value = valid_cluster_vals[1],
   is_null = FALSE
 )
 
@@ -111,6 +112,16 @@ QcConfigSignal.files
 \item{\code{view_size}}{numeric.}
 
 \item{\code{read_mode}}{character.}
+
+\item{\code{cluster_value}}{}
+
+\item{\code{linearQuantile_cutoff}}{}
+
+\item{\code{sort_value}}{}
+
+\item{\code{sort_method}}{}
+
+\item{\code{plot_value}}{}
 
 \item{\code{fetch_options}}{list.}
 }}

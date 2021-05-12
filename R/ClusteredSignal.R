@@ -1,3 +1,20 @@
+val2var = c(
+  raw = "y",
+  RPM = "y_RPM",
+  linearQuantile = "y_linQ"  
+)
+
+val2lab = c(
+  raw = "read\npileup",
+  RPM = "RPM\npileup",
+  linearQuantile = "normalized\npileup"  
+)
+
+val2bwlab = c(
+  raw = "bigWig\nsignal",
+  RPM = "***ERROR***",
+  linearQuantile = "normalized\nbigWig\nsignal"  
+)
 
 #' ClusteredSignal
 #'
@@ -99,22 +116,20 @@ ClusteredSignal.fromConfig = function(signal_config,
   query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
   
   prof_dt = fetch_signal_at_features(signal_config, query_gr)
-  if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
-    prof_dt[, y_RPM := y / mapped_reads * 1e6]
-  }
-  if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
-    prof_dt[, y_linQ := y / cap_value]
-    prof_dt[y_linQ > 1, y_linQ := 1]
-  }
-
-  
+  # if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
+  prof_dt[, y_RPM := y / mapped_reads * 1e6]
+  # }
+  # if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
+  prof_dt[, y_linQ := y / cap_value]
+  prof_dt[y_linQ > 1, y_linQ := 1]
+  # }
   clust_dt = ClusteredSignal(prof_dt, query_gr, 
-                  manual_assigned = manual_assigned,
-                  nclust = nclust,
-                  signal_var = signal_config@cluster_value,
-                  signal_var.within = signal_config@sort_value,
-                  facet_var = facet_var,
-                  extra_var = extra_var)
+                             manual_assigned = manual_assigned,
+                             nclust = nclust,
+                             signal_var = val2var[signal_config@cluster_value],
+                             signal_var.within = val2var[signal_config@sort_value],
+                             facet_var = facet_var,
+                             extra_var = extra_var)
   clust_dt
 }
 

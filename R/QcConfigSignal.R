@@ -20,7 +20,14 @@ check_QcConfigSignal = function(object){
 #'
 #' @slot view_size numeric.
 #' @slot read_mode character.
+#' @slot cluster_value 
+#' @slot linearQuantile_cutoff 
+#' @slot sort_value 
+#' @slot sort_method 
+#' @slot plot_value 
+#' @slot  
 #' @slot fetch_options list.
+#'
 #' @rdname QcConfigSignal
 #' @export
 #'
@@ -32,7 +39,8 @@ setClass("QcConfigSignal", contains = "QcConfig",
            cluster_value = "character",
            linearQuantile_cutoff = "numeric",
            sort_value = "character",
-           sort_method = "character"
+           sort_method = "character",
+           plot_value = "character"
          ), validity = check_QcConfigSignal)
 
 valid_cluster_vals = c("raw", "RPM", "linearQuantile")
@@ -84,6 +92,7 @@ QcConfigSignal = function(config_df,
                           linearQuantile_cutoff = .98,
                           sort_value = valid_cluster_vals[1],
                           sort_method = c("hclust", "sort")[2],
+                          plot_value = valid_cluster_vals[1],
                           is_null = FALSE){
   .enforce_file_var(config_df)
   if(!run_by %in% colnames(config_df)){
@@ -161,6 +170,7 @@ QcConfigSignal = function(config_df,
       linearQuantile_cutoff = linearQuantile_cutoff,
       sort_value = sort_value,
       sort_method = sort_method,
+      plot_value = plot_value,
       is_null = is_null)
 }
 
@@ -196,6 +206,7 @@ QcConfigSignal.parse = function(signal_config_file){
                        "cluster_value",
                        "linearQuantile_cutoff",
                        "sort_value",
+                       "plot_value",
                        "sort_method")
   cfg_vals = .parse_config_header(signal_config_file, valid_signal_var)
   
@@ -225,6 +236,7 @@ QcConfigSignal.parse = function(signal_config_file){
                   linearQuantile_cutoff = .98,
                   sort_value = valid_cluster_vals[1],
                   sort_method = c("hclust", "sort")[2],
+                  plot_value = valid_cluster_vals[1],
                   fetch_options = list(), 
                   is_null = FALSE){
     QcConfigSignal(config_df = config_dt, 
@@ -240,6 +252,7 @@ QcConfigSignal.parse = function(signal_config_file){
                    linearQuantile_cutoff = linearQuantile_cutoff,
                    sort_value = sort_value,
                    sort_method = sort_method,
+                   plot_value = plot_value,
                    is_null = TRUE)
   }
   do.call(tfun, c(list(config_dt = signal_config_dt), cfg_vals))
@@ -288,8 +301,6 @@ QcConfigSignal.files = function(file_paths,
   if(is.null(names(group_colors))){
     names(group_colors) = group_names
   }
-  
-  
   
   config_df = data.frame(file = as.character(file_paths), group = group_names[groups], stringsAsFactors = FALSE)
   
@@ -379,6 +390,11 @@ setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definit
         color_mapping = x@color_mapping,
         read_mode = x@read_mode,
         view_size = x@view_size, 
+        cluster_value = x@cluster_value,
+        linearQuantile_cutoff = x@linearQuantile_cutoff,
+        sort_value = x@sort_value,
+        sort_method = x@sort_method,
+        plot_value = x@plot_value,
         fetch_options = x@fetch_options)
   })
 })
