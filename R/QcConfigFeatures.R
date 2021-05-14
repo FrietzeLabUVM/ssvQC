@@ -11,6 +11,7 @@ setClass("QcConfigFeatures", contains = "QcConfig",
          representation = list(
            feature_load_FUN = "function",
            n_peaks = "numeric",
+           balance_groups = "logical",
            consensus_fraction = "numeric",
            consensus_n = "numeric",
            loaded_features = "list",
@@ -33,7 +34,10 @@ setMethod("initialize","QcConfigFeatures", function(.Object,...){
 setMethod("names", "QcConfigFeatures",
           function(x)
           {
-            c("loaded_features", "overlapped_features", "assessment_features", "meta_data", "run_by", "to_run", "to_run_reference", "color_by", "color_mapping")
+            c("loaded_features", "overlapped_features", "assessment_features", 
+              "n_peaks",
+              "meta_data", "run_by", "to_run", "to_run_reference", "color_by", "color_mapping",
+              "consensus_fraction", "consensus_n")
             
           })
 
@@ -45,6 +49,9 @@ setMethod("$", "QcConfigFeatures",
                     loaded_features = x@loaded_features,
                     overlapped_features = x@overlap_gr,
                     assessment_features = x@assessment_gr,
+                    n_peaks = x@n_peaks,
+                    consensus_fraction = x@consensus_fraction,
+                    consensus_n = x@consensus_n,
                     meta_data = x@meta_data,
                     run_by = x@run_by,
                     to_run = x@to_run,
@@ -62,7 +69,23 @@ setReplaceMethod("$", "QcConfigFeatures",
                            loaded_features = warning(warn_msg),
                            overlapped_features = warning(warn_msg),
                            assessment_features = warning(warn_msg),
-                           meta_data = warning(warn_msg),
+                           meta_data = {
+                             x@meta_data = value
+                           },
+                           n_peaks = {
+                             x@assessment_gr = list()
+                             x@n_peaks = value
+                           },
+                           consensus_n = {
+                             x@overlapped_features = list()
+                             x@assessment_gr = list()
+                             x@consensus_n = value
+                           },
+                           consensus_fraction = {
+                             x@overlapped_features = list()
+                             x@assessment_gr = list()
+                             x@consensus_fraction = value
+                           },
                            #TODO add checks, call validity?
                            run_by = {
                              x@run_by = value
@@ -122,7 +145,7 @@ setReplaceMethod("$", "QcConfigFeatures",
   overlap_gr
 }
 
-.process_assessment = function(feat_list, olap_gr, overlap_extension, n_peaks, consensus_fraction, consensus_n){
+.process_assessment = function(feat_list, olap_gr, overlap_extension, n_peaks, balance_groups, consensus_fraction, consensus_n){
   f_consensus = floor(consensus_fraction * length(feat_list))
   n_consensus = min(length(feat_list), max(consensus_n, f_consensus))
   
@@ -131,7 +154,23 @@ setReplaceMethod("$", "QcConfigFeatures",
   }else{
     asses_gr.full = ssvConsensusIntervalSets(feat_list, min_number = consensus_n, min_fraction = consensus_fraction, ext = overlap_extension)
   }
-  assessment_gr = sampleCap(asses_gr.full, n_peaks)
+  if(n_peaks >= length(asses_gr.full)){
+    assessment_gr = asses_gr.full
+  }else{
+    if(!balance_groups){
+      assessment_gr = sort(sampleCap(asses_gr.full, n_peaks))
+    }else{
+      df = as.data.frame(mcols(asses_gr.full))
+      n_peaks.per = floor(n_peaks / ncol(df))
+      sel_i = sort(unique(unlist(lapply(seq_len(ncol(df)), function(i){
+        x = df[,i]
+        sampleCap(which(x), n_peaks.per)
+      }))))
+      assessment_gr = asses_gr.full[sel_i]
+    }  
+  }
+  
+  
   
   if(length(assessment_gr) == 0){
     stop("No regions in assessment. Maybe loosen consensus requirements or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
@@ -168,6 +207,7 @@ prepFeatures = function(object){
         olap_gr = object@overlap_gr[[tr_name]], 
         overlap_extension = object@overlap_extension, 
         n_peaks = object@n_peaks, 
+        balance_groups = object@balance_groups,
         consensus_fraction = object@consensus_fraction, 
         consensus_n = object@consensus_n)
     }
@@ -186,8 +226,14 @@ prepFeatures = function(object){
 #' @param color_mapping named character vector that maps values of color_by to valid R colors, i.e. "red" or "#FF0000". 
 #' @param feature_load_FUN function that takes a vector of file paths and returns list of GRanges.
 #' @param n_peaks Number of features to sample from full overlap of feature sets for use in fetching signal.
+#' @param balance_groups 
 #' @param consensus_fraction number [0,1] to adjust number of overlap required for consensus dynamically.
 #' @param consensus_n number from 1 to number of feature sets to statically set threshold for consensus.
+#' @param to_run 
+#' @param to_run_reference 
+#' @param overlap_extension 
+#' @param process_features 
+#' @param is_null 
 #'
 #' @return QcConfigFeatures object
 #' @export
@@ -205,6 +251,7 @@ QcConfigFeatures = function(config_df,
                             color_mapping = NULL,
                             feature_load_FUN = NULL,
                             n_peaks = 1e3,
+                            balance_groups = FALSE,
                             overlap_extension = 0,
                             consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
                             consensus_n = getOption("SQC_CONSENSUS_N", 1),
@@ -269,6 +316,7 @@ QcConfigFeatures = function(config_df,
             color_mapping = color_mapping,
             feature_load_FUN = feature_load_FUN,
             n_peaks = n_peaks,
+            balance_groups = balance_groups,
             overlap_extension = overlap_extension,
             consensus_fraction = consensus_fraction,
             consensus_n = consensus_n,
@@ -297,10 +345,12 @@ QcConfigFeatures.null = function(){
 #' QcConfigFeatures for files
 #'
 #' @param file_paths character paths to files
+#' @param run_separately
 #' @param groups numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)
 #' @param group_names vector of group names to assign from according to groups
 #' @param group_colors vector of colors to use per group
 #' @param n_peaks number of peaks to subset for
+#' @param balance_groups
 #' @param consensus_n An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.
 #' @param consensus_fraction A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.
 #'
@@ -309,14 +359,17 @@ QcConfigFeatures.null = function(){
 #' @rdname QcConfigFeatures
 #' @examples
 #' np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
-#' object = QcConfigFeatures.files(np_files)
+#' object = QcConfigFeatures.files(np_files, balance_groups = TRUE)
+#' object = ssvQC.prepFeatures(object)
 #' plot(object)
 QcConfigFeatures.files = function(file_paths,
+                                  run_separately = FALSE,
                                   group_names = NULL,
                                   groups = NULL,
                                   group_colors = NULL,
                                   feature_load_FUN = NULL,
                                   n_peaks = 1e3,
+                                  balance_groups = FALSE,
                                   overlap_extension = 0,
                                   consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
                                   consensus_n = getOption("SQC_CONSENSUS_N", 1),
@@ -349,14 +402,16 @@ QcConfigFeatures.files = function(file_paths,
   config_df$name = factor(config_df$name, levels = unique(config_df$name))
   config_df$name_split = factor(config_df$name_split, levels = unique(config_df$name_split))
   
+  run_by = ifelse(run_separately, "group", "All")
   obj = new("QcConfigFeatures",
             meta_data =  config_df,
-            run_by = "All",
-            to_run = "All",
+            run_by = run_by,
+            to_run = unique(config_df[[run_by]]),
             color_by = "group",
             color_mapping = group_colors,
             feature_load_FUN = feature_load_FUN,
             n_peaks = n_peaks,
+            balance_groups = balance_groups,
             overlap_extension = overlap_extension,
             consensus_fraction = consensus_fraction,
             consensus_n = consensus_n
@@ -383,7 +438,7 @@ QcConfigFeatures.files = function(file_paths,
 QcConfigFeatures.parse = function(feature_config_file,
                                   process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
   peak_config_dt = .parse_config_body(feature_config_file)
-  valid_feature_var = c("main_dir", "overlap_extension", "n_peaks", "consensus_n", 
+  valid_feature_var = c("main_dir", "overlap_extension", "n_peaks", "balance_groups", "consensus_n", 
                         "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run", "is_null")
   cfg_vals = .parse_config_header(feature_config_file, valid_feature_var)
   
@@ -404,6 +459,7 @@ QcConfigFeatures.parse = function(feature_config_file,
   tfun = function(config_dt, 
                   main_dir = NULL, 
                   n_peaks = 1e3, 
+                  balance_groups = FALSE,
                   overlap_extension = 0,
                   consensus_n = 1, consensus_fraction = 0, 
                   color_by = NULL, color_mapping = NULL, 
@@ -415,6 +471,7 @@ QcConfigFeatures.parse = function(feature_config_file,
                      color_by = color_by, 
                      color_mapping = color_mapping, 
                      n_peaks = n_peaks, 
+                     balance_groups = balance_groups,
                      overlap_extension = overlap_extension,
                      consensus_fraction = consensus_fraction,
                      consensus_n = consensus_n,
@@ -424,6 +481,58 @@ QcConfigFeatures.parse = function(feature_config_file,
   do.call(tfun, c(list(config_dt = peak_config_dt), cfg_vals))
 }
 
+#' Title
+#'
+#' @param object 
+#' @param group_colors 
+#' @param n_peaks 
+#' @param balance_groups 
+#' @param overlap_extension 
+#' @param consensus_fraction 
+#' @param consensus_n 
+#' @param process_features 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
+#' object = QcConfigFeatures.files(np_files, run_separately = TRUE)
+#' object = ssvQC.prepFeatures(object)
+#' plot(object)
+QcConfigFeatures.overlap_run_by = function(object,
+                                    group_colors = NULL,
+                                    n_peaks = 1e3,
+                                    balance_groups = FALSE,
+                                    overlap_extension = 0,
+                                    consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
+                                    consensus_n = getOption("SQC_CONSENSUS_N", 1),
+                                    process_features = getOption("SQC_PROCESS_FEATURES", TRUE) ){
+  #TODO
+  stop("NYI")
+  object$loaded_features
+  object$overlapped_features
+  new_meta = object@meta_data
+  new_meta$file = NA
+  new_meta[[object@run_by]]
+  new_meta[[object@color_by]]
+  object@color_mapping
+  
+  new_obj = new("QcConfigFeatures",
+                meta_data =  config_df,
+                run_by = run_by,
+                to_run = to_run,
+                to_run_reference = to_run_reference,
+                color_by = color_by,
+                color_mapping = color_mapping,
+                feature_load_FUN = feature_load_FUN,
+                n_peaks = n_peaks,
+                balance_groups = balance_groups,
+                overlap_extension = overlap_extension,
+                consensus_fraction = consensus_fraction,
+                consensus_n = consensus_n,
+                is_null = is_null)
+}
 
 #' @return
 #' @export
@@ -434,6 +543,7 @@ QcConfigFeatures.parse = function(feature_config_file,
 QcConfigFeatures.save_config = function(object, file){
   slots_to_save = c(
     "n_peaks",
+    "balance_groups",
     "consensus_fraction",
     "consensus_n",
     "overlap_extension",

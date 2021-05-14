@@ -1,0 +1,153 @@
+---
+title: "ssvQC Demo"
+author: "joe boyd"
+date: "5/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Objective
+
+To illustrate the uses of ssvQC at a basic, intermediate, and advanced level.
+
+This will be done using a variety of different datasets to demonstrate the flexibility of ssvQC.
+
+1) Basic replicate comparison
+2) Reprodicible peaks comparison between two different marks.
+
+## Replicate Comparison
+
+The first task is to locate the files we need.  ssvQC requires two types of files "signal" (bam or bigwig) and "feature" (any bed-like file with special support for narrowPeak and other common types).  [UCSC has an excellent resource](https://genome.ucsc.edu/FAQ/FAQformat.html) for learning about different file types.
+
+The code below also demonstrates basic usage of dir() coupled with Regex.  Regex is shorthand for Regular Expression and it's a specialized syntax for matching text. Regex below is the odd looking text passed to dir as the "pattern" argument.  Regex gets used again in grepl().  [Here are](https://regex101.com/) [a couple](https://regexr.com/) good Regex resources.
+
+```{r h4 ac files}
+in_dir = "/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/"
+data_paths = dir(in_dir, pattern = "H4K[5].+rep", full.names = TRUE)
+bam_files = dir(data_paths, pattern = "bam$", full.names = TRUE)
+
+np_files = dir(data_paths, pattern = ".+narrowPeak$", full.names = TRUE)
+np_files = np_files[!grepl("loose", np_files)]
+```
+
+With bam_files for our "signal" and narrowPeak files for our "features" we can create a ssvQC object which will link the two together.
+
+```{r h4 ac ssvQC create}
+sqc1 = ssvQC(np_files, bam_files)
+```
+
+As we'll see in the next section, this isn't a very good ssvQC configuration but it will work, especially for this simplest case simply comparing 2 replicates.
+
+Note the use of the $ accessor.  This is the primary intended way to access, meaning get or set, data in ssvQC object.
+
+```{r h4 ac ssvQC config plot}
+plot(sqc1$signal_config)
+plot(sqc1$features_config)
+```
+
+The names are rather long and don't match between the signal and config files. The colors are also automatically selected but work fine with just 2 color groups like this.
+
+Regardless, we can run ssvQC with this data just fine. We'll start slow and just look at feature overlaps.
+
+ssvQC has 2 families of functions ssvQC.prep* and ssvQC.plot*.  In general you only want to run ssvQC.prep* steps once and the results may take some time to calculate so by default they are cached.  Meaning, if you run an ssvQC.prep* step again using the same signal and feature files the previous results are simply loaded.  Feature selection uses random sampling so it's important to use set.seed() prior to processing data to benefit from caching and is just generally a good idea for reproducibility.  
+
+Most ssvQC.plot* functions will run the matching ssvQC.prep* function as needed so it isn't actually necessary to call ssvQC.prep* independently as we do here.
+
+```{r h4 ac features}
+set.seed(0)
+sqc1$features_config$n_peaks = 100
+sqc1$features_config$consensus_fraction
+sqc1$features_config$consensus_n
+sqc1 = ssvQC.prepFeatures(sqc1) #ssvQC.plotFeatures would call this automatically.
+sqc1 = ssvQC.plotFeatures(sqc1)
+```
+
+This doesn't actually output a plot.  All plots are stored in the "plots" slot of the ssvQC object. Again we use the $ accessor.
+
+### Feature plots
+
+```{r h4 ac features plots}
+sqc1$plots$features$count$All_features
+sqc1$plots$features$binary_heatmap$All_features
+sqc1$plots$features$UpSet$All_features
+sqc1$plots$features$venn$All_features
+sqc1$plots$features$euler$All_features
+```
+
+This kind of "feature" analysis actually doesn't rely on "signal" files at all. It would have been valid to create the ssvQC object with only the feature files and we could have generated the same plots.
+
+ssvQC can do a lot more than this though. With signal files we can perform clustering and generate heatmaps, etc.  Especially with bam files, as opposed to bigwigs, there are lots of QC metrics we can generate.  The function ssvQC.runAll will perform all possible analyses on our ssvQC object.
+
+### runAll
+
+```{r h4 ac runAll}
+SQC_OPTIONS$mc.cores = 10 #equivalent to `options(mc.cores = 10)`
+sqc1 = ssvQC.runAll(sqc1)
+```
+
+This has called a series of ssvQC.plot* (and their supporting ssvQC.prep*) functions.
+
+The following sets of plots are now available:
+
+```{r}
+names(sqc1$plots)
+```
+
+### Heatmap
+
+First let's look at the average read pileup across assessed peaks.
+
+```{r}
+sqc1$plots$signal$lines
+```
+
+A big difference! The FRIP plots are very informative as to what's going on here.
+
+Now the signal clustered:
+
+```{r heatmap}
+cowplot::plot_grid(
+  sqc1$plots$signal$heatmaps$All_features$All_signal,
+  sqc1$plots$signal$heatmaps.lines$All_features$All_signal
+)
+#TODO global with cluster vals and signal_config $ accessor
+sqc1$signal_config@cluster_value = "linearQuantile"
+sqc1$signal_config@sort_value = "linearQuantile"
+sqc1$signal_config@plot_value = "linearQuantile"
+
+sqc1 = ssvQC.plotSignal(sqc1)
+cowplot::plot_grid(
+  sqc1$plots$signal$heatmaps$All_features$All_signal,
+  sqc1$plots$signal$heatmaps.lines$All_features$All_signal
+)
+```
+
+All peaks are not created equal! Some clusters have much stronger signal.
+
+### SCC
+
+```{r, fig.width=10, fig.height=4}
+cowplot::plot_grid(ncol = 2,
+                   sqc1$plots$SCC$curves$All_features$All_signal,
+                   sqc1$plots$SCC$dots$All_features$All_signal
+)
+```
+
+The good news is, neither peak set has peaks with high correlation at read length. That kind of peak is typically an artifact from over-amplification or just mapping to artifact prone regions of the genome (i.e. peri-centromere, rDNA, other repetitive or high copy-number regions).
+
+That said, the correlation at estimated fragment length isn't great though either. It averages .16 for rep2 when values of .6 to .8 are typical of high-quality data. The dots plot shows that all peaks fall into the same distribution (blob of dots), indicating the issue isn't a mix of low-quality and high-quality peaks, just generally low enrichment.
+
+### FRIP
+
+```{r}
+sqc1$plots$reads$All_signal
+sqc1$plots$features$count$All_features
+sqc1$plots$FRIP$reads_per_peak
+sqc1$plots$FRIP$reads_per_peak
+sqc1$plots$FRIP$reads_per_peak
+```
+
+The FRIP (Fraction of Reads in Peaks) series of plots assesses the strenght of the signal enrichment.  Keep in mind we're only looking at a small sampling of peaks in this case so the total FRIP will be lower than expected. If the FRIP per peak plots show rough equivalence, that suggests the samples are of similar quality to one another. If that's true, and the read count per peak plots show an imbalance, and that imbalance holds in the mapped reads and peak count plots, that strongly indicates that more reads would be a benefit to the weaker replicate.

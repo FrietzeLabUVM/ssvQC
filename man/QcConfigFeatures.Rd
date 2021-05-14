@@ -22,6 +22,7 @@ QcConfigFeatures(
   color_mapping = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
+  balance_groups = FALSE,
   overlap_extension = 0,
   consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
   consensus_n = getOption("SQC_CONSENSUS_N", 1),
@@ -33,11 +34,13 @@ QcConfigFeatures.null()
 
 QcConfigFeatures.files(
   file_paths,
+  run_separately = FALSE,
   group_names = NULL,
   groups = NULL,
   group_colors = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
+  balance_groups = FALSE,
   overlap_extension = 0,
   consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
   consensus_n = getOption("SQC_CONSENSUS_N", 1),
@@ -61,6 +64,10 @@ impact on the configuration.}
 
 \item{run_by}{character that defines the column of config_df that groups the features.  The default of "All" will simply group all features into a single comparison.}
 
+\item{to_run}{}
+
+\item{to_run_reference}{}
+
 \item{color_by}{character that defines the column of config_df that controls color mapping. The default of "file" will assign a unique color to every feature set.}
 
 \item{color_mapping}{named character vector that maps values of color_by to valid R colors, i.e. "red" or "#FF0000".}
@@ -69,9 +76,17 @@ impact on the configuration.}
 
 \item{n_peaks}{number of peaks to subset for}
 
+\item{balance_groups}{}
+
+\item{overlap_extension}{}
+
 \item{consensus_fraction}{A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.}
 
 \item{consensus_n}{An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.}
+
+\item{process_features}{}
+
+\item{is_null}{}
 
 \item{file_paths}{character paths to files}
 
@@ -126,7 +141,8 @@ config_df$file = file.path(system.file(package = "ssvQC", "extdata"), config_df$
 feature_conf = QcConfigFeatures(config_df, process_features = TRUE)
 QcConfigFeatures.null()
 np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
-object = QcConfigFeatures.files(np_files)
+object = QcConfigFeatures.files(np_files, balance_groups = TRUE)
+object = ssvQC.prepFeatures(object)
 plot(object)
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 object = QcConfigFeatures.parse(feature_config_file)

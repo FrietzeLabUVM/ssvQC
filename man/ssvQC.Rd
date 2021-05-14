@@ -18,7 +18,7 @@
 \title{ssvQC}
 \usage{
 ssvQC(
-  feature_config = NULL,
+  features_config = NULL,
   signal_config = NULL,
   out_dir = getwd(),
   bfc = NULL,
@@ -52,7 +52,7 @@ ssvQC.prepFeatures(object)
 ssvQC.plotFeatures(object, force_euler)
 }
 \arguments{
-\item{feature_config}{Controls features configuration.  May be a:
+\item{features_config}{Controls features configuration.  May be a:
 QcConfigFeatures object, path to a file defining configuration via
 QcConfigFeatures.parse, features files to define via
 QcConfigFeatures.files, or a data.frame to pass to QcConfigFeatures.}
@@ -78,8 +78,8 @@ ssvQC
 \examples{
 options(mc.cores = 10)
 set.seed(0)
-feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
-feature_config = QcConfigFeatures.parse(feature_config_file)
+features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+features_config = QcConfigFeatures.parse(features_config_file)
 
 bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 bam_config = QcConfigSignal.parse(bam_config_file)
@@ -87,19 +87,28 @@ bam_config = QcConfigSignal.parse(bam_config_file)
 bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 bigwig_config = QcConfigSignal.parse(bigwig_config_file)
 
-sqc.complete.file = ssvQC(feature_config_file, bam_config_file)
+sqc.complete.file = ssvQC(features_config_file, bam_config_file)
 
-sqc.complete = ssvQC(feature_config, bam_config)
+sqc.complete = ssvQC(features_config, bam_config)
 object = sqc.complete
 
-sqc.complete.bw = ssvQC(feature_config, bigwig_config_file)
+sqc.complete.bw = ssvQC(features_config, bigwig_config_file)
 
 sqc.signal = ssvQC(signal_config = bam_config)
 
-sqc.feature = ssvQC(feature_config = feature_config)
+sqc.feature = ssvQC(features_config = features_config)
 
 sqc.signal = ssvQC.runAll(sqc.signal)
 sqc.feature = ssvQC.runAll(sqc.feature)
 
 sqc.complete = ssvQC.runAll(sqc.complete)
+
+sqc.complete$plots$signal$heatmaps
+sqc.complete$signal_config@plot_value = "RPM"
+sqc.complete = ssvQC.plotSignal(sqc.complete)
+sqc.complete$plots$signal$heatmaps
+
+sqc.complete$signal_config@plot_value = "linearQuantile"
+sqc.complete = ssvQC.plotSignal(sqc.complete)
+sqc.complete$plots$signal$heatmaps
 }
