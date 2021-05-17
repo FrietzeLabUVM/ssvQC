@@ -48,8 +48,8 @@ As we'll see in the next section, this isn't a very good ssvQC configuration but
 Note the use of the $ accessor.  This is the primary intended way to access, meaning get or set, data in ssvQC object.
 
 ```{r h4 ac ssvQC config plot}
-plot(sqc1$signal_config)
-plot(sqc1$features_config)
+# plot(sqc1$signal_config)
+# plot(sqc1$features_config)
 ```
 
 The names are rather long and don't match between the signal and config files. The colors are also automatically selected but work fine with just 2 color groups like this.
@@ -196,7 +196,7 @@ sig_config$color_by = "rep"
 sig_config$to_run = setdiff(sig_config$meta_data[[sig_config$run_by]], "input")
 sig_config$to_run_reference = "input"
 
-plot(sig_config)
+# plot(sig_config)
 
 feat_config = QcConfigFeatures.files(np_files, n_peaks = 200)
 feat_config$meta_data$mark = sapply(strsplit(feat_config$meta_data$group, "[_\\.]"), function(x)x[2])

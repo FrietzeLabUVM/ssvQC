@@ -186,6 +186,7 @@ setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
   message("run+plot features overlaps")
   object = ssvQC.plotFeatures(object)
   message("run+plot mapped reads")
+  object = ssvQC.prepMappedReads(object)
   object = ssvQC.plotMappedReads(object)
   message("run signal fragLens")
   object = ssvQC.prepFragLens(object)
@@ -209,7 +210,7 @@ setMethod("ssvQC.runAll", "ssvQC.signalOnly", function(object){
 })
 
 ##FragLens for SE bams
-.prepFragLens = function(bam_f, peak_gr, n_regions, bfc){
+.prepFragLens = function(bam_f, peak_gr, name, n_regions, bfc){
   fl = bfcif(bfc, digest::digest(list(bam_f, peak_gr, n_regions)), function(){
     seqsetvis::fragLen_calcStranded(bam_f, peak_gr, n_regions = n_regions)
   })
@@ -253,7 +254,7 @@ setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
         name = matched_dt[i,]$name
         peak_gr = query@feature_load_FUN(peak_f)[[1]]
         # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
-        .prepFragLens(bam_f, peak_gr, 500, bfc)
+        .prepFragLens(bam_f, peak_gr, name, 500, bfc)
       }))
     }else{
       fl_dt.matched = NULL
@@ -267,7 +268,7 @@ setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
         bam_f = unmatched_dt[i,]$file
         name = unmatched_dt[i,]$name
         # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
-        .prepFragLens(bam_f, peak_gr, 500, bfc)
+        .prepFragLens(bam_f, peak_gr, name, 500, bfc)
       }))
     }else{
       fl_dt.unmatched = NULL
