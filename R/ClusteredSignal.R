@@ -1,20 +1,4 @@
-val2var = c(
-  raw = "y",
-  RPM = "y_RPM",
-  linearQuantile = "y_linQ"  
-)
 
-val2lab = c(
-  raw = "read\npileup",
-  RPM = "RPM\npileup",
-  linearQuantile = "normalized\npileup"  
-)
-
-val2bwlab = c(
-  raw = "bigWig\nsignal",
-  RPM = "***ERROR***",
-  linearQuantile = "normalized\nbigWig\nsignal"  
-)
 
 #' ClusteredSignal
 #'

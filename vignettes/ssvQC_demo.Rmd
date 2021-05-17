@@ -18,6 +18,10 @@ This will be done using a variety of different datasets to demonstrate the flexi
 1) Basic replicate comparison
 2) Reprodicible peaks comparison between two different marks.
 
+```{r libs}
+library(ssvQC)
+```
+
 ## Replicate Comparison
 
 The first task is to locate the files we need.  ssvQC requires two types of files "signal" (bam or bigwig) and "feature" (any bed-like file with special support for narrowPeak and other common types).  [UCSC has an excellent resource](https://genome.ucsc.edu/FAQ/FAQformat.html) for learning about different file types.
@@ -114,9 +118,9 @@ cowplot::plot_grid(
   sqc1$plots$signal$heatmaps.lines$All_features$All_signal
 )
 #TODO global with cluster vals and signal_config $ accessor
-sqc1$signal_config@cluster_value = "linearQuantile"
-sqc1$signal_config@sort_value = "linearQuantile"
-sqc1$signal_config@plot_value = "linearQuantile"
+sqc1$signal_config$cluster_value = SQC_SIGNAL_VALUES$linearQuantile
+sqc1$signal_config$sort_value = SQC_SIGNAL_VALUES$linearQuantile
+sqc1$signal_config$plot_value = SQC_SIGNAL_VALUES$linearQuantile
 
 sqc1 = ssvQC.plotSignal(sqc1)
 cowplot::plot_grid(

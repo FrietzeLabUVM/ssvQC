@@ -295,13 +295,16 @@ parse_fetch_options = function(fop){
     }
   }
   #numeric: consensus_n, consensus_fraction, n_peaks, view_size
-  for(var in c("consensus_n", "consensus_fraction", "n_peaks", "view_size", "overlap_extension")){
+  for(var in c("consensus_n", "consensus_fraction", "n_peaks", "view_size", "overlap_extension", "heatmap_limit_values")){
     if(!is.null(cfg_vals[[var]])){
       cfg_vals[[var]] = as.numeric(cfg_vals[[var]])
+      if(!is.numeric(cfg_vals[[var]])){
+        stop("The variable, '", var, "' is only supported as a numeric currently.")
+      }
     }    
   }
   #logical: is_null
-  for(var in c("is_null")){
+  for(var in c("is_null", "lineplot_free_limits")){
     if(!is.null(cfg_vals[[var]])){
       cfg_vals[[var]] = as.logical(cfg_vals[[var]])
     }    

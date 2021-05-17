@@ -20,11 +20,13 @@ QcConfigSignal(
   read_mode = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
   fetch_options = list(),
-  cluster_value = valid_cluster_vals[1],
+  cluster_value = signal_vars[1],
   linearQuantile_cutoff = 0.98,
-  sort_value = valid_cluster_vals[1],
+  sort_value = signal_vars[1],
   sort_method = c("hclust", "sort")[2],
-  plot_value = valid_cluster_vals[1],
+  plot_value = signal_vars[1],
+  heatmap_limit_values = NULL,
+  lineplot_free_limits = FALSE,
   is_null = FALSE
 )
 
@@ -37,9 +39,9 @@ QcConfigSignal.files(
   group_colors = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
   read_mode = NULL,
-  cluster_value = valid_cluster_vals[1],
+  cluster_value = signal_vars[1],
   linearQuantile_cutoff = 0.98,
-  sort_value = valid_cluster_vals[1],
+  sort_value = signal_vars[1],
   sort_method = c("hclust", "sort")[2]
 )
 
@@ -104,14 +106,18 @@ a QcConfigSignal object
 \description{
 QcConfigSignal
 
+QcConfigSignal
+
 QcConfigSignal.files
 }
 \section{Slots}{
 
 \describe{
-\item{\code{view_size}}{numeric.}
+\item{\code{view_size}}{}
 
-\item{\code{read_mode}}{character.}
+\item{\code{read_mode}}{}
+
+\item{\code{fetch_options}}{}
 
 \item{\code{cluster_value}}{}
 
@@ -123,7 +129,9 @@ QcConfigSignal.files
 
 \item{\code{plot_value}}{}
 
-\item{\code{fetch_options}}{list.}
+\item{\code{heatmap_limit_values}}{}
+
+\item{\code{lineplot_free_limits}}{}
 }}
 
 \examples{

@@ -16,17 +16,20 @@ check_QcConfigSignal = function(object){
   if (length(errors) == 0) TRUE else errors
 }
 
-' QcConfigSignal
+#' QcConfigSignal
 #'
-#' @slot view_size numeric.
-#' @slot read_mode character.
+#' @slot view_size 
+#' @slot read_mode 
+#' @slot fetch_options 
 #' @slot cluster_value 
 #' @slot linearQuantile_cutoff 
 #' @slot sort_value 
 #' @slot sort_method 
 #' @slot plot_value 
+#' @slot heatmap_limit_values 
+#' @slot lineplot_free_limits 
+#'
 #' @slot  
-#' @slot fetch_options list.
 #'
 #' @rdname QcConfigSignal
 #' @export
@@ -40,16 +43,120 @@ setClass("QcConfigSignal", contains = "QcConfig",
            linearQuantile_cutoff = "numeric",
            sort_value = "character",
            sort_method = "character",
-           plot_value = "character"
+           plot_value = "character",
+           heatmap_limit_values = "ANY",
+           lineplot_free_limits = "logical"
          ), validity = check_QcConfigSignal)
-
-valid_cluster_vals = c("raw", "RPM", "linearQuantile")
 
 setMethod("initialize","QcConfigSignal", function(.Object,...){
   .Object <- callNextMethod()
   validObject(.Object)
   .Object
 })
+
+setMethod("names", "QcConfigSignal",
+          function(x)
+          {
+            c(
+              "view_size", 
+              "read_mode", 
+              "fetch_options", 
+              "cluster_value", 
+              "linearQuantile_cutoff", 
+              "sort_value", 
+              "sort_method", 
+              "plot_value",
+              "heatmap_limit_values",
+              "lineplot_free_limits"
+            )
+            
+          })
+
+
+setMethod("$", "QcConfigSignal",
+          function(x, name)
+          {
+            switch (name,
+                    view_size = x@view_size, 
+                    read_mode = x@read_mode, 
+                    fetch_options = x@fetch_options, 
+                    cluster_value = x@cluster_value, 
+                    linearQuantile_cutoff = x@linearQuantile_cutoff, 
+                    sort_value = x@sort_value, 
+                    sort_method = x@sort_method, 
+                    plot_value = x@plot_value,
+                    heatmap_limit_values = x@heatmap_limit_values,
+                    lineplot_free_limits = x@lineplot_free_limits
+            )
+          })
+
+setReplaceMethod("$", "QcConfigSignal",
+                 function(x, name, value)
+                 {
+                   warn_msg = "This assignment is not supported.  No effect."
+                   switch (name,
+                           view_size = {
+                             x@view_size = value
+                           },
+                           read_mode = {
+                             stopifnot(value %in% c("bam_SE", "bam_PE", "bigwig", "null"))  
+                             x@read_mode = value
+                           },
+                           fetch_options = {
+                             x@fetch_options = value
+                           },
+                           cluster_value = {
+                             if(!value %in% signal_vars){
+                               stop("cluster_value must be one of: ", paste(signal_vars, collapse = ", "))
+                             } 
+                             x@cluster_value = value
+                           },
+                           linearQuantile_cutoff = {
+                             stopifnot(value > 0 & value <= 1)  
+                             x@linearQuantile_cutoff = value
+                           },
+                           sort_value = {
+                             if(!value %in% signal_vars){
+                               stop("sort_value must be one of: ", paste(signal_vars, collapse = ", "))
+                             }
+                             x@sort_value = value
+                           },
+                           sort_method = {
+                             if(!value %in% c("hclust", "sort")){
+                               stop("sort_method must be one of: ", paste(c("hclust", "sort"), collapse = ", "))
+                             }
+                             x@sort_method = value
+                           },
+                           plot_value = {
+                             if(!value %in% signal_vars){
+                               stop("plot_value must be one of: ", paste(signal_vars, collapse = ", "))
+                             }
+                             x@plot_value = value
+                           },
+                           heatmap_limit_values = {
+                             if(is.null(value)){
+                               
+                             }else if(is.numeric(value)){
+                               if(length(value) != 2){
+                                 stop("2 values required for limits, may use NA for one to use min/max.")
+                               }
+                             }else if(is.function(value)){
+                               
+                             }else{
+                               stop("heatmap_limit_values must be defined in a way compatible with ggplot2::scale_continuous limits.  NULL, numeric, or function allowed.")
+                             }
+                             x@heatmap_limit_values = value
+                           },
+                           lineplot_free_limits = {
+                             if(!value %in% c(FALSE, TRUE)){
+                               stop("lineplot_free_limits must be one of FALSE or TRUE")
+                             }
+                             x@lineplot_free_limits = value
+                           },
+                           warning(warn_msg)
+                   )
+                   x
+                 })
 
 #' QcConfigSignal
 #'
@@ -88,11 +195,13 @@ QcConfigSignal = function(config_df,
                           read_mode = NULL,
                           view_size = getOption("SQC_VIEW_SIZE", 3e3), 
                           fetch_options = list(),
-                          cluster_value = valid_cluster_vals[1],
+                          cluster_value = signal_vars[1],
                           linearQuantile_cutoff = .98,
-                          sort_value = valid_cluster_vals[1],
+                          sort_value = signal_vars[1],
                           sort_method = c("hclust", "sort")[2],
-                          plot_value = valid_cluster_vals[1],
+                          plot_value = signal_vars[1],
+                          heatmap_limit_values = NULL,
+                          lineplot_free_limits = FALSE,
                           is_null = FALSE){
   .enforce_file_var(config_df)
   if(!run_by %in% colnames(config_df)){
@@ -105,11 +214,11 @@ QcConfigSignal = function(config_df,
   if(!color_by %in% colnames(config_df)){
     stop("color_by ", color_by, " was not in column names.")
   }
-  if(!cluster_value %in% valid_cluster_vals){
-    stop("cluster_value of ", cluster_value, " was not one of : ", paste(valid_cluster_vals, collapse = ", "))
+  if(!cluster_value %in% signal_vars){
+    stop("cluster_value of ", cluster_value, " was not one of : ", paste(signal_vars, collapse = ", "))
   }
-  if(!sort_value %in% valid_cluster_vals){
-    stop("sort_value of ", sort_value, " was not one of : ", paste(valid_cluster_vals, collapse = ", "))
+  if(!sort_value %in% signal_vars){
+    stop("sort_value of ", sort_value, " was not one of : ", paste(signal_vars, collapse = ", "))
   }
   if(linearQuantile_cutoff <= 0 | linearQuantile_cutoff > 1){
     stop("linearQuantile_cutoff must be between 0 and 1. Was ", linearQuantile_cutoff)
@@ -171,6 +280,8 @@ QcConfigSignal = function(config_df,
       sort_value = sort_value,
       sort_method = sort_method,
       plot_value = plot_value,
+      heatmap_limit_values = heatmap_limit_values,
+      lineplot_free_limits = lineplot_free_limits,
       is_null = is_null)
 }
 
@@ -207,7 +318,10 @@ QcConfigSignal.parse = function(signal_config_file){
                        "linearQuantile_cutoff",
                        "sort_value",
                        "plot_value",
-                       "sort_method")
+                       "sort_method",
+                       "heatmap_limit_values", 
+                       "lineplot_free_limits" 
+                       )
   cfg_vals = .parse_config_header(signal_config_file, valid_signal_var)
   
   if(!is.null(cfg_vals[["main_dir"]])){
@@ -232,12 +346,14 @@ QcConfigSignal.parse = function(signal_config_file){
                   run_by = NULL, 
                   to_run = NULL, 
                   to_run_reference = NULL,
-                  cluster_value = valid_cluster_vals[1],
+                  cluster_value = signal_vars[1],
                   linearQuantile_cutoff = .98,
-                  sort_value = valid_cluster_vals[1],
+                  sort_value = signal_vars[1],
                   sort_method = c("hclust", "sort")[2],
-                  plot_value = valid_cluster_vals[1],
+                  plot_value = signal_vars[1],
                   fetch_options = list(), 
+                  heatmap_limit_values = NULL, 
+                  lineplot_free_limits = FALSE, 
                   is_null = FALSE){
     QcConfigSignal(config_df = config_dt, 
                    run_by = run_by, 
@@ -253,6 +369,8 @@ QcConfigSignal.parse = function(signal_config_file){
                    sort_value = sort_value,
                    sort_method = sort_method,
                    plot_value = plot_value,
+                   heatmap_limit_values = heatmap_limit_values,
+                   lineplot_free_limits = lineplot_free_limits,
                    is_null = TRUE)
   }
   do.call(tfun, c(list(config_dt = signal_config_dt), cfg_vals))
@@ -279,9 +397,9 @@ QcConfigSignal.files = function(file_paths,
                                 group_colors = NULL,
                                 view_size = getOption("SQC_VIEW_SIZE", 3e3), 
                                 read_mode = NULL,
-                                cluster_value = valid_cluster_vals[1],
+                                cluster_value = signal_vars[1],
                                 linearQuantile_cutoff = .98,
-                                sort_value = valid_cluster_vals[1],
+                                sort_value = signal_vars[1],
                                 sort_method = c("hclust", "sort")[2]
 ){
   if(is.null(groups)){
@@ -395,7 +513,10 @@ setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definit
         sort_value = x@sort_value,
         sort_method = x@sort_method,
         plot_value = x@plot_value,
-        fetch_options = x@fetch_options)
+        fetch_options = x@fetch_options,
+        heatmap_limit_values = x@heatmap_limit_values,
+        lineplot_free_limits = x@lineplot_free_limits
+        )
   })
 })
 setMethod("split", signature = c("QcConfigSignal", "character"), definition = function(x, f){

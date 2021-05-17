@@ -1,3 +1,4 @@
+
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage("Attaching ssvQC version ",
                         packageDescription("ssvQC")$Version, ".")
@@ -13,6 +14,7 @@
   options("SQC_CACHE_VERSION" = "v1")
   options("SQC_CACHE_PATH" = "~/.cache")
   SQC_OPTIONS <<- new("SQC_OPTIONS")
+  SQC_SIGNAL_VALUES <<- sqc_signal_values
 }
 
 setClass("SQC_OPTIONS", representation = list(
