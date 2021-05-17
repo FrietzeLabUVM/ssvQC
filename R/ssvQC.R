@@ -183,15 +183,19 @@ ssvQC = function(features_config = NULL,
 #' @rdname ssvQC
 setGeneric("ssvQC.runAll", function(object){standardGeneric("ssvQC.runAll")})
 setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
+  message("run+plot features overlaps")
   object = ssvQC.plotFeatures(object)
-  
-  object = ssvQC.prepMappedReads(object)
-  object = ssvQC.prepFragLens(object)
-  object = ssvQC.prepCapValue(object)
-  
+  message("run+plot mapped reads")
   object = ssvQC.plotMappedReads(object)
+  message("run signal fragLens")
+  object = ssvQC.prepFragLens(object)
+  message("run signal normalization")
+  object = ssvQC.prepCapValue(object)
+  message("plot signal")
   object = ssvQC.plotSignal(object)
+  message("plot SCC")
   object = ssvQC.plotSCC(object)
+  message("plot FRIP")
   object = ssvQC.plotFRIP(object)
   object
 })
@@ -205,13 +209,21 @@ setMethod("ssvQC.runAll", "ssvQC.signalOnly", function(object){
 })
 
 ##FragLens for SE bams
+.prepFragLens = function(bam_f, peak_gr, n_regions, bfc){
+  fl = bfcif(bfc, digest::digest(list(bam_f, peak_gr, n_regions)), function(){
+    seqsetvis::fragLen_calcStranded(bam_f, peak_gr, n_regions = n_regions)
+  })
+  dt = data.table(fragLens = fl)
+  dt$name = name
+  dt
+}
+
 
 #' @export
 #' @rdname ssvQC
-setGeneric("ssvQC.prepFragLens", function(object, query){standardGeneric("ssvQC.prepFragLens")})
+setGeneric("ssvQC.prepFragLens", function(object, query, bfc){standardGeneric("ssvQC.prepFragLens")})
 setMethod("ssvQC.prepFragLens", "ssvQC.complete", function(object){
-  message("complete")
-  object@signal_config = ssvQC.prepFragLens(object@signal_config, object@features_config)
+  object@signal_config = ssvQC.prepFragLens(object@signal_config, object@features_config, object@bfc)
   object
 })
 setMethod("ssvQC.prepFragLens", "ssvQC.featureOnly", function(object){
@@ -220,62 +232,61 @@ setMethod("ssvQC.prepFragLens", "ssvQC.featureOnly", function(object){
 setMethod("ssvQC.prepFragLens", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepCapValue on ssvQC with no QcConfigFeatures component")
 })
-setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures"), function(object, query){
+setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFileCache"), function(object, query, bfc){
   if(object@read_mode != "bam_SE"){
     stop("ssvQC.prepFragLens only appropriate for read_mode bam_SE")
   }
   
   #bam specific independent of peaks
   
-  sig_dt = as.data.table(object@meta_data)
-  peak_dt = as.data.table(query@meta_data)
+  sig_dt = as.data.table(object@meta_data)[, .(file, name)][order(file)]
+  peak_dt = as.data.table(query@meta_data)[, .(file, name)][order(file)]
   
-  matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
-  unmatched_dt = sig_dt[!name %in% matched_dt$name]
-  
-  if(nrow(matched_dt) > 0){
-    fl_dt.matched = rbindlist(lapply(seq_len(nrow(matched_dt)), function(i){
-      peak_f = matched_dt[i,]$peak_file
-      bam_f = matched_dt[i,]$bam_file
-      name = matched_dt[i,]$name
-      peak_gr = query@feature_load_FUN(peak_f)[[1]]
-      # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
-      fl = seqsetvis::fragLen_calcStranded(bam_f, peak_gr, n_regions = 500)
-      
-      dt = data.table(fragLens = fl)
-      dt$name = name
-      dt
-    }))
-  }else{
-    fl_dt.matched = NULL
-  }
-  
-  if(nrow(unmatched_dt) > 0){
-    query = ssvQC.prepFeatures(query)
-    peak_gr = unlist(GRangesList(query$assessment_features))
+  fl_dt = bfcif(bfc, digest::digest(list(sig_dt, peak_dt, "ssvQC.prepFragLens")), function(){
+    matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
+    unmatched_dt = sig_dt[!name %in% matched_dt$name]
     
-    fl_dt.unmatched = rbindlist(lapply(seq_len(nrow(unmatched_dt)), function(i){
-      bam_f = unmatched_dt[i,]$file
-      name = unmatched_dt[i,]$name
-      # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
-      fl = seqsetvis::fragLen_calcStranded(bam_f, peak_gr, n_regions = 500)
+    if(nrow(matched_dt) > 0){
+      fl_dt.matched = rbindlist(lapply(seq_len(nrow(matched_dt)), function(i){
+        peak_f = matched_dt[i,]$peak_file
+        bam_f = matched_dt[i,]$bam_file
+        name = matched_dt[i,]$name
+        peak_gr = query@feature_load_FUN(peak_f)[[1]]
+        # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
+        .prepFragLens(bam_f, peak_gr, 500, bfc)
+      }))
+    }else{
+      fl_dt.matched = NULL
+    }
+    
+    if(nrow(unmatched_dt) > 0){
+      query = ssvQC.prepFeatures(query)
+      peak_gr = unlist(GRangesList(query$assessment_features))
       
-      dt = data.table(fragLens = fl)
-      dt$name = name
-      dt
-    }))
-  }else{
-    fl_dt.unmatched = NULL
-  }
-  fl_dt = rbind(fl_dt.matched, fl_dt.unmatched)
+      fl_dt.unmatched = rbindlist(lapply(seq_len(nrow(unmatched_dt)), function(i){
+        bam_f = unmatched_dt[i,]$file
+        name = unmatched_dt[i,]$name
+        # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
+        .prepFragLens(bam_f, peak_gr, 500, bfc)
+      }))
+    }else{
+      fl_dt.unmatched = NULL
+    }
+    fl_dt = rbind(fl_dt.matched, fl_dt.unmatched)
+    
+    if(!setequal(fl_dt$name, object@meta_data$name)){
+      stop("something has gone wrong assigning fragLens, pease report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues") 
+    }
+    setkey(fl_dt, "name")
+    fl_dt
+  })
   
-  if(!setequal(fl_dt$name, object@meta_data$name)){
-    stop("something has gone wrong assigning fragLens, pease report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues") 
-  }
-  
-  setkey(fl_dt, "name")
   object@meta_data$fragLens = fl_dt[.(object@meta_data$name)]$fragLens
   object
+})
+
+setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures"), function(object, query){
+  ssvQC.prepFragLens(object, query, BiocFileCache::BiocFileCache())
 })
 
 ##MappedReads
@@ -284,7 +295,6 @@ setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures"), functio
 #' @rdname ssvQC
 setGeneric("ssvQC.prepMappedReads", function(object){standardGeneric("ssvQC.prepMappedReads")})
 setMethod("ssvQC.prepMappedReads", "ssvQC.complete", function(object){
-  message("complete")
   object@signal_config = ssvQC.prepMappedReads(object@signal_config)
   object
 })
@@ -293,12 +303,10 @@ setMethod("ssvQC.prepMappedReads", "ssvQC.featureOnly", function(object){
   message("featureOnly")
 })
 setMethod("ssvQC.prepMappedReads", "ssvQC.signalOnly", function(object){
-  message("signalOnly")
   object@signal_config = ssvQC.prepMappedReads(object@signal_config)
   object
 })
 setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
-  message("QcConfigSignal")
   #bam specific independent of peaks
   if(grepl("bam", object@read_mode)){
     object@meta_data$mapped_reads = sapply(object@meta_data$file, get_mapped_reads)
@@ -315,7 +323,6 @@ setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
 #' @rdname ssvQC
 setGeneric("ssvQC.prepCapValue", function(object, query){standardGeneric("ssvQC.prepCapValue")})
 setMethod("ssvQC.prepCapValue", "ssvQC.complete", function(object){
-  message("complete")
   object@signal_config = ssvQC.prepCapValue(object@signal_config, object@features_config)
   object
 })
@@ -326,9 +333,7 @@ setMethod("ssvQC.prepCapValue", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepCapValue on ssvQC with no QcConfigFeatures component")
 })
 setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures"), function(object, query){
-  message("QcConfigSignal")
   #bam specific independent of peaks
-  
   sig_dt = as.data.table(object@meta_data)
   setkey(sig_dt, "name")
   peak_dt = as.data.table(query@meta_data)
@@ -760,7 +765,6 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
   
   
   feature_plots =lapply(names(feat_config$loaded_features), function(feat_nam){
-    feat_nam = names(feat_config$loaded_features)
     feat_label = sub("_features", " features", feat_nam)
     peak_grs = feat_config$loaded_features[[feat_nam]]
     peak_dt = data.table(N = lengths(peak_grs), name_split = names(peak_grs))
@@ -819,6 +823,7 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
   object
 }
 
+
 #' @param force_euler If TRUE forces Euler plots to be generated for a list of feature sets longer than 8.  Euler plots can take quite a long time to generate as more feature sets are generated.
 #' @export
 #' @rdname ssvQC
@@ -835,6 +840,7 @@ setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly"), function(object){
   ssvQC.plotFeatures(object, force_euler = FALSE)
 })
 setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly", "logical"), .plotFeatures)
+
 
 
 ### $ Accessor

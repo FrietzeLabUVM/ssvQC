@@ -193,8 +193,18 @@ sig_config$meta_data$mark = sapply(strsplit(sig_config$meta_data$group, "[_\\.]"
 sig_config$meta_data$rep = sapply(strsplit(sig_config$meta_data$group, "[_\\.]"), function(x)x[3])
 sig_config$run_by = "mark"
 sig_config$color_by = "rep"
+sig_config$to_run = setdiff(sig_config$meta_data[[sig_config$run_by]], "input")
+sig_config$to_run_reference = "input"
 
 plot(sig_config)
 
-feat_config = QcConfigFeatures.files(np_files)
+feat_config = QcConfigFeatures.files(np_files, n_peaks = 200)
+feat_config$meta_data$mark = sapply(strsplit(feat_config$meta_data$group, "[_\\.]"), function(x)x[2])
+feat_config$meta_data$rep = sapply(strsplit(feat_config$meta_data$group, "[_\\.]"), function(x)x[3])
+feat_config$run_by = "mark"
+feat_config$color_by = "rep"
+feat_config$to_run = setdiff(feat_config$meta_data[[feat_config$run_by]], "input")
+feat_config$to_run_reference = character()
+sqc2 = ssvQC(feat_config, sig_config)
+sqc2 = ssvQC.runAll(sqc2)
 ```

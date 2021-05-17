@@ -31,6 +31,9 @@ setMethod("initialize","QcConfigFeatures", function(.Object,...){
   .Object
 })
 
+#' @export
+setMethod("plot", "QcConfigFeatures", definition = function(x).plot_QcConfig(x))
+
 setMethod("names", "QcConfigFeatures",
           function(x)
           {

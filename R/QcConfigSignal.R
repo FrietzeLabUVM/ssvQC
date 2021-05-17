@@ -54,6 +54,9 @@ setMethod("initialize","QcConfigSignal", function(.Object,...){
   .Object
 })
 
+#' @export
+setMethod("plot", "QcConfigSignal", definition = function(x).plot_QcConfig(x))
+
 setMethod("names", "QcConfigSignal",
           function(x)
           {
