@@ -204,7 +204,8 @@ setMethod("QcScaleFill", c("QcConfig"), function(object){
 #' @rdname QcConfig
 #' @examples
 setMethod("plot", "QcConfig", definition = function(x).plot_QcConfig(x))
-
+setMethod("plot", "QcConfigFeatures", definition = function(x).plot_QcConfig(x))
+setMethod("plot", "QcConfigSignal", definition = function(x).plot_QcConfig(x))
 
 #' Title
 #'

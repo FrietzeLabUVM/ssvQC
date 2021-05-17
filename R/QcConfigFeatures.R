@@ -336,7 +336,7 @@ QcConfigFeatures = function(config_df,
 #' @examples
 #' QcConfigFeatures.null()
 QcConfigFeatures.null = function(){
-  qc = suppressWarnings({QcConfigFeatures(data.frame(file = "null"), process_features = FALSE)})
+  qc = suppressWarnings({QcConfigFeatures(data.frame(file = "null", stringsAsFactors = FALSE), process_features = FALSE)})
   qc@is_null = TRUE
   qc
 }
@@ -395,7 +395,10 @@ QcConfigFeatures.files = function(file_paths,
     feature_load_FUN = get_feature_file_load_function(file_paths[1])[[1]]
   }
   config_df = data.frame(file = as.character(file_paths), 
-                         group = group_names[groups], All = "All", stringsAsFactors = FALSE)
+                         group = group_names[groups], 
+                         All = "All", 
+                         stringsAsFactors = FALSE)
+  
   config_df$name = basename(config_df$file)
   config_df$name_split = gsub("[_\\.]", "\n", config_df$name)
   

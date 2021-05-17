@@ -18,11 +18,11 @@ This will be done using a variety of different datasets to demonstrate the flexi
 1) Basic replicate comparison
 2) Reprodicible peaks comparison between two different marks.
 
-```{r libs}
+```{r libs, warning=FALSE, message=FALSE}
 library(ssvQC)
 ```
 
-## Replicate Comparison
+## Simple Replicate Comparison
 
 The first task is to locate the files we need.  ssvQC requires two types of files "signal" (bam or bigwig) and "feature" (any bed-like file with special support for narrowPeak and other common types).  [UCSC has an excellent resource](https://genome.ucsc.edu/FAQ/FAQformat.html) for learning about different file types.
 
@@ -117,12 +117,30 @@ cowplot::plot_grid(
   sqc1$plots$signal$heatmaps$All_features$All_signal,
   sqc1$plots$signal$heatmaps.lines$All_features$All_signal
 )
-#TODO global with cluster vals and signal_config $ accessor
+```
+
+We can tweak a couple setting that impact the color scale limits of the heatmap and y-axis limits of the line plots.
+
+```{r heatmap2}
+sqc1$signal_config$lineplot_free_limits = TRUE
+sqc1$signal_config$heatmap_limit_values = c(0, 50)
+
+sqc1 = ssvQC.plotSignal(sqc1)
+
+cowplot::plot_grid(
+  sqc1$plots$signal$heatmaps$All_features$All_signal,
+  sqc1$plots$signal$heatmaps.lines$All_features$All_signal
+)
+```
+
+```{r heatmap3}
 sqc1$signal_config$cluster_value = SQC_SIGNAL_VALUES$linearQuantile
 sqc1$signal_config$sort_value = SQC_SIGNAL_VALUES$linearQuantile
 sqc1$signal_config$plot_value = SQC_SIGNAL_VALUES$linearQuantile
+sqc1$signal_config$heatmap_limit_values = NULL
 
 sqc1 = ssvQC.plotSignal(sqc1)
+
 cowplot::plot_grid(
   sqc1$plots$signal$heatmaps$All_features$All_signal,
   sqc1$plots$signal$heatmaps.lines$All_features$All_signal
@@ -155,3 +173,28 @@ sqc1$plots$FRIP$reads_per_peak
 ```
 
 The FRIP (Fraction of Reads in Peaks) series of plots assesses the strenght of the signal enrichment.  Keep in mind we're only looking at a small sampling of peaks in this case so the total FRIP will be lower than expected. If the FRIP per peak plots show rough equivalence, that suggests the samples are of similar quality to one another. If that's true, and the read count per peak plots show an imbalance, and that imbalance holds in the mapped reads and peak count plots, that strongly indicates that more reads would be a benefit to the weaker replicate.
+
+## Batch Replicate Comparison
+
+```{r files2}
+in_dir = "/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak"
+data_paths = dir(in_dir, pattern = "((H4K[5812]+)|(ATAD)|(input)).+rep", full.names = TRUE)
+data_paths
+
+bam_files = dir(data_paths, pattern = "bam$", full.names = TRUE)
+
+np_files = dir(data_paths, pattern = ".+narrowPeak$", full.names = TRUE)
+np_files = np_files[!grepl("loose", np_files)]
+```
+
+```{r config2}
+sig_config = QcConfigSignal.files(bam_files)
+sig_config$meta_data$mark = sapply(strsplit(sig_config$meta_data$group, "[_\\.]"), function(x)x[2])
+sig_config$meta_data$rep = sapply(strsplit(sig_config$meta_data$group, "[_\\.]"), function(x)x[3])
+sig_config$run_by = "mark"
+sig_config$color_by = "rep"
+
+plot(sig_config)
+
+feat_config = QcConfigFeatures.files(np_files)
+```

@@ -67,7 +67,13 @@ setMethod("names", "QcConfigSignal",
               "sort_method", 
               "plot_value",
               "heatmap_limit_values",
-              "lineplot_free_limits"
+              "lineplot_free_limits",
+              "meta_data",
+              "run_by",
+              "to_run",
+              "to_run_reference",
+              "color_by",
+              "color_mapping"
             )
             
           })
@@ -86,7 +92,13 @@ setMethod("$", "QcConfigSignal",
                     sort_method = x@sort_method, 
                     plot_value = x@plot_value,
                     heatmap_limit_values = x@heatmap_limit_values,
-                    lineplot_free_limits = x@lineplot_free_limits
+                    lineplot_free_limits = x@lineplot_free_limits,
+                    meta_data = x@meta_data,
+                    run_by = x@run_by,
+                    to_run = x@to_run,
+                    to_run_reference = x@to_run_reference,
+                    color_by = x@color_by,
+                    color_mapping = as.list(x@color_mapping)
             )
           })
 
@@ -152,6 +164,42 @@ setReplaceMethod("$", "QcConfigSignal",
                                stop("lineplot_free_limits must be one of FALSE or TRUE")
                              }
                              x@lineplot_free_limits = value
+                           },
+                           meta_data = {
+                             x@meta_data = value
+                           },
+                           run_by = {
+                             x@run_by = value
+                           },
+                           to_run = {
+                             x@to_run = value
+                           },
+                           to_run_reference = {
+                             x@to_run_reference = value
+                           },
+                           color_by = {
+                             x@color_by = value
+                             message("Applying option SQC_COLORS for updated color_mapping.")
+                             x$color_mapping = getOption("SQC_COLORS")
+                           },
+                           color_mapping = {
+                             value = unlist(value)
+                             col_lev = unique(x@meta_data[[x@color_by]])
+                             if(is.null(names(value))){
+                               if(length(value) >= length(col_lev)){
+                                 value = value[seq_along(col_lev)]
+                               }else{
+                                 stop("Insufficient colors supplied. Mapping requires at least ", length(col_lev), ".")
+                               }
+                               names(value) = col_lev
+                             }else{
+                               if(!all(names(value) %in% col_lev)){
+                                 stop(paste(collapse = "\n",
+                                            c("Missing name values from color mapping. Required:", 
+                                              setdiff(col_lev, names(value)))))
+                               }
+                             }
+                             x@color_mapping = value
                            },
                            warning(warn_msg)
                    )
