@@ -9,7 +9,6 @@
 \alias{QcScaleColor,QcConfig-method}
 \alias{QcScaleFill}
 \alias{QcScaleFill,QcConfig-method}
-\alias{plot,QcConfig,ANY-method}
 \alias{show,QcConfig-method}
 \alias{QcConfig.save_config}
 \title{QcConfig}
@@ -30,8 +29,6 @@ QcColorMapping(object)
 QcScaleFill(object)
 
 \S4method{QcScaleFill}{QcConfig}(object)
-
-\S4method{plot}{QcConfig,ANY}(x)
 
 \S4method{show}{QcConfig}(object)
 
@@ -60,8 +57,6 @@ a ggplot2 scale_fill_manual
 
 
 
-
-
 }
 \description{
 QcConfig
@@ -77,8 +72,6 @@ QcScaleColor for QcConfig
 QcScaleFill
 
 QcScaleFill for QcConfig
-
-Title
 
 Title
 

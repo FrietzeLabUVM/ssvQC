@@ -322,9 +322,9 @@ setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
 
 #' @export
 #' @rdname ssvQC
-setGeneric("ssvQC.prepCapValue", function(object, query){standardGeneric("ssvQC.prepCapValue")})
+setGeneric("ssvQC.prepCapValue", function(object, query, bfc){standardGeneric("ssvQC.prepCapValue")})
 setMethod("ssvQC.prepCapValue", "ssvQC.complete", function(object){
-  object@signal_config = ssvQC.prepCapValue(object@signal_config, object@features_config)
+  object@signal_config = ssvQC.prepCapValue(object@signal_config, object@features_config, object@bfc)
   object
 })
 setMethod("ssvQC.prepCapValue", "ssvQC.featureOnly", function(object){
@@ -333,106 +333,102 @@ setMethod("ssvQC.prepCapValue", "ssvQC.featureOnly", function(object){
 setMethod("ssvQC.prepCapValue", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepCapValue on ssvQC with no QcConfigFeatures component")
 })
-setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures"), function(object, query){
+setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFileCache"), function(object, query, bfc){
   #bam specific independent of peaks
-  sig_dt = as.data.table(object@meta_data)
+  if(is.null(object@meta_data$fragLens)){
+    sig_dt = as.data.table(object@meta_data)[, .(file, name)][order(file)]
+  }else{
+    sig_dt = as.data.table(object@meta_data)[, .(file, name, fragLens)][order(file)]  
+  }
+  
   setkey(sig_dt, "name")
-  peak_dt = as.data.table(query@meta_data)
+  peak_dt = as.data.table(query@meta_data)[, .(file, name)][order(file)]
   
-  matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
-  unmatched_dt = sig_dt[!name %in% matched_dt$name]
-  
-  if(nrow(matched_dt) > 0){
-    cap_dt.matched = rbindlist(lapply(seq_len(nrow(matched_dt)), function(i){
-      peak_f = matched_dt[i,]$peak_file
-      bam_f = matched_dt[i,]$bam_file
-      name_i = matched_dt[i,]$name
-      peak_gr = query@feature_load_FUN(peak_f)[[1]]
-      peak_gr = peak_gr[sample(min(5e3, length(peak_gr)))]
-      
-      if(!is.null(matched_dt$fragLens))
-        fragLens = match_
-      
-      if(object@read_mode == "bam_SE"){
-        fragLens = sig_dt[.(name_i)]$fragLens  
-        max_dt = get_fetch_fun(object@read_mode)(bam_f, 
-                                                 peak_gr, 
-                                                 fragLens = fragLens,
-                                                 win_size = 1, 
-                                                 win_method = "summary", 
-                                                 summary_FUN = function(x,w)max(x), 
-                                                 return_data.table = TRUE, 
-                                                 n_region_splits = getOption("mc.cores", 1))
-      }else{
-        max_dt = get_fetch_fun(object@read_mode)(bam_f, 
-                                                 peak_gr, 
-                                                 win_size = 1, 
-                                                 win_method = "summary", 
-                                                 summary_FUN = function(x,w)max(x), 
-                                                 return_data.table = TRUE, 
-                                                 n_region_splits = getOption("mc.cores", 1))
-      }
-      
-      
-      
-      
-      cap_dt = seqsetvis::calc_norm_factors(max_dt)
-      cap_dt$name = name_i
-      cap_dt
-    }))
-  }else{
-    cap_dt.matched = NULL
-  }
-  
-  if(nrow(unmatched_dt) > 0){
-    query = ssvQC.prepFeatures(query)
-    peak_gr = unlist(GRangesList(query$assessment_features))
-    names(peak_gr) = NULL
+  cap_dt = bfcif(bfc, digest::digest(list(sig_dt, peak_dt, "ssvQC.prepCapValue")), function(){
+    matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
+    unmatched_dt = sig_dt[!name %in% matched_dt$name]
     
-    cap_dt.unmatched = rbindlist(lapply(seq_len(nrow(unmatched_dt)), function(i){
-      bam_f = unmatched_dt[i,]$file
-      name_i = unmatched_dt[i,]$name
-      # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
-      if(!is.null(matched_dt$fragLens))
-        fragLens = match_
+    if(nrow(matched_dt) > 0){
+      cap_dt.matched = rbindlist(lapply(seq_len(nrow(matched_dt)), function(i){
+        peak_f = matched_dt[i,]$peak_file
+        bam_f = matched_dt[i,]$bam_file
+        name_i = matched_dt[i,]$name
+        peak_gr = query@feature_load_FUN(peak_f)[[1]]
+        peak_gr = peak_gr[sample(min(5e3, length(peak_gr)))]
+        
+        if(object@read_mode == "bam_SE"){
+          fragLens = sig_dt[.(name_i)]$fragLens  
+          fragLens = ifelse(is.null(fragLens), "auto", fragLens)
+          max_dt = get_fetch_fun(object@read_mode)(bam_f, 
+                                                   peak_gr, 
+                                                   fragLens = fragLens,
+                                                   win_size = 1, 
+                                                   win_method = "summary", 
+                                                   summary_FUN = function(x,w)max(x), 
+                                                   return_data.table = TRUE, 
+                                                   n_region_splits = getOption("mc.cores", 1))
+        }else{
+          max_dt = get_fetch_fun(object@read_mode)(bam_f, 
+                                                   peak_gr, 
+                                                   win_size = 1, 
+                                                   win_method = "summary", 
+                                                   summary_FUN = function(x,w)max(x), 
+                                                   return_data.table = TRUE, 
+                                                   n_region_splits = getOption("mc.cores", 1))
+        }
+        cap_dt = seqsetvis::calc_norm_factors(max_dt)
+        cap_dt$name = name_i
+        cap_dt
+      }))
+    }else{
+      cap_dt.matched = NULL
+    }
+    
+    if(nrow(unmatched_dt) > 0){
+      query = ssvQC.prepFeatures(query)
+      peak_gr = unlist(GRangesList(query$assessment_features))
+      names(peak_gr) = NULL
       
-      if(object@read_mode == "bam_SE"){
-        fragLens = sig_dt[.(name_i)]$fragLens  
-        max_dt = get_fetch_fun(object@read_mode)(bam_f, 
-                                                 peak_gr, 
-                                                 fragLens = fragLens,
-                                                 win_size = 1, 
-                                                 win_method = "summary", 
-                                                 summary_FUN = function(x,w)max(x), 
-                                                 return_data.table = TRUE, 
-                                                 n_region_splits = getOption("mc.cores", 1))
-      }else{
-        max_dt = get_fetch_fun(object@read_mode)(bam_f, 
-                                                 peak_gr, 
-                                                 win_size = 1, 
-                                                 win_method = "summary", 
-                                                 summary_FUN = function(x,w)max(x), 
-                                                 return_data.table = TRUE, 
-                                                 n_region_splits = getOption("mc.cores", 1))
-      }
-      
-      
-      
-      
-      cap_dt = seqsetvis::calc_norm_factors(max_dt)
-      cap_dt$name = name_i
-      cap_dt
-    }))
-  }else{
-    cap_dt.unmatched = NULL
-  }
-  cap_dt = rbind(cap_dt.matched, cap_dt.unmatched)
+      cap_dt.unmatched = rbindlist(lapply(seq_len(nrow(unmatched_dt)), function(i){
+        bam_f = unmatched_dt[i,]$file
+        name_i = unmatched_dt[i,]$name
+        # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
+        if(object@read_mode == "bam_SE"){
+          fragLens = sig_dt[.(name_i)]$fragLens  
+          fragLens = ifelse(is.null(fragLens), "auto", fragLens)
+          max_dt = get_fetch_fun(object@read_mode)(bam_f, 
+                                                   peak_gr, 
+                                                   fragLens = fragLens,
+                                                   win_size = 1, 
+                                                   win_method = "summary", 
+                                                   summary_FUN = function(x,w)max(x), 
+                                                   return_data.table = TRUE, 
+                                                   n_region_splits = getOption("mc.cores", 1))
+        }else{
+          max_dt = get_fetch_fun(object@read_mode)(bam_f, 
+                                                   peak_gr, 
+                                                   win_size = 1, 
+                                                   win_method = "summary", 
+                                                   summary_FUN = function(x,w)max(x), 
+                                                   return_data.table = TRUE, 
+                                                   n_region_splits = getOption("mc.cores", 1))
+        }
+        cap_dt = seqsetvis::calc_norm_factors(max_dt)
+        cap_dt$name = name_i
+        cap_dt
+      }))
+    }else{
+      cap_dt.unmatched = NULL
+    }
+    cap_dt = rbind(cap_dt.matched, cap_dt.unmatched)
+    
+    if(!setequal(cap_dt$name, object@meta_data$name)){
+      stop("something has gone wrong assigning fragLens, pease report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues") 
+    }
+    setkey(cap_dt, "name")
+    cap_dt
+  })
   
-  if(!setequal(cap_dt$name, object@meta_data$name)){
-    stop("something has gone wrong assigning fragLens, pease report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues") 
-  }
-  
-  setkey(cap_dt, "name")
   object@meta_data$cap_value = cap_dt[.(object@meta_data$name)]$y_cap_value
   object
 })
@@ -757,13 +753,14 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
 
 .plotFeatures = function(object, force_euler = FALSE){
   feat_config = object@features_config
-  if(length(feat_config$loaded_features) == 0 |
-     length(feat_config$overlapped_features) == 0 |
-     length(feat_config$assessment_features) == 0){
+  need_prep_features = 
+    length(feat_config$loaded_features) == 0 |
+    length(feat_config$overlapped_features) == 0 |
+    length(feat_config$assessment_features) == 0
+  if(need_prep_features){
     object = ssvQC.prepFeatures(object)
     feat_config = object@features_config
   }
-  
   
   feature_plots =lapply(names(feat_config$loaded_features), function(feat_nam){
     feat_label = sub("_features", " features", feat_nam)
