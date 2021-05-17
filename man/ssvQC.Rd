@@ -65,7 +65,7 @@ to QcConfigSignal.}
 \item{out_dir}{NYI}
 
 \item{bfc}{BiocFileCache object to use for caching. If NULL, default
-BiocFileCache::BiocFileCache() will be used.}
+new_cache() will be used.}
 
 \item{force_euler}{If TRUE forces Euler plots to be generated for a list of feature sets longer than 8.  Euler plots can take quite a long time to generate as more feature sets are generated.}
 }

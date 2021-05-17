@@ -84,7 +84,8 @@ ClusteredSignal.fromConfig = function(signal_config,
                                       manual_assigned = list(),
                                       nclust = 6,
                                       facet_var = "name_split",
-                                      extra_var = character()){
+                                      extra_var = character(),
+                                      bfc = new_cache()){
   if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
     if(is.null(signal_config@meta_data$mapped_reads)){
       stop("Call ssvQC.prepMappedReads() on signal_config first.")
@@ -99,7 +100,7 @@ ClusteredSignal.fromConfig = function(signal_config,
   
   query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
   
-  prof_dt = fetch_signal_at_features(signal_config, query_gr)
+  prof_dt = fetch_signal_at_features(signal_config, query_gr, bfc)
   # if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
   prof_dt[, y_RPM := y / mapped_reads * 1e6]
   # }

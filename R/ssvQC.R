@@ -47,7 +47,7 @@ ssvQC.save_config = function(object, file){
 #'   to QcConfigSignal.
 #' @param out_dir NYI
 #' @param bfc BiocFileCache object to use for caching. If NULL, default
-#'   BiocFileCache::BiocFileCache() will be used.
+#'   new_cache() will be used.
 #'
 #' @return A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods ssvQC.plot*.
 #' @export
@@ -131,7 +131,7 @@ ssvQC = function(features_config = NULL,
   }
   
   if(is.null(bfc)){
-    bfc = BiocFileCache::BiocFileCache()
+    bfc = new_cache()
   }
   
   dir.create(out_dir, showWarnings = FALSE)
@@ -186,7 +186,7 @@ setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
   message("run+plot features overlaps")
   object = ssvQC.plotFeatures(object)
   message("run+plot mapped reads")
-  object = ssvQC.prepMappedReads(object)
+  # object = ssvQC.prepMappedReads(object)
   object = ssvQC.plotMappedReads(object)
   message("run signal fragLens")
   object = ssvQC.prepFragLens(object)
@@ -287,7 +287,7 @@ setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
 })
 
 setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures"), function(object, query){
-  ssvQC.prepFragLens(object, query, BiocFileCache::BiocFileCache())
+  ssvQC.prepFragLens(object, query, new_cache())
 })
 
 ##MappedReads
@@ -434,16 +434,17 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
 })
 
 .ssvQC.plotMappedReads = function(object){
-  todo = .make_query_signal_config(object@signal_config)
+  full_bam_config = object@signal_config
+  full_meta = full_bam_config@meta_data
+  if(is.null(full_meta$mapped_reads)){
+    full_bam_config = ssvQC.prepMappedReads(full_bam_config)
+    object@signal_config = full_bam_config
+  }
+  
+  todo = .make_query_signal_config(full_bam_config)
   plots = lapply(todo, function(sig_config){
     if(grepl("bam", sig_config@read_mode)){
       bam_config_dt = sig_config@meta_data
-      
-      if(is.null(bam_config_dt$mapped_reads)){
-        sig_config = ssvQC.prepMappedReads(sig_config)
-        object@signal_config = sig_config
-        bam_config_dt = sig_config@meta_data
-      }
       
       color_var = sig_config@color_by
       group_var = sig_config@run_by
@@ -634,7 +635,8 @@ setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
       ClusteredSignal.fromConfig(sel_sig_config, 
                                  query_gr, 
                                  facet_var = "name_split", 
-                                 extra_var = union(object@signal_config@color_by, object@signal_config@run_by))
+                                 extra_var = union(object@signal_config@color_by, object@signal_config@run_by), 
+                                 bfc = object@bfc)
     })
   })
   object

@@ -45,7 +45,7 @@ QcConfigSignal.files(
   sort_method = c("hclust", "sort")[2]
 )
 
-fetch_signal_at_features(qc_signal, query_gr)
+fetch_signal_at_features(qc_signal, query_gr, bfc = new_cache())
 
 QcConfigSignal.save_config(object, file)
 }

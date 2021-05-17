@@ -119,17 +119,24 @@ harmonize_seqlengths = function(gr, bam_file){
   gr
 }
 
-bfcif = function(bfc, rname, FUN, force_overwrite = FALSE){
+new_cache = function(cache_path = getOption("SQC_CACHE_PATH", "~/.cache")){
+  BiocFileCache::BiocFileCache(cache_path)
+}
+
+bfcif = function(bfc, rname, FUN, 
+                 version = getOption("SQC_CACHE_VERSION", "v1"),
+                 force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)){
   # is rname in cache?
-  if(nrow(BiocFileCache::bfcquery(bfc, query = rname, field = "rname")) == 0){
-    cache_path = BiocFileCache::bfcnew(bfc, rname = rname)
+  vrname = paste0(rname, "_", version)
+  if(nrow(BiocFileCache::bfcquery(bfc, query = vrname, field = "rname")) == 0){
+    cache_path = BiocFileCache::bfcnew(bfc, rname = vrname)
 
   }else{
-    cache_path = BiocFileCache::bfcrpath(bfc, rname)
+    cache_path = BiocFileCache::bfcrpath(bfc, vrname)
   }
   # does cached file exist?
   if(file.exists(cache_path) && !force_overwrite){
-    load(BiocFileCache::bfcrpath(bfc, rname))
+    load(BiocFileCache::bfcrpath(bfc, vrname))
   }else{
     res = FUN()
     save(res, file = cache_path)

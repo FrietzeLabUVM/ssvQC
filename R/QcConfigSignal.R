@@ -516,7 +516,7 @@ get_fetch_fun = function(read_mode){
 #' qc_features = QcConfigFeatures.parse(feature_config_file)
 #' query_gr = qc_features$assessment_features
 #' fetch_signal_at_features(qc_signal, query_gr)
-fetch_signal_at_features = function(qc_signal, query_gr){
+fetch_signal_at_features = function(qc_signal, query_gr, bfc = new_cache()){
   extra_args = qc_signal@fetch_options
   if(!is.null(qc_signal@meta_data$fragLens)){
     if(!is.null(extra_args$fragLens)){
@@ -528,7 +528,10 @@ fetch_signal_at_features = function(qc_signal, query_gr){
   }
   call_args = c(list(file_paths = qc_signal@meta_data, qgr = query_gr, return_data.table = TRUE), extra_args)
   fetch_FUN = get_fetch_fun(qc_signal@read_mode)
-  prof_dt = do.call(fetch_FUN, call_args)
+  prof_dt = bfcif(bfc, digest(list(fetch_FUN, call_args)), function(){
+    do.call(fetch_FUN, call_args)
+  })
+  
   prof_dt
 }
 
