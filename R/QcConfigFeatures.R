@@ -139,6 +139,7 @@ setReplaceMethod("$", "QcConfigFeatures",
 }
 
 .process_overlaps = function(loaded_features, overlap_extension){
+  argg <- c(as.list(environment()), list(...))
   overlap_gr = seqsetvis::ssvOverlapIntervalSets(loaded_features, ext = overlap_extension)
   overlap_gr = sort(overlap_gr)
   overlap_gr = seqsetvis::prepare_fetch_GRanges_names(overlap_gr)
@@ -187,7 +188,7 @@ setReplaceMethod("$", "QcConfigFeatures",
 #' @return
 #' @rdname QcConfigFeatures
 #' @examples
-prepFeatures = function(object){
+prepFeatures = function(object, bfc = new_cache()){
   object@meta_data[[object@run_by]]
   to_run = object@to_run
   for(tr in to_run){

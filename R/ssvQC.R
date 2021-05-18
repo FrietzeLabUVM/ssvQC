@@ -169,8 +169,6 @@ ssvQC = function(features_config = NULL,
   }else{
     stop("At least one of features_config or signal_config must be specified. This should have been caught earlier.")
   }
-  
-  
 }
 
 .make_query_signal_config = function(sc){

@@ -387,3 +387,43 @@ is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam
   fwrite(object@meta_data, file, append = TRUE)
   invisible(file)
 }
+
+#' get_args
+#' 
+#' returns parameters of calling function as a named list.
+#'
+#' @param env 
+#' @param ... 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+get_args = function(env = parent.frame(), ...){
+  args = c(as.list(env), list(...))
+  args[order(names(args))]
+}
+#' digest_args
+#' 
+#' returns digest results of name list of paramters of calling function
+#'
+#' @param env 
+#' @param ... 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+digest_args = function(env = parent.frame(), ...){
+  digest::digest(get_args(env, ...))
+}
+
+
+
+
+test_get_args(extra = 3, extra2 = 4)
+test_get_args2()
+
+get_args.dots = function(){
+  
+}
