@@ -405,7 +405,7 @@ get_args = function(env = parent.frame(), ...){
 }
 #' digest_args
 #' 
-#' returns digest results of name list of paramters of calling function
+#' returns digest results of name list of parameters of calling function
 #'
 #' @param env 
 #' @param ... 
@@ -418,12 +418,3 @@ digest_args = function(env = parent.frame(), ...){
   digest::digest(get_args(env, ...))
 }
 
-
-
-
-test_get_args(extra = 3, extra2 = 4)
-test_get_args2()
-
-get_args.dots = function(){
-  
-}

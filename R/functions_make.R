@@ -576,46 +576,47 @@ make_scc_dt = function(query_dt,
                        name_var = "name_split",
                        n_cores = getOption("mc.cores", 1L),
                        ...){
-  
-  if(is.character(query_dt)) query_dt = data.table(file = query_dt, name = basename(query_dt))
-  if(!name_var %in% colnames(query_dt)){
-    stop(
-      paste(collapse = "\n",
-            c(paste0("name_var \"", name_var, "\" was not found in colnames of query_dt!"),
-              colnames(query_dt))
+  bfcif(bfc_corr, digest_args(), function(){
+    if(is.character(query_dt)) query_dt = data.table(file = query_dt, name = basename(query_dt))
+    if(!name_var %in% colnames(query_dt)){
+      stop(
+        paste(collapse = "\n",
+              c(paste0("name_var \"", name_var, "\" was not found in colnames of query_dt!"),
+                colnames(query_dt))
+        )
       )
-    )
-  }
-  stopifnot()
-  files = .get_files(query_dt)
-  scc_res_l = lapply(files, function(f){
-    message("SCC for ", f)
-    make_scc_dt.single(f, query_gr,
-                       frag_sizes = frag_sizes,
-                       fetch_size = fetch_size,
-                       bfc_corr = bfc_corr,
-                       cache_version = cache_version,
-                       force_overwrite = force_overwrite,
-                       n_cores = n_cores,
-                       ...)
-  })
-  
-  vnames = names(scc_res_l[[1]])
-  
-  scc_res = lapply(vnames, function(nam){
-    part = lapply(scc_res_l, function(x){
-      xv = x[[nam]]
-      # if(!is.data.table(xv)){
-      #   xv = data.table(xv)
-      #   setnames(xv, nam)
-      # }
-      xv
+    }
+    stopifnot()
+    files = .get_files(query_dt)
+    scc_res_l = lapply(files, function(f){
+      message("SCC for ", f)
+      make_scc_dt.single(f, query_gr,
+                         frag_sizes = frag_sizes,
+                         fetch_size = fetch_size,
+                         bfc_corr = bfc_corr,
+                         cache_version = cache_version,
+                         force_overwrite = force_overwrite,
+                         n_cores = n_cores,
+                         ...)
     })
-    dt = rbindlist(part, idcol = name_var)
-    merge(dt, query_dt, by = name_var)
+    
+    vnames = names(scc_res_l[[1]])
+    
+    scc_res = lapply(vnames, function(nam){
+      part = lapply(scc_res_l, function(x){
+        xv = x[[nam]]
+        # if(!is.data.table(xv)){
+        #   xv = data.table(xv)
+        #   setnames(xv, nam)
+        # }
+        xv
+      })
+      dt = rbindlist(part, idcol = name_var)
+      merge(dt, query_dt, by = name_var)
+    })
+    names(scc_res) = vnames
+    scc_res
   })
-  names(scc_res) = vnames
-  scc_res
 }
 
 #' make_scc_dt.single

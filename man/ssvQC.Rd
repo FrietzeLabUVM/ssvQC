@@ -47,7 +47,7 @@ ssvQC.prepSignal(object)
 
 ssvQC.plotSignal(object)
 
-ssvQC.prepFeatures(object)
+ssvQC.prepFeatures(object, bfc)
 
 ssvQC.plotFeatures(object, force_euler)
 }

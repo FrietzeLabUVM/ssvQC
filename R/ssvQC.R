@@ -735,9 +735,9 @@ setMethod("ssvQC.plotSignal", "ssvQC.signalOnly", function(object){
 ### Features
 #' @export
 #' @rdname ssvQC
-setGeneric("ssvQC.prepFeatures", function(object){standardGeneric("ssvQC.prepFeatures")})
+setGeneric("ssvQC.prepFeatures", function(object, bfc){standardGeneric("ssvQC.prepFeatures")})
 setMethod("ssvQC.prepFeatures", "ssvQC.complete", function(object){
-  object@features_config = ssvQC.prepFeatures(object@features_config)
+  object@features_config = ssvQC.prepFeatures(object@features_config, object@bfc)
   object
 })
 setMethod("ssvQC.prepFeatures", "ssvQC.featureOnly", function(object){
@@ -746,6 +746,9 @@ setMethod("ssvQC.prepFeatures", "ssvQC.featureOnly", function(object){
 })
 setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+})
+setMethod("ssvQC.prepFeatures", c("QcConfigFeatures", "BiocFileCache"), function(object, bfc){
+  prepFeatures(object, bfc)
 })
 setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
   prepFeatures(object)

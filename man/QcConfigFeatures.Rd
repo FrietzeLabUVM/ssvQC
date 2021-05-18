@@ -11,7 +11,7 @@
 \alias{QcConfigFeatures.save_config}
 \title{QcConfigFeatures}
 \usage{
-prepFeatures(object)
+prepFeatures(object, bfc = new_cache())
 
 QcConfigFeatures(
   config_df,

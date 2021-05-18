@@ -550,8 +550,6 @@ setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definit
   meta_split = meta_split[x@to_run]
   meta_split = lapply(meta_split, function(sel_meta_df)rbind(sel_meta_df, refs))
   
-  message("split QcConfigSignal")
-  
   lapply(meta_split, function(sel_meta_df){
     new("QcConfigSignal",
         meta_data =  sel_meta_df,
