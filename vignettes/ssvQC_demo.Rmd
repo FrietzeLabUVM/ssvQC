@@ -208,3 +208,17 @@ feat_config$to_run_reference = character()
 sqc2 = ssvQC(feat_config, sig_config)
 sqc2 = ssvQC.runAll(sqc2)
 ```
+
+```{r}
+sqc2$plots$features$UpSet$H4K5AC_features
+sqc2$plots$signal$heatmaps$H4K5AC_features$H4K5AC_signal
+
+sqc2$signal_config$lineplot_free_limits = TRUE
+sqc2$signal_config$heatmap_limit_values = c(0, 50)
+sqc2 = ssvQC.plotSignal(sqc2)
+
+sqc2$signal_data$H4K5AC_features$H4K5AC_signal$signal_data.mean_per_cluster
+
+sqc2$plots$signal$heatmaps$H4K5AC_features$H4K5AC_signal
+sqc2$plots$signal$heatmaps.lines$H4K5AC_features$H4K5AC_signal
+```

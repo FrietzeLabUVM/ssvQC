@@ -86,36 +86,39 @@ ClusteredSignal.fromConfig = function(signal_config,
                                       facet_var = "name_split",
                                       extra_var = character(),
                                       bfc = new_cache()){
-  if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
-    if(is.null(signal_config@meta_data$mapped_reads)){
-      stop("Call ssvQC.prepMappedReads() on signal_config first.")
+  bfcif(bfc, digest_args(), function(){
+    if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
+      if(is.null(signal_config@meta_data$mapped_reads)){
+        stop("Call ssvQC.prepMappedReads() on signal_config first.")
+      }
     }
-  }
-  
-  if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
-    if(is.null(signal_config@meta_data$cap_value)){
-      stop("Call ssvQC.prepCapValue() on signal_config first.")
+    
+    if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
+      if(is.null(signal_config@meta_data$cap_value)){
+        stop("Call ssvQC.prepCapValue() on signal_config first.")
+      }
     }
-  }
+    
+    query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
+    
+    prof_dt = fetch_signal_at_features(signal_config, query_gr, bfc)
+    # if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
+    prof_dt[, y_RPM := y / mapped_reads * 1e6]
+    # }
+    # if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
+    prof_dt[, y_linQ := y / cap_value]
+    prof_dt[y_linQ > 1, y_linQ := 1]
+    # }
+    clust_dt = ClusteredSignal(prof_dt, query_gr, 
+                               manual_assigned = manual_assigned,
+                               nclust = nclust,
+                               signal_var = val2var[signal_config@cluster_value],
+                               signal_var.within = val2var[signal_config@sort_value],
+                               facet_var = facet_var,
+                               extra_var = extra_var)
+    clust_dt
+  })
   
-  query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
-  
-  prof_dt = fetch_signal_at_features(signal_config, query_gr, bfc)
-  # if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
-  prof_dt[, y_RPM := y / mapped_reads * 1e6]
-  # }
-  # if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
-  prof_dt[, y_linQ := y / cap_value]
-  prof_dt[y_linQ > 1, y_linQ := 1]
-  # }
-  clust_dt = ClusteredSignal(prof_dt, query_gr, 
-                             manual_assigned = manual_assigned,
-                             nclust = nclust,
-                             signal_var = val2var[signal_config@cluster_value],
-                             signal_var.within = val2var[signal_config@sort_value],
-                             facet_var = facet_var,
-                             extra_var = extra_var)
-  clust_dt
 }
 
 #' Title

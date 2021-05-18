@@ -547,10 +547,10 @@ setMethod("ssvQC.prepSCC", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.prepSCC", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+  stop("Cannot run prepSCC on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.prepSCC", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run prepSCC on ssvQC with no QcConfigFeature component")
 })
 
 dbl_names = function(name_1, name_2){
@@ -616,10 +616,10 @@ setMethod("ssvQC.plotSCC", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.plotSCC", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+  stop("Cannot run plotSCC on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.plotSCC", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run plotSCC on ssvQC with no QcConfigFeature component")
 })
 
 ##Signal
@@ -631,7 +631,7 @@ setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){
       ClusteredSignal.fromConfig(sel_sig_config, 
-                                 query_gr, 
+                                 resize(query_gr, object@signal_config@view_size, fix = "center"), 
                                  facet_var = "name_split", 
                                  extra_var = union(object@signal_config@color_by, object@signal_config@run_by), 
                                  bfc = object@bfc)
@@ -654,7 +654,7 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
     object = ssvQC.prepSignal(object)
   }
   signal_data = object@signal_data
-  sig_dt = signal_data[[1]][[1]]
+  clust_sig = signal_data[[1]][[1]]
   sig_config = object@signal_config
   
   wrap_plot_signal_dt = function(clust_sig, main_title = NULL){
@@ -672,12 +672,12 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
                                                         FUN_format_heatmap = function(p){
                                                           p + labs(x = x_label, fill = value_label, title = main_title)
                                                         })
-    sig_dt.agg = sig_dt@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ)), 
+    clust_sig.agg = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ)), 
                                     c("x", extra_vars)]
-    sig_dt.agg_per_cluster = sig_dt@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ)), 
+    clust_sig.agg_per_cluster = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ)), 
                                                 c("x", "cluster_id", extra_vars)]
     
-    p_line = ggplot(sig_dt.agg, 
+    p_line = ggplot(clust_sig.agg, 
                     aes_string(x = "x", 
                                y = val2var[sig_config@plot_value], 
                                color = sig_config@color_by, 
@@ -690,7 +690,7 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
            title = main_title) +
       scale_color_manual(values = sig_config@color_mapping)
     
-    p_heatmap.line = ggplot(sig_dt.agg_per_cluster, 
+    p_heatmap.line = ggplot(clust_sig.agg_per_cluster, 
                             aes_string(x = "x", 
                                        y = val2var[sig_config@plot_value], 
                                        color = sig_config@color_by, 
