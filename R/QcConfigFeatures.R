@@ -128,59 +128,60 @@ setReplaceMethod("$", "QcConfigFeatures",
                    x
                  })
 
-.process_features = function(meta_dt, feature_load_FUN){
-  loaded_features = feature_load_FUN(meta_dt$file)
-  names(loaded_features) = as.character(meta_dt$name_split)
-  
-  if(length(loaded_features) == 0){
-    stop("Somehow, no files were loaded. Report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
-  }
-  loaded_features
+.process_features = function(meta_dt, feature_load_FUN, bfc = new_cache()){
+  bfcif(bfc, digest_args(), function(){
+    loaded_features = feature_load_FUN(meta_dt$file)
+    names(loaded_features) = as.character(meta_dt$name_split)
+    
+    if(length(loaded_features) == 0){
+      stop("Somehow, no files were loaded. Report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+    }
+    loaded_features
+  })
 }
 
-.process_overlaps = function(loaded_features, overlap_extension){
-  argg <- c(as.list(environment()), list(...))
-  overlap_gr = seqsetvis::ssvOverlapIntervalSets(loaded_features, ext = overlap_extension)
-  overlap_gr = sort(overlap_gr)
-  overlap_gr = seqsetvis::prepare_fetch_GRanges_names(overlap_gr)
-  if(length(overlap_gr) == 0){
-    stop("No regions in overlap. Check your input or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
-  }
-  overlap_gr
+.process_overlaps = function(loaded_features, overlap_extension, bfc = new_cache()){
+  bfcif(bfc, digest_args(), function(){
+    overlap_gr = seqsetvis::ssvOverlapIntervalSets(loaded_features, ext = overlap_extension)
+    overlap_gr = sort(overlap_gr)
+    overlap_gr = seqsetvis::prepare_fetch_GRanges_names(overlap_gr)
+    if(length(overlap_gr) == 0){
+      stop("No regions in overlap. Check your input or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+    }
+    overlap_gr
+  })
 }
 
-.process_assessment = function(feat_list, olap_gr, overlap_extension, n_peaks, balance_groups, consensus_fraction, consensus_n){
-  f_consensus = floor(consensus_fraction * length(feat_list))
-  n_consensus = min(length(feat_list), max(consensus_n, f_consensus))
-  
-  if(n_consensus == 1){
-    asses_gr.full = olap_gr
-  }else{
-    asses_gr.full = ssvConsensusIntervalSets(feat_list, min_number = consensus_n, min_fraction = consensus_fraction, ext = overlap_extension)
-  }
-  if(n_peaks >= length(asses_gr.full)){
-    assessment_gr = asses_gr.full
-  }else{
-    if(!balance_groups){
-      assessment_gr = sort(sampleCap(asses_gr.full, n_peaks))
+.process_assessment = function(feat_list, olap_gr, overlap_extension, n_peaks, balance_groups, consensus_fraction, consensus_n, bfc = new_cache()){
+  bfcif(bfc, digest_args(), function(){
+    f_consensus = floor(consensus_fraction * length(feat_list))
+    n_consensus = min(length(feat_list), max(consensus_n, f_consensus))
+    
+    if(n_consensus == 1){
+      asses_gr.full = olap_gr
     }else{
-      df = as.data.frame(mcols(asses_gr.full))
-      n_peaks.per = floor(n_peaks / ncol(df))
-      sel_i = sort(unique(unlist(lapply(seq_len(ncol(df)), function(i){
-        x = df[,i]
-        sampleCap(which(x), n_peaks.per)
-      }))))
-      assessment_gr = asses_gr.full[sel_i]
-    }  
-  }
-  
-  
-  
-  if(length(assessment_gr) == 0){
-    stop("No regions in assessment. Maybe loosen consensus requirements or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
-  }
-  
-  assessment_gr
+      asses_gr.full = ssvConsensusIntervalSets(feat_list, min_number = consensus_n, min_fraction = consensus_fraction, ext = overlap_extension)
+    }
+    if(n_peaks >= length(asses_gr.full)){
+      assessment_gr = asses_gr.full
+    }else{
+      if(!balance_groups){
+        assessment_gr = sort(sampleCap(asses_gr.full, n_peaks))
+      }else{
+        df = as.data.frame(mcols(asses_gr.full))
+        n_peaks.per = floor(n_peaks / ncol(df))
+        sel_i = sort(unique(unlist(lapply(seq_len(ncol(df)), function(i){
+          x = df[,i]
+          sampleCap(which(x), n_peaks.per)
+        }))))
+        assessment_gr = asses_gr.full[sel_i]
+      }  
+    }
+    if(length(assessment_gr) == 0){
+      stop("No regions in assessment. Maybe loosen consensus requirements or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
+    }
+    assessment_gr
+  })
 }
 
 #' @param object 
@@ -196,13 +197,14 @@ prepFeatures = function(object, bfc = new_cache()){
     rb = object@meta_data[[object@run_by]]
     sel_dt = object@meta_data[rb %in% union(tr, object@to_run_reference),]
     if(is.null(object@loaded_features[[tr_name]])){
-      object@loaded_features[[tr_name]] = .process_features(sel_dt, object@feature_load_FUN)
+      object@loaded_features[[tr_name]] = .process_features(sel_dt, object@feature_load_FUN, bfc = bfc)
     }
     
     if(is.null(object@overlap_gr[[tr_name]])){
       object@overlap_gr[[tr_name]] = .process_overlaps(
         loaded_features = object@loaded_features[[tr_name]], 
-        overlap_extension = object@overlap_extension)
+        overlap_extension = object@overlap_extension,
+        bfc = bfc)
     }
     
     if(is.null(object@assessment_gr[[tr_name]])){
@@ -213,7 +215,8 @@ prepFeatures = function(object, bfc = new_cache()){
         n_peaks = object@n_peaks, 
         balance_groups = object@balance_groups,
         consensus_fraction = object@consensus_fraction, 
-        consensus_n = object@consensus_n)
+        consensus_n = object@consensus_n, 
+        bfc = bfc)
     }
   }
   object
@@ -425,7 +428,6 @@ QcConfigFeatures.files = function(file_paths,
   )
   if(process_features){
     obj = prepFeatures(obj)
-    
   }
   obj
 }
@@ -508,13 +510,13 @@ QcConfigFeatures.parse = function(feature_config_file,
 #' object = ssvQC.prepFeatures(object)
 #' plot(object)
 QcConfigFeatures.overlap_run_by = function(object,
-                                    group_colors = NULL,
-                                    n_peaks = 1e3,
-                                    balance_groups = FALSE,
-                                    overlap_extension = 0,
-                                    consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
-                                    consensus_n = getOption("SQC_CONSENSUS_N", 1),
-                                    process_features = getOption("SQC_PROCESS_FEATURES", TRUE) ){
+                                           group_colors = NULL,
+                                           n_peaks = 1e3,
+                                           balance_groups = FALSE,
+                                           overlap_extension = 0,
+                                           consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
+                                           consensus_n = getOption("SQC_CONSENSUS_N", 1),
+                                           process_features = getOption("SQC_PROCESS_FEATURES", TRUE) ){
   #TODO
   stop("NYI")
   object$loaded_features
