@@ -203,7 +203,7 @@ plot_frip_dt = function(frip_dt, sort_by = c("none", "frip", "reads_in_peak")[1]
   }
   if(!sort_by == "none"){
     stopifnot(all(frip_dt[[name_var]] %in% name_lev))
-    stopifnot(all(name_lev %in% frip_dt[[name_var]]))
+    # stopifnot(all(name_lev %in% frip_dt[[name_var]]))
     frip_dt[[name_var]] = factor(frip_dt[[name_var]], levels = name_lev)  
   }
   p_reads1 = ggplot(frip_dt,
@@ -272,7 +272,7 @@ plot_scc_dt = function(scc_dt, main_title = NULL, name_var = "name_split", name_
   scc_dt_agg = scc_dt$average_correlation
 
   if(!is.null(name_lev)){
-    stopifnot(name_lev %in% unique(scc_dt_agg[[name_var]]))
+    stopifnot(unique(scc_dt_agg[[name_var]]) %in% name_lev)
     scc_dt_agg[[name_var]] = factor(scc_dt_agg[[name_var]], levels = name_lev)
     
     scc_dt$read_length[[name_var]] = factor(scc_dt$read_length[[name_var]], levels = name_lev)
@@ -295,7 +295,7 @@ plot_scc_dt = function(scc_dt, main_title = NULL, name_var = "name_split", name_
                    by = c(name_var, "id")
                    )
   if(!is.null(name_lev)){
-    stopifnot(name_lev %in% unique(scc_dt_p[[name_var]]))
+    stopifnot(unique(scc_dt_p[[name_var]]) %in% name_lev)
     scc_dt_p[[name_var]] = factor(scc_dt_p[[name_var]], levels = name_lev)
   }
   p_scc_frag_vs_read = ggplot(scc_dt_p, aes(x = read_correlation, y = fragment_correlation)) +
