@@ -231,8 +231,11 @@ get_feature_file_load_function = function(feature_files){
 #' 
 #' @examples
 #' fop = "win_size:10,win_method:\"summary\",summary_FUN:mean"
+#' parse_fetch_options(fop)
 parse_fetch_options = function(fop){
-  fop = strsplit(fop, ",")[[1]]
+  if(is.null(fop)) return(list())
+  if(is.na(fop)) return(list())
+  # fop = strsplit(fop, ",")[[1]]
   fop = strsplit(fop, ":")
   fop_names = sapply(fop, function(x)x[1])
   fop_opts = sapply(fop, function(x)x[2])
@@ -281,7 +284,7 @@ parse_fetch_options = function(fop){
     x[2]
   })
   names(cfg_vals) = cfg_names
-  cfg_vals = as.list(cfg_vals)
+  cfg_vals = strsplit(cfg_vals, ",")
   
   bad_var = setdiff(cfg_names, valid_feature_var)
   if(length(bad_var) > 0){
@@ -295,7 +298,7 @@ parse_fetch_options = function(fop){
     }
   }
   #numeric: consensus_n, consensus_fraction, n_peaks, view_size
-  for(var in c("consensus_n", "consensus_fraction", "n_peaks", "view_size", "overlap_extension", "heatmap_limit_values")){
+  for(var in c("consensus_n", "consensus_fraction", "n_peaks", "view_size", "overlap_extension", "heatmap_limit_values", "linearQuantile_cutoff")){
     if(!is.null(cfg_vals[[var]])){
       cfg_vals[[var]] = as.numeric(cfg_vals[[var]])
       if(!is.numeric(cfg_vals[[var]])){
@@ -304,7 +307,7 @@ parse_fetch_options = function(fop){
     }    
   }
   #logical: is_null
-  for(var in c("is_null", "lineplot_free_limits")){
+  for(var in c("is_null", "lineplot_free_limits", "balance_groups")){
     if(!is.null(cfg_vals[[var]])){
       cfg_vals[[var]] = as.logical(cfg_vals[[var]])
     }    
@@ -313,13 +316,13 @@ parse_fetch_options = function(fop){
   #parsing the color mapping
   if(!is.null(cfg_vals[["color_mapping"]])){
     cmap = cfg_vals[["color_mapping"]]
-    if(grepl(":", cmap)){
-      cmap = strsplit(strsplit(cmap, ",")[[1]], ":")
+    if(any(grepl(":", cmap))){
+      cmap = strsplit(cmap, ":")
       color_mapping = sapply(cmap, function(x)x[2])
       names(color_mapping) = sapply(cmap, function(x)x[1])
       cfg_vals[["color_mapping"]] = color_mapping    
     }else{
-      color_mapping = strsplit(cmap, ",")[[1]]
+      color_mapping = cmap
       cfg_vals[["color_mapping"]] = color_mapping
     }
   }
@@ -362,7 +365,7 @@ is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam
   hdr1 = sapply(slots_to_save, function(x){
     val = slot(object, x)
     ifelse(length(val) > 0,
-           paste0("#CFG ", x, "=", val),
+           paste0("#CFG ", x, "=", paste(val, collapse = ",")),
            character())
   })
   hdr1 = hdr1[!is.na(hdr1)]
@@ -399,8 +402,9 @@ is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam
 #' @export
 #'
 #' @examples
-get_args = function(env = parent.frame(), ...){
+get_args = function(env = parent.frame(), to_ignore = character(), ...){
   args = c(as.list(env), list(...))
+  args = args[!names(args) %in% to_ignore]
   args[order(names(args))]
 }
 #' digest_args
@@ -414,7 +418,7 @@ get_args = function(env = parent.frame(), ...){
 #' @export
 #'
 #' @examples
-digest_args = function(env = parent.frame(), ...){
-  digest::digest(get_args(env, ...))
+digest_args = function(env = parent.frame(), to_ignore = character(), ...){
+  digest::digest(get_args(env, to_ignore, ...))
 }
 

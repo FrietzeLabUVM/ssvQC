@@ -4,7 +4,7 @@
 \alias{get_args}
 \title{get_args}
 \usage{
-get_args(env = parent.frame(), ...)
+get_args(env = parent.frame(), to_ignore = character(), ...)
 }
 \arguments{
 \item{env}{}

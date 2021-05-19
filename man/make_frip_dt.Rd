@@ -10,7 +10,8 @@ make_frip_dt(
   n_cores = getOption("mc.cores", 1),
   name_lev = NULL,
   name_var = "name_split",
-  color_var = name_var
+  color_var = name_var,
+  bfc = new_cache()
 )
 }
 \arguments{

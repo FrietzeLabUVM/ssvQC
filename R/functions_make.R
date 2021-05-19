@@ -424,52 +424,57 @@ make_centered_query_gr = function(query_dt, query_gr, view_size = NULL, fetch_fu
 #' query_gr = seqsetvis::easyLoad_bed(peak_file)[[1]]
 #'
 #' make_frip_dt(bam_file, query_gr)
-make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), name_lev = NULL, name_var = "name_split", color_var = name_var){
+make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), name_lev = NULL, name_var = "name_split", color_var = name_var, bfc = new_cache()){
   treatment = qname = id = frip = N = mapped_reads = V1 = NULL#global data.table bindings
-  aes_vars = union(name_var, color_var)
-  if(is.character(query_dt)){
-    query_dt = data.table(file = query_dt)
-  }
-  if(is.null(query_dt$file)){
-    stop("query_dt must contain file variable")
-  }
-  if(is.null(query_dt[[name_var]])){
-    query_dt[[name_var]] = basename(query_dt$file)
-  }
-  if(!is.null(name_lev)) stopifnot(all(query_dt[[name_var]] %in% name_lev))
-  if(is.null(query_dt[[color_var]])){
-    query_dt[[color_var]] = query_dt[[name_var]]
-  }
-  
-  n_region_splits = max(1, floor(length(query_gr) / 1e3))
-  message("fetch read counts...")
-  # reads_dt = seqsetvis::ssvFetchBam(query_dt, query_gr, fragLens = NA, return_unprocessed = TRUE, n_region_splits = n_region_splits, n_cores = n_cores)
-  # frip_dt = reads_dt[, list(N = length(unique(qname))), list(id, name, treatment, sample)]
-  frip_dt = seqsetvis::ssvFetchBam(query_dt, query_gr, fragLens = 1, win_size = 1, win_method = "summary", summary_FUN = function(x,w){sum(x)}, n_region_splits = n_region_splits, n_cores = n_cores, return_data.table = TRUE)
-  setnames(frip_dt, "y", "N")
-  
-  frip_dt_filled = melt(dcast(frip_dt, paste0("id~", name_var), value.var = "N", fill = 0), id.vars = "id", value.name = "N", variable.name = name_var)
-  frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(aes_vars, "sample"), with = FALSE]), by = name_var)
-  
-  message("fetch total mapped reads...")
-  mapped_counts = sapply(query_dt$file, function(f){
-    stats = Rsamtools::idxstatsBam(f)
-    stats = subset(stats, grepl("chr[0-9XY]+$", seqnames ))
-    sum(stats[,3])
+  bfcif(bfc, digest_args(to_ignore = c("bfc", "n_cores")), function(){
+    aes_vars = union(name_var, color_var)
+    if(is.character(query_dt)){
+      query_dt = data.table(file = query_dt)
+    }
+    if(is.null(query_dt$file)){
+      stop("query_dt must contain file variable")
+    }
+    if(is.null(query_dt[[name_var]])){
+      query_dt[[name_var]] = basename(query_dt$file)
+    }
+    if(!is.null(name_lev)) stopifnot(all(query_dt[[name_var]] %in% name_lev))
+    if(is.null(query_dt[[color_var]])){
+      query_dt[[color_var]] = query_dt[[name_var]]
+    }
+    
+    n_region_splits = max(1, floor(length(query_gr) / 1e3))
+    message("fetch read counts...")
+    # reads_dt = seqsetvis::ssvFetchBam(query_dt, query_gr, fragLens = NA, return_unprocessed = TRUE, n_region_splits = n_region_splits, n_cores = n_cores)
+    # frip_dt = reads_dt[, list(N = length(unique(qname))), list(id, name, treatment, sample)]
+    frip_dt = bfcif(bfc, digest::digest(list(query_dt, query_gr, "make_frip_dt")), function(){
+      seqsetvis::ssvFetchBam(query_dt, query_gr, fragLens = 1, win_size = 1, win_method = "summary", summary_FUN = function(x,w){sum(x)}, n_region_splits = n_region_splits, n_cores = n_cores, return_data.table = TRUE)
+    })
+    
+    
+    setnames(frip_dt, "y", "N")
+    
+    frip_dt_filled = melt(dcast(frip_dt, paste0("id~", name_var), value.var = "N", fill = 0), id.vars = "id", value.name = "N", variable.name = name_var)
+    frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(aes_vars, "sample"), with = FALSE]), by = name_var)
+    
+    message("fetch total mapped reads...")
+    mapped_counts = sapply(query_dt$file, function(f){
+      stats = Rsamtools::idxstatsBam(f)
+      stats = subset(stats, grepl("chr[0-9XY]+$", seqnames ))
+      sum(stats[,3])
+    })
+    frip_dt$mapped_reads = mapped_counts[frip_dt$sample]
+    frip_dt[, frip := N/mapped_reads]
+    
+    if(!is.null(name_lev)){
+      # name_lev = frip_dt[, stats::median(N) , list(name)][rev(order(V1))]$name
+      stopifnot(all(frip_dt[[name_var]] %in% name_lev))
+      frip_dt[[name_var]] = factor(frip_dt[[name_var]], levels = name_lev)
+    }
+    
+    
+    setnames(frip_dt, "N", "reads_in_peak")
+    frip_dt
   })
-  frip_dt$mapped_reads = mapped_counts[frip_dt$sample]
-  frip_dt[, frip := N/mapped_reads]
-  
-  if(!is.null(name_lev)){
-    # name_lev = frip_dt[, stats::median(N) , list(name)][rev(order(V1))]$name
-    stopifnot(all(frip_dt[[name_var]] %in% name_lev))
-    frip_dt[[name_var]] = factor(frip_dt[[name_var]], levels = name_lev)
-  }
-  
-  
-  setnames(frip_dt, "N", "reads_in_peak")
-  frip_dt
-  
 }
 
 #' make_peak_dt
@@ -538,10 +543,7 @@ make_peak_dt = function(peak_grs, treatments = NULL){
 #' @param fetch_size optional numeric. Size in bp centered around each interval
 #'   in query_gr to retrieve.  Should be greater than max frag_size. The default
 #'   is 3*max(frag_sizes).
-#' @param bfc_corr BiocFileCache object to use.
-#' @param cache_version Modifying the cache version will force recalulation of
-#'   all results going forward. Default is v1.
-#' @param force_overwrite Logical, if TRUE, cache contents will be overwritten.
+#' @param bfc BiocFileCache object to use.
 #' @param name_var Character. Variable where name information is stored.
 #' @param n_cores Number of cores to use. Defaults to mc.cores if set or 1.
 #' @param ... passed to Rsamtools::ScanBamParam()
@@ -570,13 +572,11 @@ make_scc_dt = function(query_dt,
                        query_gr,
                        frag_sizes = seq(50, 350, 10),
                        fetch_size = 3*max(frag_sizes),
-                       bfc_corr = BiocFileCache("~/.cache_peakrefine"),
-                       cache_version = "v1",
-                       force_overwrite = FALSE,
+                       bfc = new_cache(),
                        name_var = "name_split",
                        n_cores = getOption("mc.cores", 1L),
                        ...){
-  bfcif(bfc_corr, digest_args(), function(){
+  bfcif(bfc, digest_args(to_ignore = c("bfc", "n_cores")), function(){
     if(is.character(query_dt)) query_dt = data.table(file = query_dt, name = basename(query_dt))
     if(!name_var %in% colnames(query_dt)){
       stop(
@@ -590,14 +590,14 @@ make_scc_dt = function(query_dt,
     files = .get_files(query_dt)
     scc_res_l = lapply(files, function(f){
       message("SCC for ", f)
-      make_scc_dt.single(f, query_gr,
-                         frag_sizes = frag_sizes,
-                         fetch_size = fetch_size,
-                         bfc_corr = bfc_corr,
-                         cache_version = cache_version,
-                         force_overwrite = force_overwrite,
-                         n_cores = n_cores,
-                         ...)
+      bfcif(bfc, digest::digest(c(list(f, query_gr, frag_sizes, fetch_size), ...)), function(){
+        make_scc_dt.single(f, query_gr,
+                           frag_sizes = frag_sizes,
+                           fetch_size = fetch_size,
+                           n_cores = n_cores,
+                           ...)  
+      })
+      
     })
     
     vnames = names(scc_res_l[[1]])
@@ -631,7 +631,7 @@ make_scc_dt = function(query_dt,
 #' @param fetch_size optional numeric. Size in bp centered around each interval
 #'   in query_gr to retrieve.  Should be greater than max frag_size. The default
 #'   is 3*max(frag_sizes).
-#' @param bfc_corr BiocFileCache object to use.
+#' @param bfc BiocFileCache object to use.
 #' @param cache_version Modifying the cache version will force recalulation of
 #'   all results going forward. Default is v1.
 #' @param force_overwrite Logical, if TRUE, cache contents will be overwritten.
@@ -655,19 +655,8 @@ make_scc_dt.single = function(bam_file,
                               query_gr,
                               frag_sizes,
                               fetch_size = 3*max(frag_sizes),
-                              bfc_corr = BiocFileCache("~/.cache_peakrefine"),
-                              cache_version = "v1",
-                              force_overwrite = FALSE,
                               n_cores = getOption("mc.cores", 1L),
                               ...){
-  bam_md5 = NULL
-  qgr_md5 = NULL
-  if(is.null(bam_md5)){
-    bam_md5 = tools::md5sum(bam_file)
-  }
-  if(is.null(qgr_md5)){
-    qgr_md5 = digest::digest(query_gr)
-  }
   if(fetch_size <= max(frag_sizes)){
     stop("fetch_size (", fetch_size, ") must exceed max of frag_sizes (", max(frag_sizes), ").")
   }
@@ -695,21 +684,19 @@ make_scc_dt.single = function(bam_file,
   }
   stopifnot(!any(duplicated(names(query_gr))))
   
-  corr_key = paste(qgr_md5, bam_md5, digest::digest(frag_sizes), fetch_size, cache_version, sep = "_")
-  corr_res = bfcif(bfc_corr, corr_key, function(){
-    message("cached results not found, gathering correlation info.")
-    nper = ceiling(length(query_gr) / n_cores)
-    grps = ceiling(seq_along(query_gr)/ nper)
-    table(grps)
-    # browser()
-    rl = getReadLength(bam_file, query_gr)
-    lres = pbmcapply::pbmclapply(unique(grps), function(g){
-      k = grps == g
-      crossCorrByRle(bam_file, query_gr[k], fragment_sizes = frag_sizes, read_length = rl, ...)
-    })
-    peak_strand_corr = rbindlist(lres)
-    gather_metrics(peak_strand_corr, rl)
-  }, force_overwrite = force_overwrite)
+  
+  message("cached results not found, gathering correlation info.")
+  nper = ceiling(length(query_gr) / n_cores)
+  grps = ceiling(seq_along(query_gr)/ nper)
+  table(grps)
+  # browser()
+  rl = getReadLength(bam_file, query_gr)
+  lres = pbmcapply::pbmclapply(unique(grps), function(g){
+    k = grps == g
+    crossCorrByRle(bam_file, query_gr[k], fragment_sizes = frag_sizes, read_length = rl, ...)
+  })
+  peak_strand_corr = rbindlist(lres)
+  corr_res =   gather_metrics(peak_strand_corr, rl)
   
   #make everything a data.table
   vnames = names(corr_res)

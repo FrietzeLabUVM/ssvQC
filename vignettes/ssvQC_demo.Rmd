@@ -147,7 +147,7 @@ cowplot::plot_grid(
 )
 ```
 
-All peaks are not created equal! Some clusters have much stronger signal.
+All peaks are not created equal! Some clusters have much stronger signal.  Also, some peaks look iffy in terms of spikiness/extremely high signal. It's hard to be certain only looking at the pulldown samples.
 
 ### SCC
 
@@ -176,6 +176,8 @@ The FRIP (Fraction of Reads in Peaks) series of plots assesses the strenght of t
 
 ## Batch Replicate Comparison
 
+For this next example we'll be working with more of the same dataset.  Where before we only considered teh H4K5AC data, here we'll look at 2 addtional H4 marks and ATAD2B, a transcription factor.
+
 ```{r files2}
 in_dir = "/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak"
 data_paths = dir(in_dir, pattern = "((H4K[5812]+)|(ATAD)|(input)).+rep", full.names = TRUE)
@@ -185,7 +187,19 @@ bam_files = dir(data_paths, pattern = "bam$", full.names = TRUE)
 
 np_files = dir(data_paths, pattern = ".+narrowPeak$", full.names = TRUE)
 np_files = np_files[!grepl("loose", np_files)]
+np_files = c(np_files,
+             "/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7/MCF7_ATAD2B_rep1/MCF7_ATAD2B_rep1_peaks.narrowPeak")
 ```
+
+The following block illustrates one method for controlling how these files get handled and outputs get organized.
+
+We can derive "mark" and "rep" information from the file names provided and add these to the meta_data.  This is currently rather clunky and may be improved later in ssvQC.
+
+Once added to the meta_data, we can specify "run_by" and "color_by" as these two variables respectively.  "run_by" provides grouping to the data for peak overlaps and when producing various plots.  Likewise, "color_by" decides how items will be colored.  
+
+While "run_by" is shared in the signal and feature configurations, it's impact is a bit different.  For feature configurations it compares how feature sets are split up for overlap comparison. For each of these feature sets, groups specified by "run_by" in the signal configuration will be analyzed.
+
+"to_run" determines which items in "run_by" will actually be run.  Here we will not run items with the "mark" value of "input", since we have no peaks called on the input samples alone.  We will however specify "input" at the "to_run_reference" which will include input signal in every appropriate feature group analysis.
 
 ```{r config2}
 sig_config = QcConfigSignal.files(bam_files)
@@ -206,19 +220,70 @@ feat_config$color_by = "rep"
 feat_config$to_run = setdiff(feat_config$meta_data[[feat_config$run_by]], "input")
 feat_config$to_run_reference = character()
 sqc2 = ssvQC(feat_config, sig_config)
+
+sqc2$signal_config$cluster_value = SQC_SIGNAL_VALUES$RPM
+sqc2$signal_config$sort_value = SQC_SIGNAL_VALUES$RPM
+sqc2$signal_config$plot_value = SQC_SIGNAL_VALUES$RPM
+sqc2$signal_config$lineplot_free_limits = TRUE
+sqc2$signal_config$heatmap_limit_values = c(0, 5)
+sqc2$signal_config$color_by = "mark"
+sqc2$signal_config$color_mapping
+sqc2$signal_config$color_mapping$input = "gray"
+sqc2$signal_config$color_mapping$ATAD2B = "green"
+sqc2$signal_config$color_mapping$H4K12AC = "red"
+sqc2$signal_config$color_mapping$H4K5AC = "blue"
+sqc2$signal_config$color_mapping$H4K8AC = "purple"
+``` 
+
+Because we've extensively tweaked these configuations, let's save them for later use.
+
+```{r save config}
+QcConfigFeatures.save_config(sqc2$features_config, file = "qc_feature_config.csv")
+QcConfigSignal.save_config(sqc2$signal_config, file = "qc_signal_config.csv")
+```
+
+Remember to run it!
+
+```{r}
 sqc2 = ssvQC.runAll(sqc2)
 ```
 
+Let's first repeat some plots from before.
+
 ```{r}
-sqc2$plots$features$UpSet$H4K5AC_features
-sqc2$plots$signal$heatmaps$H4K5AC_features$H4K5AC_signal
+cowplot::plot_grid(
+  sqc2$plots$signal$heatmaps$H4K5AC_features$H4K5AC_signal,
+  sqc2$plots$signal$heatmaps.lines$H4K5AC_features$H4K5AC_signal
+)
+```
 
-sqc2$signal_config$lineplot_free_limits = TRUE
-sqc2$signal_config$heatmap_limit_values = c(0, 50)
-sqc2 = ssvQC.plotSignal(sqc2)
+Now it's quite clear that certain H4K5AC peaks are problematic.  I'd recommend removing peaks where the input signal is high.
 
-sqc2$signal_data$H4K5AC_features$H4K5AC_signal$signal_data.mean_per_cluster
+```{r, fig.width=10, fig.height=6}
+cowplot::plot_grid(
+sqc2$plots$FRIP$per_peak$H4K5AC_features$H4K5AC_signal,
+sqc2$plots$FRIP$per_peak$H4K8AC_features$H4K8AC_signal,
+sqc2$plots$FRIP$per_peak$H4K12AC_features$H4K12AC_signal,
+sqc2$plots$FRIP$per_peak$ATAD2B_features$ATAD2B_signal
+)
+```
 
-sqc2$plots$signal$heatmaps$H4K5AC_features$H4K5AC_signal
-sqc2$plots$signal$heatmaps.lines$H4K5AC_features$H4K5AC_signal
+I think this is one of the most powerful tools for quickly assessing the quality of ChIP-seq/cuut&run/ATAC-seq experiment.
+
+```{r, fig.width=6, fig.height=6}
+sqc2$plots$SCC$curves$H4K8AC_features$H4K8AC_signal
+```
+
+```{r, fig.width=9, fig.height=3}
+sqc2$plots$SCC$curves$ATAD2B_features$ATAD2B_signal
+```
+
+The SCC maxima at read length for ATAD2B is conclusively bad.
+
+## Between Mark Comparison
+
+```{r}
+qc_features = QcConfigFeatures.parse("qc_feature_config.csv", process_features = TRUE)
+qc_signal = QcConfigSignal.parse("qc_signal_config.csv")
+sqc3 = ssvQC(qc_features, qc_signal)
 ```

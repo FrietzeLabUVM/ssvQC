@@ -102,13 +102,9 @@ ClusteredSignal.fromConfig = function(signal_config,
     query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
     
     prof_dt = fetch_signal_at_features(signal_config, query_gr, bfc)
-    # if(signal_config@cluster_value == "RPM" | signal_config@sort_value == "RPM"){
     prof_dt[, y_RPM := y / mapped_reads * 1e6]
-    # }
-    # if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
     prof_dt[, y_linQ := y / cap_value]
     prof_dt[y_linQ > 1, y_linQ := 1]
-    # }
     clust_dt = ClusteredSignal(prof_dt, query_gr, 
                                manual_assigned = manual_assigned,
                                nclust = nclust,

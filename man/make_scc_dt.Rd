@@ -9,9 +9,7 @@ make_scc_dt(
   query_gr,
   frag_sizes = seq(50, 350, 10),
   fetch_size = 3 * max(frag_sizes),
-  bfc_corr = BiocFileCache("~/.cache_peakrefine"),
-  cache_version = "v1",
-  force_overwrite = FALSE,
+  bfc = new_cache(),
   name_var = "name_split",
   n_cores = getOption("mc.cores", 1L),
   ...
@@ -31,12 +29,7 @@ default is to count by 10 from 50 to 350.}
 in query_gr to retrieve.  Should be greater than max frag_size. The default
 is 3*max(frag_sizes).}
 
-\item{bfc_corr}{BiocFileCache object to use.}
-
-\item{cache_version}{Modifying the cache version will force recalulation of
-all results going forward. Default is v1.}
-
-\item{force_overwrite}{Logical, if TRUE, cache contents will be overwritten.}
+\item{bfc}{BiocFileCache object to use.}
 
 \item{name_var}{Character. Variable where name information is stored.}
 

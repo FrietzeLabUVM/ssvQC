@@ -1,0 +1,41 @@
+#CFG n_peaks=200
+#CFG balance_groups=FALSE
+#CFG consensus_fraction=0
+#CFG consensus_n=1
+#CFG overlap_extension=0
+#CFG run_by=mark
+#CFG to_run=H4K12AC,H4K5AC,H4K8AC,ATAD2B
+#CFG color_by=rep
+#CFG is_null=FALSE
+#CFG color_mapping=rep2:#1B9E77,rep1:#D95F02
+file,group,All,name,name_split,mark,rep
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K12AC_rep2/MCF7_H4K12AC_rep2_peaks.narrowPeak,MCF7_H4K12AC_rep2_peaks.narrowPeak,All,MCF7_H4K12AC_rep2_peaks.narrowPeak,"MCF7
+H4K12AC
+rep2
+peaks
+narrowPeak",H4K12AC,rep2
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K5AC_rep1/MCF7_H4K5AC_rep1_peaks.narrowPeak,MCF7_H4K5AC_rep1_peaks.narrowPeak,All,MCF7_H4K5AC_rep1_peaks.narrowPeak,"MCF7
+H4K5AC
+rep1
+peaks
+narrowPeak",H4K5AC,rep1
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K5AC_rep2/MCF7_H4K5AC_rep2_peaks.narrowPeak,MCF7_H4K5AC_rep2_peaks.narrowPeak,All,MCF7_H4K5AC_rep2_peaks.narrowPeak,"MCF7
+H4K5AC
+rep2
+peaks
+narrowPeak",H4K5AC,rep2
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K8AC_rep1/MCF7_H4K8AC_rep1_peaks.narrowPeak,MCF7_H4K8AC_rep1_peaks.narrowPeak,All,MCF7_H4K8AC_rep1_peaks.narrowPeak,"MCF7
+H4K8AC
+rep1
+peaks
+narrowPeak",H4K8AC,rep1
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K8AC_rep2/MCF7_H4K8AC_rep2_peaks.narrowPeak,MCF7_H4K8AC_rep2_peaks.narrowPeak,All,MCF7_H4K8AC_rep2_peaks.narrowPeak,"MCF7
+H4K8AC
+rep2
+peaks
+narrowPeak",H4K8AC,rep2
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7/MCF7_ATAD2B_rep1/MCF7_ATAD2B_rep1_peaks.narrowPeak,MCF7_ATAD2B_rep1_peaks.narrowPeak,All,MCF7_ATAD2B_rep1_peaks.narrowPeak,"MCF7
+ATAD2B
+rep1
+peaks
+narrowPeak",ATAD2B,rep1

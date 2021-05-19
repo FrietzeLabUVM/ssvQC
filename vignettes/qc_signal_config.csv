@@ -1,0 +1,53 @@
+#CFG view_size=3000
+#CFG read_mode=bam_SE
+#CFG run_by=mark
+#CFG to_run=ATAD2B,H4K12AC,H4K5AC,H4K8AC
+#CFG to_run_reference=input
+#CFG color_by=mark
+#CFG is_null=FALSE
+#CFG cluster_value=RPM
+#CFG linearQuantile_cutoff=0.98
+#CFG sort_value=RPM
+#CFG sort_method=sort
+#CFG plot_value=RPM
+#CFG heatmap_limit_values=0,5
+#CFG lineplot_free_limits=TRUE
+#CFG color_mapping=ATAD2B:green,H4K12AC:red,H4K5AC:blue,H4K8AC:purple,input:gray
+#CFG fetch_options=
+file,group,name,name_split,All,mark,rep,mapped_reads,fragLens,cap_value
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_ATAD2B_rep1/MCF7_ATAD2B_rep1.bam,MCF7_ATAD2B_rep1.bam,MCF7_ATAD2B_rep1.bam,"MCF7
+ATAD2B
+rep1
+bam",All,ATAD2B,rep1,7454578,133,450
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K12AC_rep1/MCF7_H4K12AC_rep1.bam,MCF7_H4K12AC_rep1.bam,MCF7_H4K12AC_rep1.bam,"MCF7
+H4K12AC
+rep1
+bam",All,H4K12AC,rep1,8553504,175,699
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K12AC_rep2/MCF7_H4K12AC_rep2.bam,MCF7_H4K12AC_rep2.bam,MCF7_H4K12AC_rep2.bam,"MCF7
+H4K12AC
+rep2
+bam",All,H4K12AC,rep2,2052419,158,142
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K5AC_rep1/MCF7_H4K5AC_rep1.bam,MCF7_H4K5AC_rep1.bam,MCF7_H4K5AC_rep1.bam,"MCF7
+H4K5AC
+rep1
+bam",All,H4K5AC,rep1,2001470,191,97
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K5AC_rep2/MCF7_H4K5AC_rep2.bam,MCF7_H4K5AC_rep2.bam,MCF7_H4K5AC_rep2.bam,"MCF7
+H4K5AC
+rep2
+bam",All,H4K5AC,rep2,3834904,190,186
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K8AC_rep1/MCF7_H4K8AC_rep1.bam,MCF7_H4K8AC_rep1.bam,MCF7_H4K8AC_rep1.bam,"MCF7
+H4K8AC
+rep1
+bam",All,H4K8AC,rep1,4623470,180,205.05
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_H4K8AC_rep2/MCF7_H4K8AC_rep2.bam,MCF7_H4K8AC_rep2.bam,MCF7_H4K8AC_rep2.bam,"MCF7
+H4K8AC
+rep2
+bam",All,H4K8AC,rep2,3698216,178,183
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_input_rep1/MCF7_input_rep1.bam,MCF7_input_rep1.bam,MCF7_input_rep1.bam,"MCF7
+input
+rep1
+bam",All,input,rep1,37553406,188,2584.15
+/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak/MCF7_input_rep2/MCF7_input_rep2.bam,MCF7_input_rep2.bam,MCF7_input_rep2.bam,"MCF7
+input
+rep2
+bam",All,input,rep2,25920140,186,2044.1

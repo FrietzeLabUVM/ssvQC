@@ -9,9 +9,6 @@ make_scc_dt.single(
   query_gr,
   frag_sizes,
   fetch_size = 3 * max(frag_sizes),
-  bfc_corr = BiocFileCache("~/.cache_peakrefine"),
-  cache_version = "v1",
-  force_overwrite = FALSE,
   n_cores = getOption("mc.cores", 1L),
   ...
 )
@@ -29,16 +26,16 @@ default is to count by 10 from 50 to 350.}
 in query_gr to retrieve.  Should be greater than max frag_size. The default
 is 3*max(frag_sizes).}
 
-\item{bfc_corr}{BiocFileCache object to use.}
+\item{n_cores}{Number of cores to use. Defaults to mc.cores if set or 1.}
+
+\item{...}{passed to Rsamtools::ScanBamParam()}
+
+\item{bfc}{BiocFileCache object to use.}
 
 \item{cache_version}{Modifying the cache version will force recalulation of
 all results going forward. Default is v1.}
 
 \item{force_overwrite}{Logical, if TRUE, cache contents will be overwritten.}
-
-\item{n_cores}{Number of cores to use. Defaults to mc.cores if set or 1.}
-
-\item{...}{passed to Rsamtools::ScanBamParam()}
 }
 \value{
 list fo tidy data.table of SCC data for bam_file

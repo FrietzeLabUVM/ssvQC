@@ -4,7 +4,7 @@
 \alias{digest_args}
 \title{digest_args}
 \usage{
-digest_args(env = parent.frame(), ...)
+digest_args(env = parent.frame(), to_ignore = character(), ...)
 }
 \arguments{
 \item{env}{}

@@ -601,7 +601,11 @@ QcConfigSignal.save_config = function(object, file){
     "cluster_value",
     "linearQuantile_cutoff",
     "sort_value",
-    "sort_method"
+    "sort_method",
+    "plot_value",
+    "heatmap_limit_values",
+    "lineplot_free_limits"
+    
   )
   kvp_slots = c("color_mapping", "fetch_options")
   # QcConfigSignal.parse(file)

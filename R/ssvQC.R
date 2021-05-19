@@ -540,7 +540,7 @@ setMethod("ssvQC.prepSCC", "ssvQC.complete", function(object){
   SCC_data = lapply(object@features_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){
-      make_scc_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, bfc_corr = object@bfc)
+      make_scc_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, bfc = object@bfc)
     })
   })
   object@other_data$SCC = SCC_data
@@ -627,6 +627,18 @@ setMethod("ssvQC.plotSCC", "ssvQC.signalOnly", function(object){
 #' @rdname ssvQC
 setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
 setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+  if(length(object@features_config$assessment_features) == 0){
+    object = ssvQC.prepFeatures(object)
+  }
+  if(is.null(object$signal_config$meta_data$mapped_reads)){
+    object = ssvQC.prepMappedReads(object)
+  }
+  if(is.null(object$signal_config$meta_data$fragLens)){
+    object = ssvQC.prepFragLens(object)
+  }
+  if(is.null(object$signal_config$meta_data$cap_value)){
+    object = ssvQC.prepCapValue(object)
+  }
   object@signal_data = lapply(object@features_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){
