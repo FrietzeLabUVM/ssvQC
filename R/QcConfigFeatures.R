@@ -128,8 +128,10 @@ setReplaceMethod("$", "QcConfigFeatures",
                    x
                  })
 
-.process_features = function(meta_dt, feature_load_FUN, bfc = new_cache()){
-  bfcif(bfc, digest_args(), function(){
+.process_features = function(meta_dt, feature_load_FUN, 
+                             bfc = new_cache(), 
+                             force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)){
+  bfcif(bfc, digest_args(), force_overwrite = force_overwrite,  function(){
     loaded_features = feature_load_FUN(meta_dt$file)
     names(loaded_features) = as.character(meta_dt$name_split)
     
@@ -140,8 +142,11 @@ setReplaceMethod("$", "QcConfigFeatures",
   })
 }
 
-.process_overlaps = function(loaded_features, overlap_extension, bfc = new_cache()){
-  bfcif(bfc, digest_args(), function(){
+.process_overlaps = function(loaded_features, 
+                             overlap_extension, 
+                             bfc = new_cache(), 
+                             force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)){
+  bfcif(bfc, digest_args(), force_overwrite = force_overwrite, function(){
     overlap_gr = seqsetvis::ssvOverlapIntervalSets(loaded_features, ext = overlap_extension)
     overlap_gr = sort(overlap_gr)
     overlap_gr = seqsetvis::prepare_fetch_GRanges_names(overlap_gr)
@@ -152,8 +157,15 @@ setReplaceMethod("$", "QcConfigFeatures",
   })
 }
 
-.process_assessment = function(feat_list, olap_gr, overlap_extension, n_peaks, balance_groups, consensus_fraction, consensus_n, bfc = new_cache()){
-  bfcif(bfc, digest_args(), function(){
+.process_assessment = function(feat_list, 
+                               olap_gr, 
+                               overlap_extension, 
+                               n_peaks, 
+                               balance_groups, 
+                               consensus_fraction, 
+                               consensus_n, bfc = new_cache(), 
+                               force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)){
+  bfcif(bfc, digest_args(), force_overwrite = force_overwrite, function(){
     f_consensus = floor(consensus_fraction * length(feat_list))
     n_consensus = min(length(feat_list), max(consensus_n, f_consensus))
     
