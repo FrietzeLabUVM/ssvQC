@@ -10,3 +10,6 @@ ik_demo.R
 ik_features_config.csv
 ik_signal_config.csv
 bam_config.csv
+example.*
+dev.spp.R
+dev_spp.R

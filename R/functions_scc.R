@@ -123,6 +123,18 @@ new_cache = function(cache_path = getOption("SQC_CACHE_PATH", "~/.cache")){
   BiocFileCache::BiocFileCache(cache_path)
 }
 
+#' Title
+#'
+#' @param bfc 
+#' @param rname 
+#' @param FUN 
+#' @param version 
+#' @param force_overwrite 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 bfcif = function(bfc, rname, FUN, 
                  version = getOption("SQC_CACHE_VERSION", "v1"),
                  force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)){

@@ -80,12 +80,12 @@ setReplaceMethod("$", "QcConfigFeatures",
                              x@n_peaks = value
                            },
                            consensus_n = {
-                             x@overlapped_features = list()
+                             x@overlap_gr = list()
                              x@assessment_gr = list()
                              x@consensus_n = value
                            },
                            consensus_fraction = {
-                             x@overlapped_features = list()
+                             x@overlap_gr = list()
                              x@assessment_gr = list()
                              x@consensus_fraction = value
                            },
@@ -180,7 +180,7 @@ setReplaceMethod("$", "QcConfigFeatures",
     if(length(assessment_gr) == 0){
       stop("No regions in assessment. Maybe loosen consensus requirements or report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")   
     }
-    assessment_gr
+    seqsetvis::prepare_fetch_GRanges_names(assessment_gr)
   })
 }
 
@@ -448,7 +448,7 @@ QcConfigFeatures.parse = function(feature_config_file,
                                   process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
   peak_config_dt = .parse_config_body(feature_config_file)
   valid_feature_var = c("main_dir", "overlap_extension", "n_peaks", "balance_groups", "consensus_n", 
-                        "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run", "is_null")
+                        "consensus_fraction", "color_by", "color_mapping", "run_by", "to_run", "to_run_reference", "is_null")
   cfg_vals = .parse_config_header(feature_config_file, valid_feature_var)
   
   if(!is.null(cfg_vals[["main_dir"]])){

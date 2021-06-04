@@ -10,7 +10,8 @@ setClass("ssvQC",
            bfc = "BiocFileCache",
            saving_enabled = "logical",
            plot_post_FUN = "function",
-           plots = "list"
+           plots = "list",
+           matched_only = "logical"
          ))
 
 setClass("ssvQC.featureOnly", contains = "ssvQC")
@@ -94,6 +95,7 @@ ssvQC = function(features_config = NULL,
                  signal_config = NULL,
                  out_dir = getwd(),
                  bfc = NULL, 
+                 matched_only = TRUE,
                  ...){
   if(is.null(features_config) & is.null(signal_config)){
     stop("At least one of features_config or signal_config must be specified.")
@@ -144,7 +146,8 @@ ssvQC = function(features_config = NULL,
         other_data = list(),
         out_dir = out_dir,
         bfc = bfc,
-        saving_enabled = TRUE
+        saving_enabled = TRUE,
+        matched_only = matched_only
     )
   }else if(!is.null(features_config)){
     new("ssvQC.featureOnly",
@@ -154,7 +157,8 @@ ssvQC = function(features_config = NULL,
         other_data = list(),
         out_dir = out_dir,
         bfc = bfc,
-        saving_enabled = TRUE
+        saving_enabled = TRUE,
+        matched_only = matched_only
     )
   }else if(!is.null(signal_config)){
     new("ssvQC.signalOnly",
@@ -164,7 +168,8 @@ ssvQC = function(features_config = NULL,
         other_data = list(),
         out_dir = out_dir,
         bfc = bfc,
-        saving_enabled = TRUE
+        saving_enabled = TRUE,
+        matched_only = matched_only
     )
   }else{
     stop("At least one of features_config or signal_config must be specified. This should have been caught earlier.")
@@ -185,9 +190,13 @@ setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
   object = ssvQC.plotFeatures(object)
   message("run+plot mapped reads")
   # object = ssvQC.prepMappedReads(object)
-  object = ssvQC.plotMappedReads(object)
-  message("run signal fragLens")
-  object = ssvQC.prepFragLens(object)
+  if(object$signal_config$read_mode != "bigwig"){
+    object = ssvQC.plotMappedReads(object)
+  }
+  if(object$signal_config$read_mode == "bam_SE"){
+    message("run signal fragLens")
+    object = ssvQC.prepFragLens(object)  
+  }
   message("run signal normalization")
   object = ssvQC.prepCapValue(object)
   message("plot signal")
@@ -477,16 +486,33 @@ setMethod("ssvQC.plotMappedReads", "ssvQC.featureOnly", function(object){
 })
 setMethod("ssvQC.plotMappedReads", "ssvQC.signalOnly", .ssvQC.plotMappedReads)
 
+feature_name2signal_name = function(feature_name){
+  sub("features$", "signal", feature_name)
+}
+
+signal_name2feature_name = function(signal_name){
+  sub("signal$", "features", signal_name)
+}
+
 ##FRIP
 #' @export
 #' @rdname ssvQC
 setGeneric("ssvQC.prepFRIP", function(object){standardGeneric("ssvQC.prepFRIP")})
 setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
-  FRIP_data = lapply(object@features_config$assessment_features, function(query_gr){
+  feature_names = names(object@features_config$assessment_features)
+  names(feature_names) = feature_names
+  FRIP_data = lapply(feature_names, function(name){
+    query_gr = object@features_config$assessment_features[[name]]
     sig_configs = .make_query_signal_config(object@signal_config)
-    lapply(sig_configs, function(sel_sig_config){
-      make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
-    })
+    if(object@matched_only){
+      lapply(sig_configs[feature_name2signal_name(name)], function(sel_sig_config){
+        make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
+      })  
+    }else{
+      lapply(sig_configs, function(sel_sig_config){
+        make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
+      })  
+    }
   })
   object@other_data$FRIP = FRIP_data
   object
@@ -630,10 +656,10 @@ setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
   if(length(object@features_config$assessment_features) == 0){
     object = ssvQC.prepFeatures(object)
   }
-  if(is.null(object$signal_config$meta_data$mapped_reads)){
+  if(is.null(object$signal_config$meta_data$mapped_reads) & object$signal_config$read_mode != "bigwig"){
     object = ssvQC.prepMappedReads(object)
   }
-  if(is.null(object$signal_config$meta_data$fragLens)){
+  if(is.null(object$signal_config$meta_data$fragLens) & object$signal_config$read_mode == "bam_SE"){
     object = ssvQC.prepFragLens(object)
   }
   if(is.null(object$signal_config$meta_data$cap_value)){
