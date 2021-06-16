@@ -103,6 +103,17 @@ ClusteredSignal.fromConfig = function(signal_config,
     
     prof_dt = fetch_signal_at_features(signal_config, query_gr, bfc)
     prof_dt[, y_RPM := y / mapped_reads * 1e6]
+    
+    if(signal_config@cluster_value == "RPM_linearQuantile" | signal_config@sort_value == "RPM_linearQuantile"){
+      if(is.null(signal_config@meta_data$RPM_cap_value)){
+        stop("Call ssvQC.prepRPMCapValue() on signal_config first.")
+      }
+    }
+    
+    prof_dt[, y_RPM_linQ := y_RPM / RPM_cap_value ]
+    prof_dt[y_RPM_linQ > 1, y_RPM_linQ := 1 ]
+    
+    
     prof_dt[, y_linQ := y / cap_value]
     prof_dt[y_linQ > 1, y_linQ := 1]
     clust_dt = ClusteredSignal(prof_dt, query_gr, 

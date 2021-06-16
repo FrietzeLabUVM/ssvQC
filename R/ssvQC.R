@@ -101,36 +101,8 @@ ssvQC = function(features_config = NULL,
     stop("At least one of features_config or signal_config must be specified.")
   }
   
-  if(!is.null(features_config)){
-    if(is.character(features_config)){
-      if(!any(is_feature_file(features_config))){
-        features_config = QcConfigFeatures.parse(features_config)
-      }else{
-        features_config = QcConfigFeatures.files(features_config)
-      }
-    }else if(is.data.frame(features_config)){
-      features_config = QcConfigFeatures(features_config, ...)
-    }
-    if(!"QcConfigFeatures" %in% class(features_config)){
-      stop("features_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
-    }  
-    stopifnot(file.exists(features_config@meta_data$file))
-  }
-  if(!is.null(signal_config)){
-    if(is.character(signal_config)){
-      if(!any(is_signal_file(signal_config))){
-        signal_config = QcConfigSignal.parse(signal_config)
-      }else{
-        signal_config = QcConfigSignal.files(signal_config)
-      }
-    }else if(is.data.frame(signal_config)){
-      signal_config = QcConfigSignal(signal_config, ...)
-    }
-    if(!"QcConfigSignal" %in% class(signal_config)){
-      stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
-    }  
-    stopifnot(file.exists(signal_config@meta_data$file))
-  }
+  features_config = .prep_features_config(features_config)
+  signal_config = .prep_signal_config(signal_config)
   
   if(is.null(bfc)){
     bfc = new_cache()
@@ -174,6 +146,44 @@ ssvQC = function(features_config = NULL,
   }else{
     stop("At least one of features_config or signal_config must be specified. This should have been caught earlier.")
   }
+}
+
+.prep_features_config = function(features_config){
+  if(!is.null(features_config)){
+    if(is.character(features_config)){
+      if(!any(is_feature_file(features_config))){
+        features_config = QcConfigFeatures.parse(features_config)
+      }else{
+        features_config = QcConfigFeatures.files(features_config)
+      }
+    }else if(is.data.frame(features_config)){
+      features_config = QcConfigFeatures(features_config, ...)
+    }
+    if(!"QcConfigFeatures" %in% class(features_config)){
+      stop("features_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
+    }  
+    stopifnot(file.exists(features_config@meta_data$file))
+  }
+  features_config
+}
+
+.prep_signal_config = function(signal_config){
+  if(!is.null(signal_config)){
+    if(is.character(signal_config)){
+      if(!any(is_signal_file(signal_config))){
+        signal_config = QcConfigSignal.parse(signal_config)
+      }else{
+        signal_config = QcConfigSignal.files(signal_config)
+      }
+    }else if(is.data.frame(signal_config)){
+      signal_config = QcConfigSignal(signal_config, ...)
+    }
+    if(!"QcConfigSignal" %in% class(signal_config)){
+      stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
+    }  
+    stopifnot(file.exists(signal_config@meta_data$file))
+  }
+  signal_config
 }
 
 .make_query_signal_config = function(sc){
@@ -692,7 +702,6 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
     object = ssvQC.prepSignal(object)
   }
   signal_data = object@signal_data
-  clust_sig = signal_data[[1]][[1]]
   sig_config = object@signal_config
   
   wrap_plot_signal_dt = function(clust_sig, main_title = NULL){
