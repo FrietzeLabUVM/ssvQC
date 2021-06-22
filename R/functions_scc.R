@@ -31,7 +31,6 @@ crossCorrByRle = function(bam_file,
                         ...)
   temp <- GenomicAlignments::readGAlignments(bam_file,param=Param)
   dt = as.data.table(temp)
-  # browser()
   if(is.null(read_length)){
     read_length = getReadLength(bam_file, query_gr)
   }

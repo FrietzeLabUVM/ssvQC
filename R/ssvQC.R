@@ -56,7 +56,7 @@ ssvQC.save_config = function(object, file){
 #' 
 #' @rdname ssvQC
 #' @examples
-#' options(mc.cores = 10)
+#' options(mc.cores = 1)
 #' set.seed(0)
 #' features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' features_config = QcConfigFeatures.parse(features_config_file)
@@ -89,6 +89,10 @@ ssvQC.save_config = function(object, file){
 #' sqc.complete$plots$signal$heatmaps
 #' 
 #' sqc.complete$signal_config@plot_value = "linearQuantile"
+#' sqc.complete = ssvQC.plotSignal(sqc.complete)
+#' sqc.complete$plots$signal$heatmaps
+#'
+#' sqc.complete$signal_config@plot_value = SQC_SIGNAL_VALUES$RPM_linearQuantile
 #' sqc.complete = ssvQC.plotSignal(sqc.complete)
 #' sqc.complete$plots$signal$heatmaps
 ssvQC = function(features_config = NULL,
@@ -357,6 +361,7 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
   }else{
     sig_dt = as.data.table(object@meta_data)[, .(file, name, fragLens)][order(file)]  
   }
+  object = ssvQC.prepMappedReads(object)
   
   setkey(sig_dt, "name")
   peak_dt = as.data.table(query@meta_data)[, .(file, name)][order(file)]
@@ -369,6 +374,9 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
       cap_dt.matched = rbindlist(lapply(seq_len(nrow(matched_dt)), function(i){
         peak_f = matched_dt[i,]$peak_file
         bam_f = matched_dt[i,]$bam_file
+        # if(grepl("bam", object@read_mode)){
+        #   bam_f = data.table(file = bam_f, mapped_reads = get_mapped_reads(bam_f))
+        # }
         name_i = matched_dt[i,]$name
         peak_gr = query@feature_load_FUN(peak_f)[[1]]
         peak_gr = peak_gr[sample(min(5e3, length(peak_gr)))]
@@ -446,7 +454,15 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
     cap_dt
   })
   
+  if(grepl("bam", object@read_mode)){
+    cap_dt[, mapped_reads := get_mapped_reads(as.character(sample)), .(sample) ]
+    cap_dt[, y_RPM_cap_value := y_cap_value / mapped_reads * 1e6]
+  }
+  
   object@meta_data$cap_value = cap_dt[.(object@meta_data$name)]$y_cap_value
+  if(!is.null(cap_dt$y_RPM_cap_value)){
+    object@meta_data$RPM_cap_value = cap_dt[.(object@meta_data$name)]$y_RPM_cap_value  
+  }
   object
 })
 
@@ -757,7 +773,6 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
       lines = p_line
     ))
   }
-  
   signal_plots = dbl_lapply(signal_data, FUN = wrap_plot_signal_dt, FUN_names = dbl_names)
   signal_heatmaps = dbl_extract(signal_plots, "heatmap")
   signal_heatmaps.lines = dbl_extract(signal_plots, "heatmap.lines")
