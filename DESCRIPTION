@@ -34,6 +34,7 @@ Imports:
     pbmcapply,
     png,
     RColorBrewer,
+    Rtsne,
     Rsamtools,
     rtracklayer,
     seqsetvis,

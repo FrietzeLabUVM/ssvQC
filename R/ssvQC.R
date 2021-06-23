@@ -544,10 +544,10 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.prepFRIP", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+  stop("Cannot run prepFRIP on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.prepFRIP", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run prepFRIP on ssvQC with no QcConfigFeature component")
 })
 
 #' @export
@@ -578,10 +578,10 @@ setMethod("ssvQC.plotFRIP", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+  stop("Cannot run plotFRIP on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run plotFRIP on ssvQC with no QcConfigFeature component")
 })
 
 ##SCC
@@ -788,10 +788,10 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.plotSignal", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+  stop("Cannot run plotSignal on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.plotSignal", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run plotSignal on ssvQC with no QcConfigFeature component")
 })
 
 ### Features
@@ -807,7 +807,7 @@ setMethod("ssvQC.prepFeatures", "ssvQC.featureOnly", function(object){
   object
 })
 setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run prepFeatures on ssvQC with no QcConfigFeature component")
 })
 setMethod("ssvQC.prepFeatures", c("QcConfigFeatures", "BiocFileCache"), function(object, bfc){
   prepFeatures(object, bfc)
@@ -897,7 +897,7 @@ setMethod("ssvQC.plotFeatures", c("ssvQC.complete"), function(object){
 })
 setMethod("ssvQC.plotFeatures", c("ssvQC.complete", "logical"), .plotFeatures)
 setMethod("ssvQC.plotFeatures", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run plotFeatures on ssvQC with no QcConfigFeature component")
 })
 setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly"), function(object){
   ssvQC.plotFeatures(object, force_euler = FALSE)

@@ -77,7 +77,7 @@ A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods s
 ssvQC
 }
 \examples{
-options(mc.cores = 10)
+options(mc.cores = 1)
 set.seed(0)
 features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 features_config = QcConfigFeatures.parse(features_config_file)
@@ -110,6 +110,10 @@ sqc.complete = ssvQC.plotSignal(sqc.complete)
 sqc.complete$plots$signal$heatmaps
 
 sqc.complete$signal_config@plot_value = "linearQuantile"
+sqc.complete = ssvQC.plotSignal(sqc.complete)
+sqc.complete$plots$signal$heatmaps
+
+sqc.complete$signal_config@plot_value = SQC_SIGNAL_VALUES$RPM_linearQuantile
 sqc.complete = ssvQC.plotSignal(sqc.complete)
 sqc.complete$plots$signal$heatmaps
 }

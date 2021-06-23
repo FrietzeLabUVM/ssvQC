@@ -1,6 +1,6 @@
 
 
-#' ClusteredSignal
+#' ClusteredSignal_TSNE
 #'
 #' @slot signal_data 
 #' @slot query_gr 
@@ -8,14 +8,23 @@
 #' @slot facet_var 
 #' @slot extra_var 
 #' @export
-setClass("ClusteredSignal",
+setClass("ClusteredSignal_TSNE",
          representation = list(
-           signal_data = "data.table",
-           query_gr = "GRanges",
-           signal_var = "character",
-           facet_var = "character",
-           extra_var = "character"
-         ))
+           xy_data = "data.table"
+         ), contains = "ClusteredSignal")
+
+ClusteredSignal_TSNE.from_ClusteredSignal = function(object, sts_parent){
+  stopifnot("ClusteredSignal" %in% class(object))
+  tsne_dt = run_tsne(object@signal_data, sts_parent@perplexity)
+  
+  new("ClusteredSignal_TSNE",
+      signal_data =  object@signal_data,
+      query_gr = object@query_gr,
+      signal_var = object@signal_var,
+      facet_var = object@facet_var,
+      extra_var = object@extra_var,
+      xy_data = tsne_dt)
+}
 
 #' Title
 #'
@@ -31,38 +40,34 @@ setClass("ClusteredSignal",
 #' @export
 #'
 #' @examples
-ClusteredSignal = function(signal_profile_dt,
+ClusteredSignal_TSNE = function(signal_profile_dt,
                            query_gr,
                            manual_assigned = list(),
                            nclust = 6,
                            signal_var = "y",
                            signal_var.within = "y",
                            facet_var = "name_split",
-                           extra_var = character(),
-                           bfc = new_cache()){
-  bfcif(bfc, digest_args(), function(){
-    query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
-    
-    if(is.null(signal_profile_dt[[signal_var]])) stop("signal_var \"", signal_var, "\" not found in signal_data." )
-    clust_dt = seqsetvis::ssvSignalClustering(signal_profile_dt, nclust = nclust, facet_ = "name_split", max_cols = Inf, max_rows = Inf, fill_ = signal_var)
-    if(signal_var != signal_var.within){
-      clust_dt = within_clust_sort(clust_dt = clust_dt, facet_ = "name_split", fill_ = signal_var.within)
-    }
-    
-    if(length(manual_assigned) > 0){
-      stop("manual_assigned NYI")
-    }
-    
-    new("ClusteredSignal",
-        signal_data =  clust_dt,
-        query_gr = query_gr,
-        signal_var = signal_var,
-        facet_var = facet_var,
-        extra_var = extra_var)
-  })
+                           extra_var = character()){
+  query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
+  
+  if(is.null(signal_profile_dt[[signal_var]])) stop("signal_var \"", signal_var, "\" not found in signal_data." )
+  clust_dt = seqsetvis::ssvSignalClustering(signal_profile_dt, nclust = nclust, facet_ = "name_split", max_cols = Inf, max_rows = Inf, fill_ = signal_var)
+  if(signal_var != signal_var.within){
+    clust_dt = within_clust_sort(clust_dt = clust_dt, facet_ = "name_split", fill_ = signal_var.within)
+  }
+  
+  if(length(manual_assigned) > 0){
+    stop("manual_assigned NYI")
+  }
+  new("ClusteredSignal_TSNE",
+      signal_data =  clust_dt,
+      query_gr = query_gr,
+      signal_var = signal_var,
+      facet_var = facet_var,
+      extra_var = extra_var)
 }
 
-#' ClusteredSignal.fromConfig
+#' ClusteredSignal_TSNE.fromConfig
 #'
 #' @return
 #' @export
@@ -80,9 +85,9 @@ ClusteredSignal = function(signal_profile_dt,
 #' 
 #' prepS
 #' query_gr = feature_config$assessment_features$CTCF_features
-#' sclust = ClusteredSignal(sqc@signal_profile, sqc@feature_config$assessment_features)
+#' sclust = ClusteredSignal_TSNE(sqc@signal_profile, sqc@feature_config$assessment_features)
 #' sclust$
-ClusteredSignal.fromConfig = function(signal_config,
+ClusteredSignal_TSNE.fromConfig = function(signal_config,
                                       query_gr,
                                       manual_assigned = list(),
                                       nclust = 6,
@@ -124,13 +129,13 @@ ClusteredSignal.fromConfig = function(signal_config,
         prof_dt[, y_RPM_linQ := y_RPM / RPM_cap_value ]
         prof_dt[y_RPM_linQ > 1, y_RPM_linQ := 1 ]
       }
-      
+        
       if(!is.null(prof_dt$cap_value)){
         prof_dt[, y_linQ := y / cap_value]
         prof_dt[y_linQ > 1, y_linQ := 1]
       }
-      
-      clust_dt = ClusteredSignal(prof_dt, query_gr, 
+
+      clust_dt = ClusteredSignal_TSNE(prof_dt, query_gr, 
                                  manual_assigned = manual_assigned,
                                  nclust = nclust,
                                  signal_var = val2var[signal_config@cluster_value],
@@ -139,7 +144,7 @@ ClusteredSignal.fromConfig = function(signal_config,
                                  extra_var = extra_var)
       clust_dt
     }else{
-      stop("bigwig NYI")
+      
     }
     
   })
@@ -152,8 +157,8 @@ ClusteredSignal.fromConfig = function(signal_config,
 #' @export
 #'
 #' @examples
-ClusteredSignal.null = function(){
-  new("ClusteredSignal",
+ClusteredSignal_TSNE.null = function(){
+  new("ClusteredSignal_TSNE",
       signal_data =  data.table(),
       query_gr = GRanges(),
       signal_var = character(),
@@ -161,7 +166,7 @@ ClusteredSignal.null = function(){
       extra_var = character())
 }
 
-setMethod("names", "ClusteredSignal",
+setMethod("names", "ClusteredSignal_TSNE",
           function(x)
           {
             c("signal_data", "query_gr", "assignment_data", "query_gr.cluster_list", "signal_data.mean_per_cluster")
@@ -169,7 +174,7 @@ setMethod("names", "ClusteredSignal",
           })
 
 
-setMethod("$", "ClusteredSignal",
+setMethod("$", "ClusteredSignal_TSNE",
           function(x, name)
           {
             switch (name,
@@ -190,7 +195,7 @@ setMethod("$", "ClusteredSignal",
             )
           })
 
-setReplaceMethod("$", "ClusteredSignal",
+setReplaceMethod("$", "ClusteredSignal_TSNE",
                  function(x, name, value)
                  {
                    warn_msg = "This assignment is not supported.  No effect."

@@ -2,7 +2,7 @@
 % Please edit documentation in R/ssvTSNE.R
 \name{ssvTSNE}
 \alias{ssvTSNE}
-\title{Title}
+\title{ssvTSNE}
 \usage{
 ssvTSNE(
   features_config = NULL,
@@ -30,16 +30,21 @@ ssvTSNE(
 
 }
 \description{
-Title
+ssvTSNE
 }
 \examples{
-options(mc.cores = 10)
+options(mc.cores = 1)
 set.seed(0)
 features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 features_config = QcConfigFeatures.parse(features_config_file)
 
 bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 bam_config = QcConfigSignal.parse(bam_config_file)
+bam_config$view_size = 600
 
 sts = ssvTSNE(features_config, bam_config)
+sts = ssvQC.plotFeatures(sts)
+sts = ssvQC.prepSignal(sts)
+sts = ssvQC.plotSignal(sts)
+sts$plots$signal
 }
