@@ -121,17 +121,17 @@ dt2mat = function (prof_dt, wide_values, id_var = "id", wide_var = "name", tall_
 }
 
 plot_summary_glyph.2 = function (tsne_dt, 
-                               qtall_vars, 
-                               id_to_plot = NULL, 
-                               p = NULL, 
-                               xrng = c(-0.5, 0.5), 
-                               yrng = c(-0.5, 0.5), 
-                               bg_color = "gray", 
-                               line_color_mapping = "black", 
-                               fill_color_mapping = "gray", 
-                               label_type = c("text", "label", "none")[3], 
-                               bg_points = 5000, 
-                               arrow_FUN = NULL) 
+                                 qtall_vars, 
+                                 id_to_plot = NULL, 
+                                 p = NULL, 
+                                 xrng = c(-0.5, 0.5), 
+                                 yrng = c(-0.5, 0.5), 
+                                 bg_color = "gray", 
+                                 line_color_mapping = "black", 
+                                 fill_color_mapping = "gray", 
+                                 label_type = c("text", "label", "none")[3], 
+                                 bg_points = 5000, 
+                                 arrow_FUN = NULL) 
 {
   stopifnot(qtall_vars %in% unique(tsne_dt$tall_var))
   if (is.numeric(label_type)) {
@@ -191,9 +191,18 @@ plot_summary_glyph.2 = function (tsne_dt,
   p
 }
 
-plot_summary_raster = function (image_dt, x_points, y_points = x_points, xrng = c(-0.5, 
-                                                                                  0.5), yrng = c(-0.5, 0.5), p = NULL, line_color_mapping = NULL, 
-                                N_floor = 0, N_ceiling = NULL, min_size = 0.3, return_data = FALSE) 
+plot_summary_raster = function (image_dt, 
+                                x_points, 
+                                y_points = x_points, 
+                                xrng = c(-0.5, 0.5), 
+                                yrng = c(-0.5, 0.5), 
+                                p = NULL, 
+                                line_color_mapping = NULL, 
+                                N_floor = 0, 
+                                N_ceiling = NULL, 
+                                min_size = 0.3, 
+                                return_data = FALSE, 
+                                wide_var = "name") 
 {
   image_dt = copy(image_dt)
   image_dt = set_image_rects(image_dt, x_points = x_points, 
@@ -205,15 +214,28 @@ plot_summary_raster = function (image_dt, x_points, y_points = x_points, xrng = 
   if (is.null(p)) 
     p = ggplot()
   if (!is.null(line_color_mapping)) {
-    col_dt = image_dt[, .(tx, ty, wide_var = rep(names(line_color_mapping), 
+    col_dt = image_dt[, .(tx, ty, wide_var_ = rep(names(line_color_mapping), 
                                                  each = nrow(image_dt)))]
-    p = p + geom_point(data = col_dt, aes(x = tx, y = ty, 
-                                          color = wide_var)) + scale_color_manual(values = line_color_mapping)
+    setnames(col_dt, "wide_var_", wide_var)
+    p = p + 
+      geom_point(data = col_dt, 
+                 aes_string(x = "tx", y = "ty", color = wide_var)) + 
+      scale_color_manual(values = line_color_mapping)
   }
-  p = p + geom_image.rect(data = image_dt, aes(xmin = xmin, 
-                                               xmax = xmax, ymin = ymin, ymax = ymax, image = png_file)) + 
-    geom_rect(data = image_dt, aes(xmin = xmin, xmax = xmax, 
-                                   ymin = ymin, ymax = ymax), fill = NA, color = "black") + 
+  p = p + 
+    geom_image.rect(data = image_dt, 
+                    aes(xmin = xmin, 
+                        xmax = xmax, 
+                        ymin = ymin,
+                        ymax = ymax, 
+                        image = png_file)) + 
+    geom_rect(data = image_dt, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = NA, 
+              color = "black") + 
     coord_cartesian(xlim = xrng, ylim = yrng)
   p
 }
@@ -422,8 +444,8 @@ bin_values_centers = function (n_bins, rng)
 }
 
 plot_summary_glyph = function (summary_dt, x_points, y_points = x_points, xrng = c(-0.5, 
-                                                              0.5), yrng = c(-0.5, 0.5), ylim = NULL, p = NULL, N_floor = 0, 
-          N_ceiling = NULL, min_size = 0.3, return_data = FALSE, color_mapping = NULL) 
+                                                                                   0.5), yrng = c(-0.5, 0.5), ylim = NULL, p = NULL, N_floor = 0, 
+                               N_ceiling = NULL, min_size = 0.3, return_data = FALSE, color_mapping = NULL, wide_var = "name") 
 {
   group_size = gx = gy = gid = NULL
   summary_dt = set_size(summary_dt, N_floor, N_ceiling, size.name = "group_size")
@@ -449,21 +471,22 @@ plot_summary_glyph = function (summary_dt, x_points, y_points = x_points, xrng =
     return(glyph_dt)
   }
   if (is.null(color_mapping)) {
-    if (is.factor(summary_dt$wide_var)) {
-      uwide_vars = levels(summary_dt$wide_var)
+    if (is.factor(summary_dt[[wide_var]])) {
+      uwide_vars = levels(summary_dt[[wide_var]])
     }
-    else if (is.character(summary_dt$wide_var)) {
-      uwide_vars = unique(summary_dt$wide_var)
+    else if (is.character(summary_dt[[wide_var]])) {
+      uwide_vars = unique(summary_dt[[wide_var]])
     }
     color_mapping = seqsetvis::safeBrew(length(uwide_vars))
   }
   if (is.null(p)) {
     p = ggplot()
   }
-  p + geom_path(data = glyph_dt, aes(gx, gy, group = paste(gid, 
-                                                           wide_var), color = wide_var)) + labs(x = "tx", 
-                                                                                                y = "ty") + scale_color_manual(values = color_mapping) + 
-    coord_cartesian(xrng, yrng)
+  glyph_dt[, glyph_group := paste(gid, get(wide_var))]
+  p + geom_path(data = glyph_dt, aes_string("gx", "gy", group = "glyph_group", color = wide_var)) + 
+    labs(x = "tx", y = "ty") + 
+    scale_color_manual(values = color_mapping) + 
+    coord_cartesian(xlim = xrng, ylim = yrng)
 }
 
 set_size = function (dt, N_floor, N_ceiling, size.name = "img_size") 
@@ -481,4 +504,129 @@ set_size = function (dt, N_floor, N_ceiling, size.name = "img_size")
   dt[[size.name]] = dt$tmp_var
   dt$tmp_var = NULL
   dt
+}
+
+prep_images = function (summary_dt, 
+                        x_points, 
+                        y_points = x_points, 
+                        xrng = c(-0.5, 0.5), 
+                        yrng = c(-0.5, 0.5), 
+                        rname = NULL, 
+                        odir = file.path(tempdir(), rname), 
+                        force_rewrite = FALSE, 
+                        apply_norm = TRUE, 
+                        ylim = c(0, 1), 
+                        facet_by = NULL, 
+                        ma_size = 2, 
+                        n_splines = 10, 
+                        n_cores = getOption("mc.cores", 1), 
+                        line_color_mapping = NULL, 
+                        vertical_facet_mapping = NULL, 
+                        wide_var = "name",
+                        x_var = "x",
+                        y_var = "y") 
+{
+  if (is.null(line_color_mapping)) {
+    line_color_mapping = seqsetvis::safeBrew(length(unique(summary_dt[[wide_var]])))
+    names(line_color_mapping) = unique(summary_dt[[wide_var]])
+  }
+  if (!all(unique(summary_dt[[wide_var]]) %in% names(line_color_mapping))) {
+    missing_colors = setdiff(unique(summary_dt[[wide_var]]), 
+                             names(line_color_mapping))
+    stop("line_color_mapping is missing assignments for: ", 
+         paste(missing_colors, collapse = ", "))
+  }
+  if (is.null(rname)) {
+    rname = digest::digest(list(summary_dt, x_points, y_points, 
+                                apply_norm, ylim, line_color_mapping, n_splines, 
+                                ma_size, facet_by))
+  }
+  dir.create(odir, recursive = TRUE, showWarnings = FALSE)
+  if (is.null(facet_by)) {
+    img_dt = unique(summary_dt[, list(bx, by, plot_id)])
+    img_dt[, `:=`(png_file, file.path(odir, paste0(plot_id, 
+                                                   ".png")))]
+  }
+  else {
+    img_dt = unique(summary_dt[, list(bx, by, plot_id, get(facet_by))])
+    colnames(img_dt)[4] = facet_by
+    img_dt[, `:=`(png_file, file.path(odir, paste0(get(facet_by), 
+                                                   "_", plot_id, ".png")))]
+  }
+  xs = bin_values_centers(x_points, rng = xrng)
+  ys = bin_values_centers(y_points, rng = yrng)
+  img_dt[, `:=`(tx, xs[bx])]
+  img_dt[, `:=`(ty, ys[by])]
+  if (apply_norm) {
+    summary_dt[, `:=`(ynorm, get(y_var)/stats::quantile(get(y_var), 0.95)), 
+               by = list(wide_var)]
+    summary_dt[ynorm > 1, `:=`(ynorm, 1)]
+  }
+  else {
+    summary_dt[, `:=`(ynorm, get(y_var))]
+  }
+  if (force_rewrite) {
+    file.remove(img_dt$png_file[file.exists(img_dt$png_file)])
+  }
+  if (is.null(facet_by)) {
+    count_dt = unique(summary_dt[, .(bx, by, N)])
+    img_dt = merge(img_dt, count_dt, by = c("bx", "by"))
+  }
+  else {
+    count_dt = unique(summary_dt[, .(bx, by, get(facet_by), 
+                                     N)])
+    colnames(count_dt)[colnames(count_dt) == "V3"] = facet_by
+    img_dt = merge(img_dt, count_dt, by = c("bx", "by", 
+                                            facet_by))
+  }
+  if (is.null(vertical_facet_mapping)) {
+    summary_dt$group = 1
+  }
+  else {
+    if (!all(unique(summary_dt[[wide_var]]) %in% names(vertical_facet_mapping))) {
+      missing_groups = setdiff(unique(summary_dt[[wide_var]]), 
+                               names(vertical_facet_mapping))
+      stop("vertical_facet_mapping is missing assignments for: ", 
+           paste(missing_groups, collapse = ", "))
+    }
+    summary_dt$group = factor(vertical_facet_mapping[summary_dt[[wide_var]]], 
+                              levels = unique(vertical_facet_mapping))
+  }
+  if (any(!file.exists(img_dt$png_file))) {
+    plot_info = lapply(which(!file.exists(img_dt$png_file)), 
+                       function(i) {
+                         fpath = img_dt$png_file[i]
+                         p_id = img_dt$plot_id[i]
+                         if (is.null(facet_by)) {
+                           pdt = summary_dt[plot_id == p_id]
+                         }
+                         else {
+                           pdt = summary_dt[plot_id == p_id & get(facet_by) == 
+                                              img_dt[[facet_by]][i]]
+                         }
+                         pdt[, `:=`(ysm, movingAverage(ynorm, n = ma_size)), 
+                             by = c(wide_var)]
+                         pdt = seqsetvis::applySpline(pdt, n = n_splines, 
+                                                      by_ = wide_var, y_ = "ysm")
+                         list(pdt, fpath)
+                       })
+    hidden = parallel::mclapply(plot_info, function(p_inf) {
+      fpath = p_inf[[2]]
+      pdt = p_inf[[1]]
+      p = ggplot(pdt, aes_string(x = x_var, y = "ysm", ymin = 0, ymax = "ysm", 
+                          color = wide_var, fill = wide_var)) + geom_ribbon(alpha = 0.3) + 
+        geom_path(size = 0.6, alpha = 1) + scale_color_manual(values = line_color_mapping) + 
+        scale_fill_manual(values = line_color_mapping) + 
+        theme_void() + guides(color = "none", fill = "none") + 
+        facet_wrap("group", ncol = 1) + theme(strip.background = element_blank(), 
+                                              strip.text = element_blank()) + coord_cartesian(ylim = ylim, 
+                                                                                              xlim = c(-0.5, 0.5), expand = FALSE)
+      ggsave(fpath, p, width = 2, height = 2, units = "cm")
+      NULL
+    }, mc.cores = n_cores)
+  }
+  img_dt[, `:=`(png_file, normalizePath(png_file))]
+  return(list(image_dt = img_dt[], summary_profile_dt = summary_dt[], 
+              x_points = x_points, y_points = y_points, xrng = xrng, 
+              yrng = yrng, line_color_mapping = line_color_mapping))
 }

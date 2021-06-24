@@ -31,7 +31,7 @@ setClass("ssvTSNE",
 #' sts@perplexity = 10
 #' sts = ssvQC.prepSignal(sts)
 #' sts = ssvQC.plotSignal(sts)
-#' sts$plots$signal
+#' sts$plots$TSNE
 ssvTSNE = function(features_config = NULL,
                    signal_config = NULL,
                    out_dir = getwd(),
@@ -80,7 +80,8 @@ setMethod("ssvQC.prepSignal", "ssvTSNE", function(object){
 
 setMethod("ssvQC.plotSignal", "ssvTSNE", function(object){
   object = callNextMethod()
-  object$plots$TSNE = lapply(object@signal_data, function(signal_data_groups){
+  browser()
+  sts@plots$TSNE = lapply(object@signal_data, function(signal_data_groups){
     lapply(signal_data_groups, function(signal_data){
       tmp = object@signal_data$CTCF_features$CTCF_signal
       if(!"ClusteredSignal_TSNE" %in% class(tmp)){
