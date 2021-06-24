@@ -64,7 +64,6 @@ ssvTSNE = function(features_config = NULL,
 
 setMethod("ssvQC.runAll", "ssvTSNE", function(object){
   object = callNextMethod()
-  browser()
   message("NYI")
   object
 })
@@ -81,14 +80,18 @@ setMethod("ssvQC.prepSignal", "ssvTSNE", function(object){
 
 setMethod("ssvQC.plotSignal", "ssvTSNE", function(object){
   object = callNextMethod()
+  object$plots$TSNE = lapply(object@signal_data, function(signal_data_groups){
+    lapply(signal_data_groups, function(signal_data){
+      tmp = object@signal_data$CTCF_features$CTCF_signal
+      if(!"ClusteredSignal_TSNE" %in% class(tmp)){
+        stop("Stored signal data is not of class ClusteredSignal_TSNE.")
+      }
+      tmp@xy_data
+      p_summary_profiles = stsPlotSummaryProfiles(tmp@signal_data, tmp@xy_data, 10)
+      p_summary_profiles
+    })
+  })
   
-  tmp = object@signal_data$CTCF_features$CTCF_signal
-  if(!"ClusteredSignal_TSNE" %in% class(tmp)){
-    stop("Stored signal data is not of class ClusteredSignal_TSNE.")
-  }
-  tmp@xy_data
-  stsPlotSummaryProfiles(tmp@signal_data, tmp@xy_data, 8)
   
-  browser()
   object
 })

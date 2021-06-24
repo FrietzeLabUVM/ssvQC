@@ -24,12 +24,17 @@ run_tsne = function (profile_dt,
                      Y_init = NULL, 
                      verbose = TRUE, 
                      force_overwrite = FALSE, 
+                     x_var = "x", y_var = "y", id_var = "id",
                      wide_var = "name", 
-                     tall_var = "_none_") {
-  valid_vars = c("id", ifelse(tall_var == "_none_", character(), tall_var), wide_var, "x", "y")
+                     tall_var = "tall_none") {
+  valid_vars = c(ifelse(tall_var == "tall_none", character(), tall_var), wide_var, x_var, y_var, id_var)
   valid_vars = valid_vars[!is.na(valid_vars)]
   stopifnot(valid_vars %in% colnames(profile_dt))
-  tsne_mat = dt2mat(profile_dt, unique(profile_dt[[wide_var]]))
+  
+  if(is.null(profile_dt[[tall_var]])){
+    profile_dt[[tall_var]] = "none"
+  }
+  tsne_mat = dt2mat(profile_dt, unique(profile_dt[[wide_var]]), wide_var = wide_var, tall_var = tall_var)
   bad_col = apply(tsne_mat, 2, stats::var) == 0
   if (any(bad_col)) {
     stop("zero variance columns detected in tsne matrix input.", 
@@ -37,11 +42,11 @@ run_tsne = function (profile_dt,
                      2), "% of columns affected.")
   }
   if (is.data.table(Y_init)) {
-    if(tall_var != "_none_"){
-      Y_init = as.matrix(Y_init[, .(tx, ty)], rownames.value = paste(Y_init$id, 
-                                                                     Y_init$tall_var))  
+    if(tall_var != "tall_none"){
+      Y_init = as.matrix(Y_init[, .(tx, ty)], rownames.value = paste(Y_init[[id_var]], 
+                                                                     Y_init[[tall_var]]))  
     }else{
-      Y_init = as.matrix(Y_init[, .(tx, ty)], rownames.value = paste(Y_init$id))
+      Y_init = as.matrix(Y_init[, .(tx, ty)], rownames.value = paste(Y_init[[id_var]], "none"))
     }
     
     Y_init = Y_init[rownames(tsne_mat), ]
@@ -59,11 +64,7 @@ run_tsne = function (profile_dt,
   colnames(tsne_dt) = c("tx", "ty")
   tsne_dt$rn = rownames(tsne_mat)
   
-  if(tall_var != "_none_"){
-    tsne_dt[, `:=`(c("id", "tall_var"), tstrsplit(rn, " ", keep = seq(2)))]
-  }else{
-    tsne_dt[, `:=`(c("id"), rn)]
-  }
+  tsne_dt[, `:=`(c(id_var, tall_var), tstrsplit(rn, " ", keep = seq(2)))]
   
   
   if (norm1) {
@@ -96,48 +97,41 @@ rescale_capped = function (x, to = c(0, 1), from = range(x, na.rm = TRUE, finite
   y
 }
 
-dt2mat = function (prof_dt, wide_values, wide_var = "name", tall_var = "_none_"){
-  
-  if(tall_var != "_none_"){
-    for (m in wide_values) {
-      if (m == wide_values[1]) {
-        dt = dcast(prof_dt[get(wide_var) == m], id + tall_var ~ 
-                     x, value.var = "y")
-        wide_mat = as.matrix(dt[, -seq_len(2)])
-        rn = paste(dt$id, dt$tall_var)
-      }
-      else {
-        dt = dcast(prof_dt[get(wide_var) == m], id + tall_var ~ 
-                     x, value.var = "y")
-        stopifnot(all(paste(dt$id, dt$tall_var) == rn))
-        wide_mat = cbind(wide_mat, as.matrix(dt[, -seq_len(2)]))
-      }
-    }
-  }else{
-    for (m in wide_values) {
-      if (m == wide_values[1]) {
-        dt = dcast(prof_dt[get(wide_var) == m], id ~ 
-                     x, value.var = "y")
-        wide_mat = as.matrix(dt[, -seq_len(2)])
-        rn = dt$id
-      }
-      else {
-        dt = dcast(prof_dt[get(wide_var) == m], id ~ 
-                     x, value.var = "y")
-        stopifnot(all(dt$id == rn))
-        wide_mat = cbind(wide_mat, as.matrix(dt[, -seq_len(2)]))
-      }
+dt2mat = function (prof_dt, wide_values, id_var = "id", wide_var = "name", tall_var = "tall_none", x_var= "x", y_var = "y"){
+  if(is.null(prof_dt[[tall_var]])){
+    if(tall_var == "tall_none"){
+      prof_dt[[tall_var]] = "none"
     }
   }
-  
+  stopifnot(c(id_var, wide_var, tall_var, x_var, y_var) %in% colnames(prof_dt))
+  for (m in wide_values) {
+    if (m == wide_values[1]) {
+      dt = dcast(prof_dt[get(wide_var) == m], paste0(id_var, "+", tall_var, "~", x_var), value.var = y_var)
+      wide_mat = as.matrix(dt[, -seq_len(2)])
+      rn = paste(dt[[id_var]], dt[[tall_var]])
+    }
+    else {
+      dt = dcast(prof_dt[get(wide_var) == m], paste(id_var, "+", tall_var, "~", x_var), value.var = y_var)
+      stopifnot(all(paste(dt[[id_var]], dt[[tall_var]]) == rn))
+      wide_mat = cbind(wide_mat, as.matrix(dt[, -seq_len(2)]))
+    }
+  }
   rownames(wide_mat) = rn
   wide_mat
 }
 
-plot_summary_glyph = function (tsne_dt, qtall_vars, id_to_plot = NULL, p = NULL, xrng = c(-0.5, 
-                                                                                          0.5), yrng = c(-0.5, 0.5), bg_color = "gray", line_color_mapping = "black", 
-                               fill_color_mapping = "gray", label_type = c("text", 
-                                                                           "label", "none")[3], bg_points = 5000, arrow_FUN = NULL) 
+plot_summary_glyph.2 = function (tsne_dt, 
+                               qtall_vars, 
+                               id_to_plot = NULL, 
+                               p = NULL, 
+                               xrng = c(-0.5, 0.5), 
+                               yrng = c(-0.5, 0.5), 
+                               bg_color = "gray", 
+                               line_color_mapping = "black", 
+                               fill_color_mapping = "gray", 
+                               label_type = c("text", "label", "none")[3], 
+                               bg_points = 5000, 
+                               arrow_FUN = NULL) 
 {
   stopifnot(qtall_vars %in% unique(tsne_dt$tall_var))
   if (is.numeric(label_type)) {
@@ -229,7 +223,7 @@ stsPlotSummaryProfiles = function (profile_dt,
                                    x_points, 
                                    y_points = x_points, 
                                    wide_var = "name",
-                                   tall_var = "_none_",
+                                   tall_var = "tall_none",
                                    q_tall_values = NULL, 
                                    q_wide_values = NULL, 
                                    xrng = range(position_dt$tx), 
@@ -251,7 +245,6 @@ stsPlotSummaryProfiles = function (profile_dt,
                                    N_ceiling = NULL, 
                                    min_size = 0.3, 
                                    return_data = FALSE) {
-  browser()
   if(is.null(profile_dt[[tall_var]])){
     profile_dt[[tall_var]] = "none"
   }
@@ -292,7 +285,7 @@ stsPlotSummaryProfiles = function (profile_dt,
   if (!plot_type %in% c("glyph", "raster")) {
     stop("plot_type (\"", plot_type, "\") must be one of \"glyph\" or \"raster\".")
   }
-  prof_dt = copy(profile_dt[get(tall_var) %in% q_tall_values & wide_var %in% 
+  prof_dt = copy(profile_dt[get(tall_var) %in% q_tall_values & get(wide_var) %in% 
                               q_wide_values])
   pos_dt = copy(position_dt[get(tall_var) %in% q_tall_values])
   if (is.null(rname)) {
@@ -371,3 +364,121 @@ stsPlotSummaryProfiles = function (profile_dt,
   }
 }
 
+prep_summary = function (profile_dt, 
+                         position_dt, 
+                         x_points, 
+                         y_points = x_points, 
+                         xrng = range(position_dt$tx), 
+                         yrng = range(position_dt$ty), 
+                         facet_by = NULL,
+                         x_var = "x", 
+                         y_var = "y", 
+                         id_var = "id",
+                         wide_var = "name", 
+                         tall_var = "tall_none") 
+{
+  position_dt = copy(position_dt[tx >= min(xrng) & tx <= max(xrng) & 
+                                   ty >= min(yrng) & ty <= max(yrng)])
+  position_dt = position_dt[get(id_var) %in% unique(profile_dt[[id_var]])]
+  if (is.null(position_dt$bx)) 
+    position_dt[, `:=`(bx, bin_values(tx, x_points, 
+                                      xrng = xrng))]
+  if (is.null(position_dt$by)) 
+    position_dt[, `:=`(by, bin_values(ty, y_points, 
+                                      xrng = yrng))]
+  summary_dt = merge(profile_dt, position_dt[, c("bx", "by", tall_var, id_var), with = FALSE], 
+                     allow.cartesian = TRUE, 
+                     by = intersect(colnames(profile_dt), c(tall_var, id_var)))
+  if (is.null(summary_dt[[wide_var]])) 
+    summary_dt[[wide_var]] = "signal"
+  if (is.null(facet_by)) {
+    summary_dt = summary_dt[, list(y_tmp_ = mean(get(y_var))), c("bx", "by", x_var, wide_var)]
+  }
+  else {
+    summary_dt = summary_dt[, list(y_tmp_ = mean(get(y_var))), c("bx", "by", x_var, wide_var, facet_by)]
+  }
+  setnames(summary_dt, "y_tmp_", y_var)
+  N_dt = position_dt[, .(.N), by = .(bx, by)]
+  summary_dt = merge(summary_dt, N_dt, by = c("bx", "by"))
+  summary_dt[, `:=`(plot_id, paste(bx, by, sep = "_"))]
+  summary_dt[]
+}
+
+bin_values = function (x, n_bins, xrng = range(x)) 
+{
+  stopifnot(length(xrng) == 2)
+  floor(rescale_capped(x, 0:1, xrng) * (n_bins - 1e-05)) + 
+    1
+}
+
+bin_values_centers = function (n_bins, rng) 
+{
+  if (length(rng) != 2) 
+    rng = range(rng)
+  stopifnot(length(rng) == 2)
+  xspc = diff(rng)/n_bins/2
+  xs = seq(min(rng) + xspc, max(rng) - xspc, diff(rng)/(n_bins))
+  xs
+}
+
+plot_summary_glyph = function (summary_dt, x_points, y_points = x_points, xrng = c(-0.5, 
+                                                              0.5), yrng = c(-0.5, 0.5), ylim = NULL, p = NULL, N_floor = 0, 
+          N_ceiling = NULL, min_size = 0.3, return_data = FALSE, color_mapping = NULL) 
+{
+  group_size = gx = gy = gid = NULL
+  summary_dt = set_size(summary_dt, N_floor, N_ceiling, size.name = "group_size")
+  summary_dt = summary_dt[group_size >= min_size]
+  if (is.null(ylim)) {
+    ylim = range(summary_dt$y)
+  }
+  ylim = range(ylim)
+  summary_dt[y < min(ylim), `:=`(y, min(ylim))]
+  summary_dt[y > max(ylim), `:=`(y, max(ylim))]
+  summary_dt[, `:=`(x, x * group_size)]
+  summary_dt[, `:=`(y, y * group_size)]
+  xs = bin_values_centers(x_points, rng = xrng)
+  ys = bin_values_centers(y_points, rng = yrng)
+  summary_dt[, `:=`(tx, xs[bx])]
+  summary_dt[, `:=`(ty, ys[by])]
+  down_scale = max(summary_dt$group_size)
+  glyph_dt = as.data.table(GGally::glyphs(summary_dt, x_major = "tx", 
+                                          x_minor = "x", y_major = "ty", y_minor = "y", 
+                                          width = diff(xrng)/x_points * 0.95 * down_scale, height = diff(yrng)/y_points * 
+                                            0.95 * down_scale))
+  if (return_data) {
+    return(glyph_dt)
+  }
+  if (is.null(color_mapping)) {
+    if (is.factor(summary_dt$wide_var)) {
+      uwide_vars = levels(summary_dt$wide_var)
+    }
+    else if (is.character(summary_dt$wide_var)) {
+      uwide_vars = unique(summary_dt$wide_var)
+    }
+    color_mapping = seqsetvis::safeBrew(length(uwide_vars))
+  }
+  if (is.null(p)) {
+    p = ggplot()
+  }
+  p + geom_path(data = glyph_dt, aes(gx, gy, group = paste(gid, 
+                                                           wide_var), color = wide_var)) + labs(x = "tx", 
+                                                                                                y = "ty") + scale_color_manual(values = color_mapping) + 
+    coord_cartesian(xrng, yrng)
+}
+
+set_size = function (dt, N_floor, N_ceiling, size.name = "img_size") 
+{
+  tmp_var = NULL
+  stopifnot("N" %in% colnames(dt))
+  if (is.null(N_ceiling)) {
+    N_ceiling = max(dt$N)
+  }
+  dt[, `:=`(tmp_var, N)]
+  dt[tmp_var > N_ceiling, `:=`(tmp_var, N_ceiling)]
+  dt[tmp_var < N_floor, `:=`(tmp_var, N_floor)]
+  dt[, `:=`(tmp_var, tmp_var - N_floor)]
+  dt[, `:=`(tmp_var, tmp_var/N_ceiling)]
+  dt[[size.name]] = dt$tmp_var
+  dt$tmp_var = NULL
+  dt
+}
