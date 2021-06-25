@@ -45,6 +45,10 @@ ssvTSNE = function(features_config = NULL,
   features_config = .prep_features_config(features_config)
   signal_config = .prep_signal_config(signal_config)
   
+  signal_config@cluster_value = SQC_SIGNAL_VALUES$linearQuantile
+  signal_config@sort_value = SQC_SIGNAL_VALUES$linearQuantile
+  signal_config@plot_value = SQC_SIGNAL_VALUES$linearQuantile
+  
   if(is.null(bfc)){
     bfc = new_cache()
   }
@@ -80,19 +84,18 @@ setMethod("ssvQC.prepSignal", "ssvTSNE", function(object){
 
 setMethod("ssvQC.plotSignal", "ssvTSNE", function(object){
   object = callNextMethod()
-  browser()
-  sts@plots$TSNE = lapply(object@signal_data, function(signal_data_groups){
+  object@plots$TSNE = lapply(object@signal_data, function(signal_data_groups){
     lapply(signal_data_groups, function(signal_data){
-      tmp = object@signal_data$CTCF_features$CTCF_signal
-      if(!"ClusteredSignal_TSNE" %in% class(tmp)){
+      if(!"ClusteredSignal_TSNE" %in% class(signal_data)){
         stop("Stored signal data is not of class ClusteredSignal_TSNE.")
       }
-      tmp@xy_data
-      p_summary_profiles = stsPlotSummaryProfiles(tmp@signal_data, tmp@xy_data, 10)
+      p_summary_profiles = stsPlotSummaryProfiles(signal_data@signal_data, 
+                                                  signal_data@xy_data, 
+                                                  x_points = 10, 
+                                                  y_var = val2var[object@signal_config@plot_value])
       p_summary_profiles
     })
   })
-  
   
   object
 })
