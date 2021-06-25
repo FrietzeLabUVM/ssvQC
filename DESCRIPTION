@@ -37,7 +37,7 @@ Imports:
     Rtsne,
     Rsamtools,
     rtracklayer,
-    seqsetvis,
+    seqsetvis (>= 1.13.1),
     S4Vectors,
     stats,
     UpSetR

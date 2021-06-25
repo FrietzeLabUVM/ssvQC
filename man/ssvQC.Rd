@@ -11,6 +11,8 @@
 \alias{ssvQC.plotFRIP}
 \alias{ssvQC.prepSCC}
 \alias{ssvQC.plotSCC}
+\alias{ssvQC.prepFetch}
+\alias{ssvQC.referenceUsesSameScale}
 \alias{ssvQC.prepSignal}
 \alias{ssvQC.plotSignal}
 \alias{ssvQC.prepFeatures}
@@ -43,6 +45,10 @@ ssvQC.plotFRIP(object)
 ssvQC.prepSCC(object)
 
 ssvQC.plotSCC(object)
+
+ssvQC.prepFetch(object)
+
+ssvQC.referenceUsesSameScale(object)
 
 ssvQC.prepSignal(object)
 

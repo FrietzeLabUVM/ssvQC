@@ -44,7 +44,10 @@ bam_config$view_size = 600
 
 sts = ssvTSNE(features_config, bam_config)
 sts = ssvQC.plotFeatures(sts)
+sts@perplexity = 10
+sts = ssvQC.prepFetch(sts)
+sts = ssvQC.referenceUsesSameScale(sts)
 sts = ssvQC.prepSignal(sts)
 sts = ssvQC.plotSignal(sts)
-sts$plots$signal
+sts$plots$TSNE
 }

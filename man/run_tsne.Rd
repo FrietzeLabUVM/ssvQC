@@ -10,13 +10,14 @@ run_tsne(
   n_cores = getOption("mc.cores", 1),
   high_topright = TRUE,
   norm1 = TRUE,
-  bfc = BiocFileCache::BiocFileCache(),
-  rname = NULL,
   Y_init = NULL,
   verbose = TRUE,
   force_overwrite = FALSE,
+  x_var = "x",
+  y_var = "y",
+  id_var = "id",
   wide_var = "name",
-  tall_var = "_none_"
+  tall_var = "tall_none"
 )
 }
 \arguments{
@@ -29,10 +30,6 @@ run_tsne(
 \item{high_topright}{}
 
 \item{norm1}{}
-
-\item{bfc}{}
-
-\item{rname}{}
 
 \item{Y_init}{}
 

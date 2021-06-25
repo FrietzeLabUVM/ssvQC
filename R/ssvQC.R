@@ -674,11 +674,10 @@ setMethod("ssvQC.plotSCC", "ssvQC.signalOnly", function(object){
   stop("Cannot run plotSCC on ssvQC with no QcConfigFeature component")
 })
 
-##Signal
 #' @export
 #' @rdname ssvQC
-setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
-setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+setGeneric("ssvQC.prepFetch", function(object){standardGeneric("ssvQC.prepFetch")})
+setMethod("ssvQC.prepFetch", "ssvQC.complete", function(object){
   if(length(object@features_config$assessment_features) == 0){
     object = ssvQC.prepFeatures(object)
   }
@@ -691,6 +690,39 @@ setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
   if(is.null(object$signal_config$meta_data$cap_value)){
     object = ssvQC.prepCapValue(object)
   }
+  object
+})
+setMethod("ssvQC.prepFetch", "ssvQC.featureOnly", function(object){
+  stop("Cannot run prepFetch on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.prepFetch", "ssvQC.signalOnly", function(object){
+  stop("Cannot run prepFetch on ssvQC with no QcConfigFeature component")
+})
+
+#' @export
+#' @rdname ssvQC
+setGeneric("ssvQC.referenceUsesSameScale", function(object){standardGeneric("ssvQC.referenceUsesSameScale")})
+setMethod("ssvQC.referenceUsesSameScale", "ssvQC.complete", function(object){
+  object@signal_config = ssvQC.referenceUsesSameScale(object@signal_config)
+  object
+})
+setMethod("ssvQC.referenceUsesSameScale", "ssvQC.featureOnly", function(object){
+  stop("Cannot run referenceUsesSameScale on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.referenceUsesSameScale", "ssvQC.signalOnly", function(object){
+  object@signal_config = ssvQC.referenceUsesSameScale(object@signal_config)
+  object
+})
+setMethod("ssvQC.referenceUsesSameScale", "QcConfigSignal", function(object){
+  reference_uses_same_scale(object)
+})
+
+##Signal
+#' @export
+#' @rdname ssvQC
+setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
+setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+  object = ssvQC.prepFetch(object)
   object@signal_data = lapply(object@features_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){

@@ -12,7 +12,8 @@ ClusteredSignal(
   signal_var = "y",
   signal_var.within = "y",
   facet_var = "name_split",
-  extra_var = character()
+  extra_var = character(),
+  bfc = new_cache()
 )
 }
 \arguments{
