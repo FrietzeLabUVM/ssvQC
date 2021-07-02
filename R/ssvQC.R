@@ -789,9 +789,9 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
                                                         FUN_format_heatmap = function(p){
                                                           p + labs(x = x_label, fill = value_label, title = main_title)
                                                         })
-    clust_sig.agg = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ)), 
+    clust_sig.agg = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ), y_RPM_linQ = mean(y_RPM_linQ)), 
                                     c("x", extra_vars)]
-    clust_sig.agg_per_cluster = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ)), 
+    clust_sig.agg_per_cluster = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ), y_RPM_linQ = mean(y_RPM_linQ)), 
                                                 c("x", "cluster_id", extra_vars)]
     
     p_line = ggplot(clust_sig.agg, 
