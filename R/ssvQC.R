@@ -56,7 +56,7 @@ ssvQC.save_config = function(object, file){
 #' 
 #' @rdname ssvQC
 #' @examples
-#' options(mc.cores = 10)
+#' options(mc.cores = 1)
 #' set.seed(0)
 #' features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' features_config = QcConfigFeatures.parse(features_config_file)
@@ -91,6 +91,10 @@ ssvQC.save_config = function(object, file){
 #' sqc.complete$signal_config@plot_value = "linearQuantile"
 #' sqc.complete = ssvQC.plotSignal(sqc.complete)
 #' sqc.complete$plots$signal$heatmaps
+#'
+#' sqc.complete$signal_config@plot_value = SQC_SIGNAL_VALUES$RPM_linearQuantile
+#' sqc.complete = ssvQC.plotSignal(sqc.complete)
+#' sqc.complete$plots$signal$heatmaps
 ssvQC = function(features_config = NULL,
                  signal_config = NULL,
                  out_dir = getwd(),
@@ -101,36 +105,8 @@ ssvQC = function(features_config = NULL,
     stop("At least one of features_config or signal_config must be specified.")
   }
   
-  if(!is.null(features_config)){
-    if(is.character(features_config)){
-      if(!any(is_feature_file(features_config))){
-        features_config = QcConfigFeatures.parse(features_config)
-      }else{
-        features_config = QcConfigFeatures.files(features_config)
-      }
-    }else if(is.data.frame(features_config)){
-      features_config = QcConfigFeatures(features_config, ...)
-    }
-    if(!"QcConfigFeatures" %in% class(features_config)){
-      stop("features_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
-    }  
-    stopifnot(file.exists(features_config@meta_data$file))
-  }
-  if(!is.null(signal_config)){
-    if(is.character(signal_config)){
-      if(!any(is_signal_file(signal_config))){
-        signal_config = QcConfigSignal.parse(signal_config)
-      }else{
-        signal_config = QcConfigSignal.files(signal_config)
-      }
-    }else if(is.data.frame(signal_config)){
-      signal_config = QcConfigSignal(signal_config, ...)
-    }
-    if(!"QcConfigSignal" %in% class(signal_config)){
-      stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
-    }  
-    stopifnot(file.exists(signal_config@meta_data$file))
-  }
+  features_config = .prep_features_config(features_config)
+  signal_config = .prep_signal_config(signal_config)
   
   if(is.null(bfc)){
     bfc = new_cache()
@@ -174,6 +150,44 @@ ssvQC = function(features_config = NULL,
   }else{
     stop("At least one of features_config or signal_config must be specified. This should have been caught earlier.")
   }
+}
+
+.prep_features_config = function(features_config){
+  if(!is.null(features_config)){
+    if(is.character(features_config)){
+      if(!any(is_feature_file(features_config))){
+        features_config = QcConfigFeatures.parse(features_config)
+      }else{
+        features_config = QcConfigFeatures.files(features_config)
+      }
+    }else if(is.data.frame(features_config)){
+      features_config = QcConfigFeatures(features_config, ...)
+    }
+    if(!"QcConfigFeatures" %in% class(features_config)){
+      stop("features_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
+    }  
+    stopifnot(file.exists(features_config@meta_data$file))
+  }
+  features_config
+}
+
+.prep_signal_config = function(signal_config){
+  if(!is.null(signal_config)){
+    if(is.character(signal_config)){
+      if(!any(is_signal_file(signal_config))){
+        signal_config = QcConfigSignal.parse(signal_config)
+      }else{
+        signal_config = QcConfigSignal.files(signal_config)
+      }
+    }else if(is.data.frame(signal_config)){
+      signal_config = QcConfigSignal(signal_config, ...)
+    }
+    if(!"QcConfigSignal" %in% class(signal_config)){
+      stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
+    }  
+    stopifnot(file.exists(signal_config@meta_data$file))
+  }
+  signal_config
 }
 
 .make_query_signal_config = function(sc){
@@ -358,6 +372,7 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
   }else{
     sig_dt = as.data.table(object@meta_data)[, .(file, name, fragLens)][order(file)]  
   }
+  object = ssvQC.prepMappedReads(object)
   
   setkey(sig_dt, "name")
   peak_dt = as.data.table(query@meta_data)[, .(file, name)][order(file)]
@@ -381,6 +396,9 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
       cap_dt.matched = rbindlist(lapply(seq_len(nrow(matched_dt)), function(i){
         peak_f = matched_dt[i,]$peak_file
         bam_f = matched_dt[i,]$bam_file
+        # if(grepl("bam", object@read_mode)){
+        #   bam_f = data.table(file = bam_f, mapped_reads = get_mapped_reads(bam_f))
+        # }
         name_i = matched_dt[i,]$name
         peak_gr = query@feature_load_FUN(peak_f)[[1]]
         peak_gr = peak_gr[sample(min(5e3, length(peak_gr)))]
@@ -458,7 +476,15 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
     cap_dt
   })
   
+  if(grepl("bam", object@read_mode)){
+    cap_dt[, mapped_reads := get_mapped_reads(as.character(sample)), .(sample) ]
+    cap_dt[, y_RPM_cap_value := y_cap_value / mapped_reads * 1e6]
+  }
+  
   object@meta_data$cap_value = cap_dt[.(object@meta_data$name)]$y_cap_value
+  if(!is.null(cap_dt$y_RPM_cap_value)){
+    object@meta_data$RPM_cap_value = cap_dt[.(object@meta_data$name)]$y_RPM_cap_value  
+  }
   object
 })
 
@@ -540,10 +566,10 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.prepFRIP", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+  stop("Cannot run prepFRIP on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.prepFRIP", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run prepFRIP on ssvQC with no QcConfigFeature component")
 })
 
 #' @export
@@ -574,10 +600,10 @@ setMethod("ssvQC.plotFRIP", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+  stop("Cannot run plotFRIP on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run plotFRIP on ssvQC with no QcConfigFeature component")
 })
 
 ##SCC
@@ -670,11 +696,10 @@ setMethod("ssvQC.plotSCC", "ssvQC.signalOnly", function(object){
   stop("Cannot run plotSCC on ssvQC with no QcConfigFeature component")
 })
 
-##Signal
 #' @export
 #' @rdname ssvQC
-setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
-setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+setGeneric("ssvQC.prepFetch", function(object){standardGeneric("ssvQC.prepFetch")})
+setMethod("ssvQC.prepFetch", "ssvQC.complete", function(object){
   if(length(object@features_config$assessment_features) == 0){
     object = ssvQC.prepFeatures(object)
   }
@@ -687,6 +712,39 @@ setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
   if(is.null(object$signal_config$meta_data$cap_value)){
     object = ssvQC.prepCapValue(object)
   }
+  object
+})
+setMethod("ssvQC.prepFetch", "ssvQC.featureOnly", function(object){
+  stop("Cannot run prepFetch on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.prepFetch", "ssvQC.signalOnly", function(object){
+  stop("Cannot run prepFetch on ssvQC with no QcConfigFeature component")
+})
+
+#' @export
+#' @rdname ssvQC
+setGeneric("ssvQC.referenceUsesSameScale", function(object){standardGeneric("ssvQC.referenceUsesSameScale")})
+setMethod("ssvQC.referenceUsesSameScale", "ssvQC.complete", function(object){
+  object@signal_config = ssvQC.referenceUsesSameScale(object@signal_config)
+  object
+})
+setMethod("ssvQC.referenceUsesSameScale", "ssvQC.featureOnly", function(object){
+  stop("Cannot run referenceUsesSameScale on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.referenceUsesSameScale", "ssvQC.signalOnly", function(object){
+  object@signal_config = ssvQC.referenceUsesSameScale(object@signal_config)
+  object
+})
+setMethod("ssvQC.referenceUsesSameScale", "QcConfigSignal", function(object){
+  reference_uses_same_scale(object)
+})
+
+##Signal
+#' @export
+#' @rdname ssvQC
+setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
+setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+  object = ssvQC.prepFetch(object)
   object@signal_data = lapply(object@features_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
     lapply(sig_configs, function(sel_sig_config){
@@ -714,7 +772,6 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
     object = ssvQC.prepSignal(object)
   }
   signal_data = object@signal_data
-  clust_sig = signal_data[[1]][[1]]
   sig_config = object@signal_config
   
   wrap_plot_signal_dt = function(clust_sig, main_title = NULL){
@@ -770,7 +827,6 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
       lines = p_line
     ))
   }
-  
   signal_plots = dbl_lapply(signal_data, FUN = wrap_plot_signal_dt, FUN_names = dbl_names)
   signal_heatmaps = dbl_extract(signal_plots, "heatmap")
   signal_heatmaps.lines = dbl_extract(signal_plots, "heatmap.lines")
@@ -786,10 +842,10 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.plotSignal", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
+  stop("Cannot run plotSignal on ssvQC with no QcConfigSignal component")
 })
 setMethod("ssvQC.plotSignal", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run plotSignal on ssvQC with no QcConfigFeature component")
 })
 
 ### Features
@@ -805,7 +861,7 @@ setMethod("ssvQC.prepFeatures", "ssvQC.featureOnly", function(object){
   object
 })
 setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run prepFeatures on ssvQC with no QcConfigFeature component")
 })
 setMethod("ssvQC.prepFeatures", c("QcConfigFeatures", "BiocFileCache"), function(object, bfc){
   prepFeatures(object, bfc)
@@ -895,7 +951,7 @@ setMethod("ssvQC.plotFeatures", c("ssvQC.complete"), function(object){
 })
 setMethod("ssvQC.plotFeatures", c("ssvQC.complete", "logical"), .plotFeatures)
 setMethod("ssvQC.plotFeatures", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepSignal on ssvQC with no QcConfigFeature component")
+  stop("Cannot run plotFeatures on ssvQC with no QcConfigFeature component")
 })
 setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly"), function(object){
   ssvQC.plotFeatures(object, force_euler = FALSE)

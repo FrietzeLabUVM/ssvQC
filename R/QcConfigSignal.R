@@ -372,7 +372,7 @@ QcConfigSignal.parse = function(signal_config_file){
                        "sort_method",
                        "heatmap_limit_values", 
                        "lineplot_free_limits" 
-                       )
+  )
   cfg_vals = .parse_config_header(signal_config_file, valid_signal_var)
   
   if(!is.null(cfg_vals[["main_dir"]])){
@@ -568,7 +568,7 @@ setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definit
         fetch_options = x@fetch_options,
         heatmap_limit_values = x@heatmap_limit_values,
         lineplot_free_limits = x@lineplot_free_limits
-        )
+    )
   })
 })
 setMethod("split", signature = c("QcConfigSignal", "character"), definition = function(x, f){
@@ -611,3 +611,53 @@ QcConfigSignal.save_config = function(object, file){
   # QcConfigSignal.parse(file)
   .save_config(object, file, slots_to_save, kvp_slots)
 }
+
+reference_uses_same_scale = function(signal_config){
+  meta_df = signal_config@meta_data
+  run_by = signal_config@run_by
+  to_run_ref = signal_config@to_run_reference
+  to_run = signal_config@to_run
+  
+  
+  meta_df.to_run = subset(meta_df, get(run_by) %in% to_run)
+  meta_df.ref = subset(meta_df, get(run_by) %in% to_run_ref)
+  
+  if((nrow(meta_df.to_run) + nrow(meta_df.ref)) != nrow(meta_df)){
+    stop("metadata not appropriate for this function.  All items should be in one to_run or to_run_reference.")
+  }
+  
+  match_counts = lapply(seq(nrow(meta_df.to_run)), function(i){
+    df1 = meta_df.to_run[i, setdiff(colnames(meta_df.to_run), run_by)]
+    sapply(seq(nrow(meta_df.ref)), function(j){
+      df2 = meta_df.ref[j, setdiff(colnames(meta_df.ref), run_by)]
+      sum(df1[1, ] == df2[1,])
+    })
+  })
+  which_match = lapply(match_counts, function(cnt){
+    which(cnt == max(cnt))
+  })
+  if(any(duplicated(unlist(which_match)))){
+    stop("Could not uniquely determine match for reference")
+  }
+  
+  for(i in seq(nrow(meta_df.to_run))){
+    j = which_match[[i]]
+    if(!is.null(meta_df.to_run$cap_value)){
+      meta_df.ref$cap_value[j] = meta_df.to_run$cap_value[i]
+    }
+    if(!is.null(meta_df.to_run$RPM_cap_value)){
+      meta_df.ref$RPM_cap_value[j] = meta_df.to_run$RPM_cap_value[i]
+    }
+  }
+  
+  meta_df.new = rbind(meta_df.to_run, meta_df.ref)
+  if(!setequal(meta_df$file, meta_df.new$file)){
+    stop("Something has gone wrong in reference_uses_same_scale(). Report this issue at https://github.com/FrietzeLabUVM/ssvQC/issues")
+  }
+  meta_df.new$file = factor(meta_df.new$file, levels = meta_df$file)
+  meta_df.new = meta_df.new[order(meta_df.new$file),]
+  meta_df.new$file = as.character(meta_df.new$file)
+  signal_config@meta_data = meta_df.new
+  signal_config
+}
+
