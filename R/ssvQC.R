@@ -229,9 +229,9 @@ setMethod("ssvQC.runAll", "ssvQC.signalOnly", function(object){
 
 #' @export
 #' @rdname ssvQC
-setGeneric("ssvQC.prepFragLens", function(object, query, bfc){standardGeneric("ssvQC.prepFragLens")})
+setGeneric("ssvQC.prepFragLens", function(object, query, bfc, use_matched){standardGeneric("ssvQC.prepFragLens")})
 setMethod("ssvQC.prepFragLens", "ssvQC.complete", function(object){
-  object@signal_config = ssvQC.prepFragLens(object@signal_config, object@features_config, object@bfc)
+  object@signal_config = ssvQC.prepFragLens(object@signal_config, object@features_config, object@bfc, object@matched_only)
   object
 })
 setMethod("ssvQC.prepFragLens", "ssvQC.featureOnly", function(object){
@@ -240,7 +240,7 @@ setMethod("ssvQC.prepFragLens", "ssvQC.featureOnly", function(object){
 setMethod("ssvQC.prepFragLens", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepCapValue on ssvQC with no QcConfigFeatures component")
 })
-setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFileCache"), function(object, query, bfc){
+setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFileCache", "logical"), function(object, query, bfc, use_matched){
   if(object@read_mode != "bam_SE"){
     stop("ssvQC.prepFragLens only appropriate for read_mode bam_SE")
   }
@@ -249,17 +249,29 @@ setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
   
   sig_dt = as.data.table(object@meta_data)[, .(file, name)][order(file)]
   peak_dt = as.data.table(query@meta_data)[, .(file, name)][order(file)]
+  query = ssvQC.prepFeatures(query)
+  
+  if(use_matched){
+    matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
+    
+    matched_peaks_gr = query@feature_load_FUN(matched_dt$peak_file)
+    matched_dt = matched_dt[lengths(matched_peaks_gr) > 0,]
+    matched_peaks_gr = matched_peaks_gr[lengths(matched_peaks_gr) > 0]
+    
+    unmatched_dt = sig_dt[!name %in% matched_dt$name]  
+  }else{
+    matched_dt = data.table()
+    unmatched_dt = sig_dt
+  }
+  
   
   fl_dt = bfcif(bfc, digest::digest(list(sig_dt, peak_dt, "ssvQC.prepFragLens")), function(){
-    matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
-    unmatched_dt = sig_dt[!name %in% matched_dt$name]
-    
     if(nrow(matched_dt) > 0){
       fl_dt.matched = rbindlist(lapply(seq_len(nrow(matched_dt)), function(i){
         peak_f = matched_dt[i,]$peak_file
         bam_f = matched_dt[i,]$bam_file
         name = matched_dt[i,]$name
-        peak_gr = query@feature_load_FUN(peak_f)[[1]]
+        peak_gr = matched_peaks_gr[[1]]
         # rname = digest::digest(list(bam_f, name, peak_gr, "ssvQC.prepFragLens"))
         .prepFragLens(bam_f, peak_gr, name, 500, bfc)
       }))
@@ -268,7 +280,6 @@ setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
     }
     
     if(nrow(unmatched_dt) > 0){
-      query = ssvQC.prepFeatures(query)
       peak_gr = unlist(GRangesList(query$assessment_features))
       
       fl_dt.unmatched = rbindlist(lapply(seq_len(nrow(unmatched_dt)), function(i){
@@ -329,9 +340,9 @@ setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
 
 #' @export
 #' @rdname ssvQC
-setGeneric("ssvQC.prepCapValue", function(object, query, bfc){standardGeneric("ssvQC.prepCapValue")})
+setGeneric("ssvQC.prepCapValue", function(object, query, bfc, use_matched){standardGeneric("ssvQC.prepCapValue")})
 setMethod("ssvQC.prepCapValue", "ssvQC.complete", function(object){
-  object@signal_config = ssvQC.prepCapValue(object@signal_config, object@features_config, object@bfc)
+  object@signal_config = ssvQC.prepCapValue(object@signal_config, object@features_config, object@bfc, object@matched_only)
   object
 })
 setMethod("ssvQC.prepCapValue", "ssvQC.featureOnly", function(object){
@@ -340,7 +351,7 @@ setMethod("ssvQC.prepCapValue", "ssvQC.featureOnly", function(object){
 setMethod("ssvQC.prepCapValue", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepCapValue on ssvQC with no QcConfigFeatures component")
 })
-setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFileCache"), function(object, query, bfc){
+setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFileCache"), function(object, query, bfc, use_matched){
   #bam specific independent of peaks
   if(is.null(object@meta_data$fragLens)){
     sig_dt = as.data.table(object@meta_data)[, .(file, name)][order(file)]
@@ -350,11 +361,22 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
   
   setkey(sig_dt, "name")
   peak_dt = as.data.table(query@meta_data)[, .(file, name)][order(file)]
+  query = ssvQC.prepFeatures(query)
+  
+  if(use_matched){
+    matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
+    
+    matched_peaks_gr = query@feature_load_FUN(matched_dt$peak_file)
+    matched_dt = matched_dt[lengths(matched_peaks_gr) > 0,]
+    matched_peaks_gr = matched_peaks_gr[lengths(matched_peaks_gr) > 0]
+    
+    unmatched_dt = sig_dt[!name %in% matched_dt$name]  
+  }else{
+    matched_dt = data.table()
+    unmatched_dt = sig_dt
+  }
   
   cap_dt = bfcif(bfc, digest::digest(list(sig_dt, peak_dt, "ssvQC.prepCapValue")), function(){
-    matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
-    unmatched_dt = sig_dt[!name %in% matched_dt$name]
-    
     if(nrow(matched_dt) > 0){
       cap_dt.matched = rbindlist(lapply(seq_len(nrow(matched_dt)), function(i){
         peak_f = matched_dt[i,]$peak_file
@@ -807,7 +829,7 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
     feat_label = sub("_features", " features", feat_nam)
     peak_grs = feat_config$loaded_features[[feat_nam]]
     peak_dt = data.table(N = lengths(peak_grs), name_split = names(peak_grs))
-    peak_dt = merge(peak_dt, feat_config@meta_data, by = "name_split")
+    peak_dt = merge(feat_config@meta_data, peak_dt, by = "name_split")
     
     out = list()
     
