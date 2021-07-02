@@ -34,6 +34,9 @@ crossCorrByRle = function(bam_file,
   if(is.null(read_length)){
     read_length = getReadLength(bam_file, query_gr)
   }
+  if(length(read_length) == 0){
+    read_length = NA
+  }
   if(is.na(read_length)){
     read_length = numeric()
   }
