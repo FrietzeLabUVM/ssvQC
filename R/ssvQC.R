@@ -476,9 +476,11 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
     cap_dt
   })
   
+  cap_dt[y_cap_value <= 1, y_cap_value := 1]
+  
   if(grepl("bam", object@read_mode)){
     cap_dt[, mapped_reads := get_mapped_reads(as.character(sample)), .(sample) ]
-    cap_dt[, y_RPM_cap_value := y_cap_value / mapped_reads * 1e6]
+    cap_dt[, y_RPM_cap_value := y_cap_value / max(mapped_reads, 1) * 1e6]
   }
   
   object@meta_data$cap_value = cap_dt[.(object@meta_data$name)]$y_cap_value
