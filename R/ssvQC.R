@@ -152,7 +152,7 @@ ssvQC = function(features_config = NULL,
   }
 }
 
-.prep_features_config = function(features_config){
+.prep_features_config = function(features_config, ...){
   if(!is.null(features_config)){
     if(is.character(features_config)){
       if(!any(is_feature_file(features_config))){
@@ -171,7 +171,7 @@ ssvQC = function(features_config = NULL,
   features_config
 }
 
-.prep_signal_config = function(signal_config){
+.prep_signal_config = function(signal_config, ...){
   if(!is.null(signal_config)){
     if(is.character(signal_config)){
       if(!any(is_signal_file(signal_config))){
