@@ -554,11 +554,19 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
   FRIP_data = lapply(feature_names, function(name){
     query_gr = object@features_config$assessment_features[[name]]
     sig_configs = .make_query_signal_config(object@signal_config)
-    if(object@matched_only){
-      lapply(sig_configs[feature_name2signal_name(name)], function(sel_sig_config){
-        make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
-      })  
-    }else{
+    
+    must_match = object@matched_only
+    if(must_match){
+      sig_name = feature_name2signal_name(name)
+      if(!sig_name %in% names(sig_configs)){
+        must_match = FALSE
+      }else{
+        lapply(sig_configs[feature_name2signal_name(name)], function(sel_sig_config){
+          make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
+        })    
+      }
+    }
+    if(!must_match){
       lapply(sig_configs, function(sel_sig_config){
         make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
       })  
