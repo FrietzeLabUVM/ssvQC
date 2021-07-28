@@ -561,16 +561,17 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
       if(!sig_name %in% names(sig_configs)){
         must_match = FALSE
       }else{
-        lapply(sig_configs[feature_name2signal_name(name)], function(sel_sig_config){
+        out = lapply(sig_configs[feature_name2signal_name(name)], function(sel_sig_config){
           make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
         })    
       }
     }
     if(!must_match){
-      lapply(sig_configs, function(sel_sig_config){
+      out = lapply(sig_configs, function(sel_sig_config){
         make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
       })  
     }
+    out
   })
   object@other_data$FRIP = FRIP_data
   object
