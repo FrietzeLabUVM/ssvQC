@@ -30,8 +30,10 @@ setMethod("initialize","ssvQC", function(.Object,...){
 .show_ssvQC = function(qc){
   message("Features configuration:")
   print(qc$features_config)
+  message("\n")
   message("Signal configuration:")
   print(qc$signal_config)
+  message("\n")
   if(length(qc@signal_data) > 0){
     message("Signal data has been LOADED.")
   }else{
