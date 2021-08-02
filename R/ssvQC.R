@@ -27,6 +27,46 @@ setMethod("initialize","ssvQC", function(.Object,...){
   .Object
 })
 
+.show_ssvQC = function(qc){
+  message("Features configuration:")
+  print(qc$features_config)
+  message("Signal configuration:")
+  print(qc$signal_config)
+  if(length(qc@signal_data) > 0){
+    message("Signal data has been LOADED.")
+  }else{
+    message("Signal data has NOT been loaded.")
+  }
+  if(length(qc@other_data) > 0){
+    message(paste(names(qc@other_data), collapse = ", "), "have been LOADED.")
+  }else{
+    message("NO other data have been loaded.")
+  }
+  if(length(qc@plots) > 0){
+    message(paste(names(qc@plots), collapse = ", "), "have been PLOTTED.")
+  }else{
+    message("NO plots have been made.")
+  }
+}
+
+.plot_ssvQC = function(qc){
+  p1 = plot(qc$signal_config) + labs(title = "Signal configuration")
+  p2 = plot(qc$features_config) + labs(title = "Features configuration")
+  cowplot::plot_grid(p1, p2)
+}
+
+#' @export
+setMethod("plot", "ssvQC", definition = function(x).plot_ssvQC(x))
+
+#' ssvQC
+#'
+#' @param ssvQC 
+#'
+#' @return
+#' @export
+#' @rdname ssvQC
+#' @examples
+setMethod("show", "ssvQC", definition = function(object).show_ssvQC(object))
 
 ssvQC.save_config = function(object, file){
   feature_file = paste0(sub(".csv", "",  file), ".features.csv")
@@ -801,9 +841,9 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
                                                           p + labs(x = x_label, fill = value_label, title = main_title)
                                                         })
     clust_sig.agg = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ), y_RPM_linQ = mean(y_RPM_linQ)), 
-                                    c("x", extra_vars)]
+                                          c("x", extra_vars)]
     clust_sig.agg_per_cluster = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ), y_RPM_linQ = mean(y_RPM_linQ)), 
-                                                c("x", "cluster_id", extra_vars)]
+                                                      c("x", "cluster_id", extra_vars)]
     
     p_line = ggplot(clust_sig.agg, 
                     aes_string(x = "x", 

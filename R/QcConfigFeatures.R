@@ -381,10 +381,19 @@ QcConfigFeatures.null = function(){
 #' object = QcConfigFeatures.files(np_files, balance_groups = TRUE)
 #' object = ssvQC.prepFeatures(object)
 #' plot(object)
+#' 
+#' object = QcConfigFeatures.files(np_files, 
+#'   group_names = c("10A", "AT1", "CA1"), 
+#'   sample_names = c("MCF10A_CTCF", "MCF10AT1_CTCF", "MCF10CA1a_CTCF"))
+#' object = ssvQC.prepFeatures(object)
+#' plot(object)
 QcConfigFeatures.files = function(file_paths,
-                                  run_separately = FALSE,
+                                  file_paths.input = character(),
+                                  run_separately = TRUE,
+                                  sample_names = NULL,
+                                  sample_names.split = NULL,
                                   group_names = NULL,
-                                  groups = NULL,
+                                  group_name.input = "input",
                                   group_colors = NULL,
                                   feature_load_FUN = NULL,
                                   n_peaks = 1e3,
@@ -393,19 +402,11 @@ QcConfigFeatures.files = function(file_paths,
                                   consensus_fraction = getOption("SQC_CONSENSUS_FRACTION", 0),
                                   consensus_n = getOption("SQC_CONSENSUS_N", 1),
                                   process_features = getOption("SQC_PROCESS_FEATURES", TRUE)){
-  if(is.null(groups)){
-    groups = seq_along(file_paths)
-  }
   if(is.null(group_names)){
-    if(!any(duplicated(basename(file_paths)))){
-      group_names = basename(file_paths)
-    }else{
-      group_names = LETTERS[seq_along(unique(groups))]  
-      message("non-unique file basenames, resorting to A,B,C... names.")
-    }
+    group_names = paste(seq_along(file_paths), basename(file_paths))
   }  
   if(is.null(group_colors)){
-    group_colors = seqsetvis::safeBrew(length(group_names))
+    group_colors = get_group_colors(group_names)
   }
   if(is.null(names(group_colors))){
     names(group_colors) = group_names
@@ -413,13 +414,21 @@ QcConfigFeatures.files = function(file_paths,
   if(is.null(feature_load_FUN)){
     feature_load_FUN = get_feature_file_load_function(file_paths[1])[[1]]
   }
-  config_df = data.frame(file = as.character(file_paths), 
-                         group = group_names[groups], 
+  config_df = data.frame(file = c(as.character(file_paths), file_paths.input), 
+                         group = c(group_names, rep(group_name.input, length(file_paths.input))), 
                          All = "All", 
                          stringsAsFactors = FALSE)
   
-  config_df$name = basename(config_df$file)
-  config_df$name_split = gsub("[_\\.]", "\n", config_df$name)
+  if(is.null(sample_names)){
+    config_df$name = basename(config_df$file)  
+  }else{
+    config_df$name = sample_names
+  }
+  if(is.null(sample_names.split)){
+    config_df$name_split = gsub("[_\\. ]", "\n", config_df$name)
+  }else{
+    config_df$name_split = sample_names.split
+  }
   
   config_df$name = factor(config_df$name, levels = unique(config_df$name))
   config_df$name_split = factor(config_df$name_split, levels = unique(config_df$name_split))
@@ -429,6 +438,7 @@ QcConfigFeatures.files = function(file_paths,
             meta_data =  config_df,
             run_by = run_by,
             to_run = unique(config_df[[run_by]]),
+            to_run_reference = intersect(group_name.input, config_df$group),
             color_by = "group",
             color_mapping = group_colors,
             feature_load_FUN = feature_load_FUN,
