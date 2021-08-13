@@ -18,6 +18,7 @@ dev_lib = paste0(.libPaths()[1], ".dev")
 dir.create(dev_lib)
 .libPaths(dev_lib)
 .libPaths()
+
 install.packages("devtools")
 
 #dplyr_1.0.0  dbplyr_1.3.0 works
