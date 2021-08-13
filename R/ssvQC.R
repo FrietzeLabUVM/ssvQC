@@ -219,6 +219,8 @@ setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
   object = ssvQC.plotSCC(object)
   message("plot FRIP")
   object = ssvQC.plotFRIP(object)
+  message("plot Correlation")
+  object = ssvQC.plotCorrelation(object)
   object
 })
 setMethod("ssvQC.runAll", "ssvQC.featureOnly", function(object){
@@ -520,11 +522,17 @@ signal_name2feature_name = function(signal_name){
   sub("signal$", "features", signal_name)
 }
 
+
+
 ##FRIP
 #' @export
 #' @rdname ssvQC
 setGeneric("ssvQC.prepFRIP", function(object){standardGeneric("ssvQC.prepFRIP")})
 setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
+  if(length(object@features_config$assessment_features) == 0){
+    object = ssvQC.prepFeatures(object)
+  }
+  
   feature_names = names(object@features_config$assessment_features)
   names(feature_names) = feature_names
   FRIP_data = lapply(feature_names, function(name){
@@ -582,6 +590,97 @@ setMethod("ssvQC.plotFRIP", "ssvQC.featureOnly", function(object){
 })
 setMethod("ssvQC.plotFRIP", "ssvQC.signalOnly", function(object){
   stop("Cannot run plotFRIP on ssvQC with no QcConfigFeature component")
+})
+
+##Correlation
+#' @export
+#' @rdname ssvQC
+setGeneric("ssvQC.prepCorrelation", function(object){standardGeneric("ssvQC.prepCorrelation")})
+setMethod("ssvQC.prepCorrelation", "ssvQC.complete", function(object){
+  if(is.null(object@other_data$FRIP)){
+    object = ssvQC.prepFRIP(object)
+  }
+  if(length(object@signal_data) == 0){
+    object = ssvQC.prepSignal(object)
+  }
+  Correlation_data = lapply(object@other_data$FRIP, function(feature_FRIP_data){
+    lapply(feature_FRIP_data, function(frip_dt){
+      reads_dt = dcast(frip_dt, id~name_split, value.var = "reads_in_peak")
+      mat = as.matrix(reads_dt[,-1])
+      rownames(mat) = reads_dt$id
+      cor_mat = cor(mat)
+      row_clust = hclust(dist(cor_mat))
+      col_clust = hclust(dist(t(cor_mat)))
+      mat_dt = as.data.table(reshape2::melt(cor_mat))
+      setnames(mat_dt, c("Var1", "Var2"), c("row_name_split", "col_name_split"))
+      # mat_dt$row_name_split = factor(mat_dt$row_name_split, levels = rownames(cor_mat)[row_clust$order])
+      # mat_dt$col_name_split = factor(mat_dt$col_name_split, levels = colnames(cor_mat)[col_clust$order])
+      return(list(mat = cor_mat, dt = mat_dt, row_hclust = row_clust, col_hclust = col_clust))
+    })
+  })
+  
+  Correlation_data.profile = lapply(object@signal_data, function(feature_signal_data){
+    lapply(feature_signal_data, function(sig_obj){
+      sig_obj = object@signal_data[[1]][[1]]
+      signal_dt = sig_obj@signal_data
+      
+      reads_dt = dcast(signal_dt, id+x~name_split, value.var = "y")
+      mat = as.matrix(reads_dt[,-1:-2])
+      rownames(mat) = paste(reads_dt$id, reads_dt$x)
+      cor_mat = cor(mat)
+      row_clust = hclust(dist(cor_mat))
+      col_clust = hclust(dist(t(cor_mat)))
+      mat_dt = as.data.table(reshape2::melt(cor_mat))
+      setnames(mat_dt, c("Var1", "Var2"), c("row_name_split", "col_name_split"))
+      # mat_dt$row_name_split = factor(mat_dt$row_name_split, levels = rownames(cor_mat)[row_clust$order])
+      # mat_dt$col_name_split = factor(mat_dt$col_name_split, levels = colnames(cor_mat)[col_clust$order])
+      return(list(mat = cor_mat, dt = mat_dt, row_hclust = row_clust, col_hclust = col_clust))
+    })
+  })
+  object@other_data$read_count_correlation = Correlation_data
+  object@other_data$signal_profile_correlation = Correlation_data.profile
+  object
+})
+setMethod("ssvQC.prepCorrelation", "ssvQC.featureOnly", function(object){
+  stop("Cannot run prepCorrelation on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.prepCorrelation", "ssvQC.signalOnly", function(object){
+  stop("Cannot run prepCorrelation on ssvQC with no QcConfigFeature component")
+})
+
+#' @export
+#' @rdname ssvQC
+setGeneric("ssvQC.plotCorrelation", function(object){standardGeneric("ssvQC.plotCorrelation")})
+setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
+  browser()
+  if(is.null(object@other_data$Correlation)){
+    object = ssvQC.prepCorrelation(object)
+  }
+  Correlation_data = object@other_data$Correlation
+  
+  wrap_plot_Correlation_dt = function(Correlation_dt, main_title){
+    plot_Correlation_dt(Correlation_dt, 
+                 color_var = object@signal_config@color_by, 
+                 color_mapping = object@signal_config@color_mapping,
+                 main_title = main_title)
+  }
+  
+  plots = dbl_lapply(Correlation_data, wrap_plot_Correlation_dt, dbl_names)
+  
+  if(is.null(object@plots$Correlation)){
+    object@plots$Correlation = list()
+  }
+  
+  object@plots$Correlation$reads_per_peak = dbl_extract(plots, "reads_per_peaks")
+  object@plots$Correlation$per_peak = dbl_extract(plots, "Correlation_per_peaks")
+  object@plots$Correlation$total = dbl_extract(plots, "Correlation_total")
+  object
+})
+setMethod("ssvQC.plotCorrelation", "ssvQC.featureOnly", function(object){
+  stop("Cannot run plotCorrelation on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.plotCorrelation", "ssvQC.signalOnly", function(object){
+  stop("Cannot run plotCorrelation on ssvQC with no QcConfigFeature component")
 })
 
 ##SCC
@@ -942,7 +1041,7 @@ setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly", "logical"), .plotFeatures
 setMethod("names", "ssvQC",
           function(x)
           {
-            c("plots", "signal_data", "signal_config", "features_config", "SCC", "FRIP")
+            c("plots", "signal_data", "signal_config", "features_config", "SCC", "FRIP", "Correlation")
             
           })
 
@@ -955,6 +1054,7 @@ setMethod("$", "ssvQC",
                     signal_data = x@signal_data,
                     SCC = x@other_data$SCC,
                     FRIP = x@other_data$FRIP,
+                    Correlation = x@other_data$Correlation,
                     bfc = x@bfc,
                     features_config = x@features_config,
                     signal_config = x@signal_config

@@ -9,6 +9,8 @@
 \alias{ssvQC.plotMappedReads}
 \alias{ssvQC.prepFRIP}
 \alias{ssvQC.plotFRIP}
+\alias{ssvQC.prepCorrelation}
+\alias{ssvQC.plotCorrelation}
 \alias{ssvQC.prepSCC}
 \alias{ssvQC.plotSCC}
 \alias{ssvQC.prepFetch}
@@ -41,6 +43,10 @@ ssvQC.plotMappedReads(object)
 ssvQC.prepFRIP(object)
 
 ssvQC.plotFRIP(object)
+
+ssvQC.prepCorrelation(object)
+
+ssvQC.plotCorrelation(object)
 
 ssvQC.prepSCC(object)
 
