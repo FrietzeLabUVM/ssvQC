@@ -10,7 +10,7 @@ devtools::install_github("FrietzeLabUVM/ssvQC")
 
 For older versions of R (prior to R 4.0) it is tricky to get the requried version of seqsetvis installed alongside older BiocConductor packages.
 
-The following works in R 3.6.3, though you will see various deprecation messages once per session.
+The following works in R 3.6.3 with BioConductor 3.10, though you will see various deprecation messages once per session.
 
 ```
 #this creates a designated personal library so that you don't muck up your existing R setup
