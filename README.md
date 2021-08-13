@@ -2,7 +2,47 @@
 R package for QC of enrichment based NGS assays.  ChIP-seq, cut&amp;run, ATAC-seq, etc.
 
 # Installation
+
+The most reliable and recommended installation method is to use the current devel version (3.14) of BiocConductor.
+
 ```
+install.packages("BiocManager")
+BiocManager::install(version = "devel")
+BiocManager::install("seqsetvis")
+install.packages("devtools") 
+devtools::install_github("FrietzeLabUVM/ssvQC")
+```
+
+Alternatively, the following should work with most recent BiocConductor versions as long as they're compatible with the seqsetvis version on github.
+
+If this doesn't work, try the next set of instructions.
+
+```
+#unless you're using the most recent dev version of BioConductor, you'll need the install seqsetvis from github.
+install.packages("devtools") 
+devtools::install_github("jrboyd/seqsetvis")
+devtools::install_github("FrietzeLabUVM/ssvQC")
+```
+
+For older versions of R (prior to R 4.0) it is tricky to get the requried version of seqsetvis installed alongside older BiocConductor packages.
+
+The following works in R 3.6.3 with BioConductor 3.10, though you will see various deprecation messages once per session.
+
+```
+#this creates a designated personal library so that you don't muck up your existing R setup
+dev_lib = paste0(.libPaths()[1], ".dev")
+dir.create(dev_lib)
+.libPaths(dev_lib)
+.libPaths()
+
+install.packages("devtools")
+
+#dplyr_1.0.0  dbplyr_1.3.0 works
+#Do not update existing packages if asked!
+devtools::install_version("dplyr", "1.0.0")
+devtools::install_version("dbplyr", "1.3.0")
+
+devtools::install_github("jrboyd/seqsetvis")
 devtools::install_github("FrietzeLabUVM/ssvQC")
 ```
 
