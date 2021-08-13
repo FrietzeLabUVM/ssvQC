@@ -2,8 +2,24 @@
 R package for QC of enrichment based NGS assays.  ChIP-seq, cut&amp;run, ATAC-seq, etc.
 
 # Installation
+
+The most reliable and recommended installation method is to use the current devel version (3.14) of BiocConductor.
+
+```
+install.packages("BiocManager")
+BiocManager::install(version = "devel")
+BiocManager::install("seqsetvis")
+install.packages("devtools") 
+devtools::install_github("FrietzeLabUVM/ssvQC")
+```
+
+Alternatively, the following should work with most recent BiocConductor versions as long as they're compatible with the seqsetvis version on github.
+
+If this doesn't work, try the next set of instructions.
+
 ```
 #unless you're using the most recent dev version of BioConductor, you'll need the install seqsetvis from github.
+install.packages("devtools") 
 devtools::install_github("jrboyd/seqsetvis")
 devtools::install_github("FrietzeLabUVM/ssvQC")
 ```
