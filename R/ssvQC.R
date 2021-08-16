@@ -650,30 +650,60 @@ setMethod("ssvQC.prepCorrelation", "ssvQC.signalOnly", function(object){
 
 #' @export
 #' @rdname ssvQC
+#' @import pheatmap
 setGeneric("ssvQC.plotCorrelation", function(object){standardGeneric("ssvQC.plotCorrelation")})
 setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
-  browser()
-  if(is.null(object@other_data$Correlation)){
+  if(is.null(object@other_data$read_count_correlation) || is.null(object@other_data$signal_profile_correlation)){
     object = ssvQC.prepCorrelation(object)
   }
-  Correlation_data = object@other_data$Correlation
   
-  wrap_plot_Correlation_dt = function(Correlation_dt, main_title){
-    plot_Correlation_dt(Correlation_dt, 
-                 color_var = object@signal_config@color_by, 
-                 color_mapping = object@signal_config@color_mapping,
-                 main_title = main_title)
+  wrap_corr_plots = function(corr_res, main_title){
+    brks = seq(-1, 1, by = .05)
+    
+    cr = colorRamp(rev(RColorBrewer::brewer.pal(n = 7, name = "RdYlBu")))
+    
+    color = rgb(cr(scales::rescale(brks, c(0,1)))/255)
+    p_pheat = pheatmap::pheatmap(corr_res$mat, main = main_title,
+                       cluster_rows = corr_res$row_hclust, 
+                       cluster_cols = corr_res$col_hclust, 
+                       scale = "none", 
+                       breaks = brks, 
+                       color = color, 
+                       silent = TRUE)[[4]]
+    p_pheat = ggplotify::as.ggplot(p_pheat)
+    
+    p_dt = corr_res$dt
+    p_dt
+    p_dt[, label := format(round(value, digits = 2))]
+    if(is.factor(p_dt$row_name_split)){
+      p_dt$row_name_split = factor(p_dt$row_name_split, rev(levels(p_dt$row_name_split)))  
+    }
+    
+    p_gg = ggplot(corr_res$dt, aes(x = col_name_split, y = row_name_split, fill = value, label = label)) +
+      geom_tile() +
+      geom_text() +
+      scale_fill_gradientn(colors = color, limits = range(brks)) +
+      labs(title = main_title, fill = "pearson correlation", subtitle = "correlation of read count at assessed peaks") +
+      theme(panel.background = element_blank(), panel.grid = element_blank())
+    
+    # cowplot::plot_grid(p_pheat, p_gg)
+    list(pheatmap = p_pheat, ggplot_heatmap = p_gg)
   }
-  
-  plots = dbl_lapply(Correlation_data, wrap_plot_Correlation_dt, dbl_names)
   
   if(is.null(object@plots$Correlation)){
     object@plots$Correlation = list()
   }
   
-  object@plots$Correlation$reads_per_peak = dbl_extract(plots, "reads_per_peaks")
-  object@plots$Correlation$per_peak = dbl_extract(plots, "Correlation_per_peaks")
-  object@plots$Correlation$total = dbl_extract(plots, "Correlation_total")
+  Correlation_data = object@other_data$read_count_correlation
+  plots = dbl_lapply(Correlation_data, wrap_corr_plots, dbl_names)
+  object@plots$Correlation$read_count_pheatmap = dbl_extract(plots, "pheatmap")
+  object@plots$Correlation$read_count_ggplot_heatmap = dbl_extract(plots, "ggplot_heatmap")
+ 
+  Correlation_data = object@other_data$signal_profile_correlation
+  plots = dbl_lapply(Correlation_data, wrap_corr_plots, dbl_names)
+  object@plots$Correlation$signal_profile_pheatmap = dbl_extract(plots, "pheatmap")
+  object@plots$Correlation$signal_profile_ggplot_heatmap = dbl_extract(plots, "ggplot_heatmap")
+  
   object
 })
 setMethod("ssvQC.plotCorrelation", "ssvQC.featureOnly", function(object){
