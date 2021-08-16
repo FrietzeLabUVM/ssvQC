@@ -9,8 +9,12 @@
 \alias{ssvQC.plotMappedReads}
 \alias{ssvQC.prepFRIP}
 \alias{ssvQC.plotFRIP}
+\alias{ssvQC.prepCorrelation}
+\alias{ssvQC.plotCorrelation}
 \alias{ssvQC.prepSCC}
 \alias{ssvQC.plotSCC}
+\alias{ssvQC.prepFetch}
+\alias{ssvQC.referenceUsesSameScale}
 \alias{ssvQC.prepSignal}
 \alias{ssvQC.plotSignal}
 \alias{ssvQC.prepFeatures}
@@ -40,9 +44,17 @@ ssvQC.prepFRIP(object)
 
 ssvQC.plotFRIP(object)
 
+ssvQC.prepCorrelation(object)
+
+ssvQC.plotCorrelation(object)
+
 ssvQC.prepSCC(object)
 
 ssvQC.plotSCC(object)
+
+ssvQC.prepFetch(object)
+
+ssvQC.referenceUsesSameScale(object)
 
 ssvQC.prepSignal(object)
 
@@ -77,7 +89,7 @@ A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods s
 ssvQC
 }
 \examples{
-options(mc.cores = 10)
+options(mc.cores = 1)
 set.seed(0)
 features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 features_config = QcConfigFeatures.parse(features_config_file)
@@ -110,6 +122,10 @@ sqc.complete = ssvQC.plotSignal(sqc.complete)
 sqc.complete$plots$signal$heatmaps
 
 sqc.complete$signal_config@plot_value = "linearQuantile"
+sqc.complete = ssvQC.plotSignal(sqc.complete)
+sqc.complete$plots$signal$heatmaps
+
+sqc.complete$signal_config@plot_value = SQC_SIGNAL_VALUES$RPM_linearQuantile
 sqc.complete = ssvQC.plotSignal(sqc.complete)
 sqc.complete$plots$signal$heatmaps
 }

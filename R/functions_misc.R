@@ -234,7 +234,7 @@ get_feature_file_load_function = function(feature_files){
 #' parse_fetch_options(fop)
 parse_fetch_options = function(fop){
   if(is.null(fop)) return(list())
-  if(is.na(fop)) return(list())
+  if(any(is.na(fop))) return(list())
   # fop = strsplit(fop, ",")[[1]]
   fop = strsplit(fop, ":")
   fop_names = sapply(fop, function(x)x[1])
@@ -246,7 +246,7 @@ parse_fetch_options = function(fop){
     stop("problem parsing fetch_options, verify fetch_options=key1:val1,key2:val2,... syntax")
   }
   if("summary_FUN" %in% fop_names){
-    warning("summary_FUN is not yet fully supported.  Definitions of summary_FUN should work but its value will not be saved via QcConfigSignal.save_config.")
+    message("summary_FUN is not yet fully supported.  Definitions of summary_FUN should work but its value will not be saved via QcConfigSignal.save_config.")
   }
   names(fop_opts) = fop_names
   lapply(fop_opts, function(x){

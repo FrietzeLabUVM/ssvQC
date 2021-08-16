@@ -689,7 +689,6 @@ make_scc_dt.single = function(bam_file,
   nper = ceiling(length(query_gr) / n_cores)
   grps = ceiling(seq_along(query_gr)/ nper)
   table(grps)
-  # browser()
   rl = getReadLength(bam_file, query_gr)
   lres = pbmcapply::pbmclapply(unique(grps), function(g){
     k = grps == g
