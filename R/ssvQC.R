@@ -137,6 +137,11 @@ ssvQC.save_config = function(object, file){
 #' sqc.complete$signal_config@plot_value = SQC_SIGNAL_VALUES$RPM_linearQuantile
 #' sqc.complete = ssvQC.plotSignal(sqc.complete)
 #' sqc.complete$plots$signal$heatmaps
+#' 
+#' write_ssvQC.summary(sqc.complete)
+#' write_ssvQC.per_peak(sqc.complete)
+#' write_ssvQC.correlation(sqc.complete)
+#' 
 ssvQC = function(features_config = NULL,
                  signal_config = NULL,
                  out_dir = getwd(),
@@ -261,7 +266,7 @@ setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
   object = ssvQC.plotSCC(object)
   message("plot FRIP")
   object = ssvQC.plotFRIP(object)
-  message("plot Correlation")
+  message("plot correlation")
   object = ssvQC.plotCorrelation(object)
   object
 })
@@ -765,19 +770,19 @@ setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
     list(pheatmap = p_pheat, ggplot_heatmap = p_gg)
   }
   
-  if(is.null(object@plots$Correlation)){
-    object@plots$Correlation = list()
+  if(is.null(object@plots$correlation)){
+    object@plots$correlation = list()
   }
   
   Correlation_data = object@other_data$read_count_correlation
   plots = dbl_lapply(Correlation_data, wrap_corr_plots, dbl_names)
-  object@plots$Correlation$read_count_pheatmap = dbl_extract(plots, "pheatmap")
-  object@plots$Correlation$read_count_ggplot_heatmap = dbl_extract(plots, "ggplot_heatmap")
+  object@plots$correlation$read_count_pheatmap = dbl_extract(plots, "pheatmap")
+  object@plots$correlation$read_count_ggplot_heatmap = dbl_extract(plots, "ggplot_heatmap")
  
   Correlation_data = object@other_data$signal_profile_correlation
   plots = dbl_lapply(Correlation_data, wrap_corr_plots, dbl_names)
-  object@plots$Correlation$signal_profile_pheatmap = dbl_extract(plots, "pheatmap")
-  object@plots$Correlation$signal_profile_ggplot_heatmap = dbl_extract(plots, "ggplot_heatmap")
+  object@plots$correlation$signal_profile_pheatmap = dbl_extract(plots, "pheatmap")
+  object@plots$correlation$signal_profile_ggplot_heatmap = dbl_extract(plots, "ggplot_heatmap")
   
   object
 })
@@ -1146,7 +1151,7 @@ setMethod("ssvQC.plotFeatures", c("ssvQC.featureOnly", "logical"), .plotFeatures
 setMethod("names", "ssvQC",
           function(x)
           {
-            c("plots", "signal_data", "signal_config", "features_config", "SCC", "FRIP", "Correlation")
+            c("plots", "signal_data", "signal_config", "features_config", "SCC", "FRIP", "correlation")
             
           })
 
@@ -1159,7 +1164,7 @@ setMethod("$", "ssvQC",
                     signal_data = x@signal_data,
                     SCC = x@other_data$SCC,
                     FRIP = x@other_data$FRIP,
-                    Correlation = x@other_data$Correlation,
+                    correlation = list(read_count = x@other_data$read_count_correlation, signal_profile = x@other_data$signal_profile_correlation),
                     bfc = x@bfc,
                     features_config = x@features_config,
                     signal_config = x@signal_config

@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-write_ssvQC.per_peak = function(sqc, out_dir = get_wd()){
+write_ssvQC.per_peak = function(sqc, out_dir = getwd()){
   make_qc_table = function(x, value.var, value.var.final = value.var){
     x[, name := gsub("\n", "_", name_split)]
     xx = x[, c("id", "name", value.var), with = FALSE]
@@ -18,7 +18,6 @@ write_ssvQC.per_peak = function(sqc, out_dir = get_wd()){
     xx$id = NULL
     xx
   }
-  
   
   
   lapply(names(sqc$FRIP), function(f_name){
@@ -60,11 +59,12 @@ write_ssvQC.per_peak = function(sqc, out_dir = get_wd()){
                        qcc_scc.stable[rownames(qc_gr.df),], 
                        qcc_scc.flex[rownames(qc_gr.df),], 
                        qcc_scc.read[rownames(qc_gr.df),])
-      
-      fwrite(qc_gr.df, file.path(out_dir, paste0("qc_perpeak.", f_name, ".", s_name, ".bedlike.txt")), sep = "\t")
+      out_f = file.path(out_dir, paste0("qc_perpeak.", f_name, ".", s_name, ".bedlike.txt"))
+      fwrite(qc_gr.df, out_f, sep = "\t")
+      message("wrote ", out_f)
     })
   })
-  
+  invisible()
 }
 
 #' write_ssvQC.summary
@@ -76,7 +76,7 @@ write_ssvQC.per_peak = function(sqc, out_dir = get_wd()){
 #' @export
 #'
 #' @examples
-write_ssvQC.summary = function(sqc, out_dir = get_wd()){
+write_ssvQC.summary = function(sqc, out_dir = getwd()){
   if(is.null(sqc@other_data$FRIP)){
     stop("missing FRIP not yet supported")
   }
@@ -91,9 +91,52 @@ write_ssvQC.summary = function(sqc, out_dir = get_wd()){
       qc_dt$name_split = NULL
       sel_cn = colnames(sqc$signal_config$meta_data)
       setcolorder(qc_dt, intersect(sel_cn, colnames(qc_dt)))
-      
-      fwrite(qc_dt, file.path(out_dir, paste0("qc_summary.", f_name, ".", s_name, ".csv")), sep = ",")
+      out_f = file.path(out_dir, paste0("qc_summary.", f_name, ".", s_name, ".csv"))
+      fwrite(qc_dt, out_f, sep = ",")
+      message("wrote ", out_f)
+    })
+  })
+  invisible()
+}
+
+#' write_ssvQC.correlation
+#'
+#' @param sqc 
+#' @param out_dir 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+write_ssvQC.correlation = function(sqc, out_dir = getwd()){
+  if(is.null(sqc@other_data$read_count_correlation)){
+    stop("missing read_count_correlation not yet supported")
+  }
+  if(is.null(sqc@other_data$signal_profile_correlation)){
+    stop("missing signal_profile_correlation not yet supported") 
+  }
+  todo = sqc@other_data$signal_profile_correlation
+  hidden = lapply(names(todo), function(f_name){
+    lapply(names(todo[[f_name]]), function(s_name){
+      cor_mat = todo[[f_name]][[s_name]]$mat
+      rownames(cor_mat) = gsub("\n", "_", rownames(cor_mat))
+      colnames(cor_mat) = gsub("\n", "_", colnames(cor_mat))
+      out_f = file.path(out_dir, paste0("qc_signal_profile_correlation.", f_name, ".", s_name, ".csv"))
+      write.csv(cor_mat, out_f)
+      message("wrote ", out_f)
     })
   })
   
+  todo = sqc@other_data$read_count_correlation
+  hidden = lapply(names(todo), function(f_name){
+    lapply(names(todo[[f_name]]), function(s_name){
+      cor_mat = todo[[f_name]][[s_name]]$mat
+      rownames(cor_mat) = gsub("\n", "_", rownames(cor_mat))
+      colnames(cor_mat) = gsub("\n", "_", colnames(cor_mat))
+      out_f = file.path(out_dir, paste0("qc_read_count_correlation.", f_name, ".", s_name, ".csv"))
+      write.csv(cor_mat, out_f)
+      message("wrote ", out_f)
+    })
+  })
+  invisible()
 }

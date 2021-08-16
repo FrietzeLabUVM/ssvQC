@@ -137,4 +137,9 @@ sqc.complete$plots$signal$heatmaps
 sqc.complete$signal_config@plot_value = SQC_SIGNAL_VALUES$RPM_linearQuantile
 sqc.complete = ssvQC.plotSignal(sqc.complete)
 sqc.complete$plots$signal$heatmaps
+
+write_ssvQC.summary(sqc.complete)
+write_ssvQC.per_peak(sqc.complete)
+write_ssvQC.correlation(sqc.complete)
+
 }

@@ -4,7 +4,7 @@
 \alias{write_ssvQC.per_peak}
 \title{write_ssvQC.per_peak}
 \usage{
-write_ssvQC.per_peak(sqc, out_dir = get_wd())
+write_ssvQC.per_peak(sqc, out_dir = getwd())
 }
 \arguments{
 \item{sqc}{}
