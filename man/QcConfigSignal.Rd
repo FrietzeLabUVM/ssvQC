@@ -34,8 +34,12 @@ QcConfigSignal.parse(signal_config_file)
 
 QcConfigSignal.files(
   file_paths,
-  groups = NULL,
+  file_paths.input = character(),
+  run_separately = TRUE,
+  sample_names = NULL,
+  sample_names.split = NULL,
   group_names = NULL,
+  group_name.input = "input",
   group_colors = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
   read_mode = NULL,
@@ -82,8 +86,6 @@ QcConfigSignal.save_config(object, file)
 
 \item{file_paths}{character paths to files}
 
-\item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
-
 \item{group_names}{vector of group names to assign from according to groups}
 
 \item{group_colors}{vector of colors to use per group}
@@ -91,6 +93,8 @@ QcConfigSignal.save_config(object, file)
 \item{qc_signal}{}
 
 \item{query_gr}{}
+
+\item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
 }
 \value{
 
@@ -148,7 +152,15 @@ QcConfigSignal.parse(bam_config_file)
 bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 QcConfigSignal.parse(bigwig_config_file)
 bam_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "CTCF.+bam$", full.names = TRUE)
-QcConfigSignal.files(bam_files)
+object = QcConfigSignal.files(bam_files)
+plot(object)
+
+object2 = QcConfigSignal.files(bam_files,
+  sample_names = c("MCF10A_CTCF", "MCF10AT1_CTCF", "MCF10CA1a_CTCF"), 
+  group_names = c("10A", "AT1", "CA1"),
+  group_colors = c("firebrick", "slategray2", "forestgreen")
+)
+plot(object2)
 bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 qc_signal = QcConfigSignal.parse(bam_config_file)
 

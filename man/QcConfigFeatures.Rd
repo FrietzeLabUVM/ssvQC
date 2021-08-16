@@ -34,9 +34,12 @@ QcConfigFeatures.null()
 
 QcConfigFeatures.files(
   file_paths,
-  run_separately = FALSE,
+  file_paths.input = character(),
+  run_separately = TRUE,
+  sample_names = NULL,
+  sample_names.split = NULL,
   group_names = NULL,
-  groups = NULL,
+  group_name.input = "input",
   group_colors = NULL,
   feature_load_FUN = NULL,
   n_peaks = 1000,
@@ -92,11 +95,11 @@ impact on the configuration.}
 
 \item{group_names}{vector of group names to assign from according to groups}
 
-\item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
-
 \item{group_colors}{vector of colors to use per group}
 
 \item{feature_config_file}{}
+
+\item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
 }
 \value{
 
@@ -142,6 +145,12 @@ feature_conf = QcConfigFeatures(config_df, process_features = TRUE)
 QcConfigFeatures.null()
 np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)
 object = QcConfigFeatures.files(np_files, balance_groups = TRUE)
+object = ssvQC.prepFeatures(object)
+plot(object)
+
+object = QcConfigFeatures.files(np_files, 
+  group_names = c("10A", "AT1", "CA1"), 
+  sample_names = c("MCF10A_CTCF", "MCF10AT1_CTCF", "MCF10CA1a_CTCF"))
 object = ssvQC.prepFeatures(object)
 plot(object)
 feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")

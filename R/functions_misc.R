@@ -427,3 +427,18 @@ get_group_colors = function(group_names){
   names(cols) = group_names
   cols
 }
+
+#' ssv_mclapply
+#'
+#' @return result of either pblapply or pbmclapply
+#'
+#' @importFrom pbapply pblapply
+#' @importFrom pbmcapply pbmclapply
+ssv_mclapply = function(X, FUN, mc.cores = getOption("mc.cores", 1), ...){
+  if(.Platform$OS.type == "windows" || mc.cores == 1) {
+    pbapply::pblapply(X = X, FUN = FUN, ...)
+    
+  } else {
+    pbmcapply::pbmclapply(X = X, FUN = FUN, mc.cores = mc.cores, ...)
+  }
+}

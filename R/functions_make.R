@@ -277,7 +277,7 @@ make_fq_dt = function(fastq_files, fastq_names = basename(fastq_files), fastq_tr
     cnt_dt
   }
   
-  fq_dt = data.table::rbindlist(pbmcapply::pbmclapply(fastq_files, mc.cores = n_cores, .cnt_fq))
+  fq_dt = data.table::rbindlist(ssv_mclapply(X = fastq_files, FUN = .cnt_fq, mc.cores = n_cores))
   setnames(fq_dt, c("file", "count"))
   
   if(dt_mode){
@@ -693,7 +693,7 @@ make_scc_dt.single = function(bam_file,
   if(length(rl) == 0){
     rl = NULL
   }
-  lres = pbmcapply::pbmclapply(unique(grps), function(g){
+  lres = ssv_mclapply(X = unique(grps), FUN = function(g){
     k = grps == g
     crossCorrByRle(bam_file, query_gr[k], fragment_sizes = frag_sizes, read_length = rl, ...)
   })
