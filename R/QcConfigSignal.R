@@ -441,10 +441,22 @@ QcConfigSignal.parse = function(signal_config_file){
 #' @rdname QcConfigSignal
 #' @examples
 #' bam_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "CTCF.+bam$", full.names = TRUE)
-#' QcConfigSignal.files(bam_files)
+#' object = QcConfigSignal.files(bam_files)
+#' plot(object)
+#' 
+#' object2 = QcConfigSignal.files(bam_files,
+#'   sample_names = c("MCF10A_CTCF", "MCF10AT1_CTCF", "MCF10CA1a_CTCF"), 
+#'   group_names = c("10A", "AT1", "CA1"),
+#'   group_colors = c("firebrick", "slategray2", "forestgreen")
+#' )
+#' plot(object2)
 QcConfigSignal.files = function(file_paths,
-                                groups = NULL,
+                                file_paths.input = character(),
+                                run_separately = TRUE,
+                                sample_names = NULL,
+                                sample_names.split = NULL,
                                 group_names = NULL,
+                                group_name.input = "input",
                                 group_colors = NULL,
                                 view_size = getOption("SQC_VIEW_SIZE", 3e3), 
                                 read_mode = NULL,
@@ -453,33 +465,31 @@ QcConfigSignal.files = function(file_paths,
                                 sort_value = signal_vars[1],
                                 sort_method = c("hclust", "sort")[2]
 ){
-  if(is.null(groups)){
-    groups = seq_along(file_paths)
-  }
   if(is.null(group_names)){
-    if(!any(duplicated(basename(file_paths)))){
-      group_names = basename(file_paths)
-    }else{
-      group_names = LETTERS[seq_along(unique(groups))]  
-      message("non-unique file basenames, resorting to A,B,C... names.")
-    }
-  }
+    group_names = paste(seq_along(file_paths), basename(file_paths))
+  }  
   if(is.null(group_colors)){
-    group_colors = seqsetvis::safeBrew(length(group_names))
+    group_colors = get_group_colors(group_names)
   }
   if(is.null(names(group_colors))){
     names(group_colors) = group_names
   }
   
-  config_df = data.frame(file = as.character(file_paths), group = group_names[groups], stringsAsFactors = FALSE)
+  config_df = data.frame(file = c(as.character(file_paths), file_paths.input), 
+                         group = c(group_names, rep(group_name.input, length(file_paths.input))), 
+                         All = "All", 
+                         stringsAsFactors = FALSE)
   
-  config_df$name = basename(config_df$file)
-  config_df$name_split = gsub("[_\\.]", "\n", config_df$name)
-  
-  config_df$name = factor(config_df$name, levels = unique(config_df$name))
-  config_df$name_split = factor(config_df$name_split, levels = unique(config_df$name_split))
-  
-  config_df$All = "All"
+  if(is.null(sample_names)){
+    config_df$name = basename(config_df$file)  
+  }else{
+    config_df$name = sample_names
+  }
+  if(is.null(sample_names.split)){
+    config_df$name_split = gsub("[_\\. ]", "\n", config_df$name)
+  }else{
+    config_df$name_split = sample_names.split
+  }
   
   QcConfigSignal(config_df, run_by = "All", color_by = "group", color_mapping = group_colors,
                  cluster_value = cluster_value,

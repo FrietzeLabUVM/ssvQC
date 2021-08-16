@@ -422,3 +422,8 @@ digest_args = function(env = parent.frame(), to_ignore = character(), ...){
   digest::digest(get_args(env, to_ignore, ...))
 }
 
+get_group_colors = function(group_names){
+  cols = SQC_OPTIONS$SQC_COLORS[(seq_along(group_names)-1) %% length(SQC_OPTIONS$SQC_COLORS) + 1]
+  names(cols) = group_names
+  cols
+}

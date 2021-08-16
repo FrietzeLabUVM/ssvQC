@@ -23,26 +23,29 @@ crossCorrByRle = function(bam_file,
   }
   names(query_gr) = query_gr$name
   # query_gr = resize(query_gr, 500, fix = "center")
-
+  
   query_gr = harmonize_seqlengths(query_gr, bam_file)
-
+  
   Param <- Rsamtools::ScanBamParam(which=query_gr,
-                        what=c("flag","mapq"),
-                        ...)
+                                   what=c("flag","mapq"),
+                                   ...)
   temp <- GenomicAlignments::readGAlignments(bam_file,param=Param)
   dt = as.data.table(temp)
   if(is.null(read_length)){
     read_length = getReadLength(bam_file, query_gr)
   }
+  if(length(read_length) == 0){
+    read_length = NA
+  }
   if(is.na(read_length)){
     read_length = numeric()
   }
   fragment_sizes = sort(union(read_length, fragment_sizes))
-
+  
   PosCoverage <- coverage(GenomicRanges::shift(GRanges(temp[strand(temp)=="+"])), -read_length)
   PosCoverage = PosCoverage[query_gr]
   names(PosCoverage) = query_gr$name
-
+  
   NegCoverage <- coverage(GRanges(temp[strand(temp)=="-"]))
   NegCoverage = NegCoverage[query_gr]
   names(NegCoverage) = query_gr$name
@@ -59,7 +62,7 @@ crossCorrByRle = function(bam_file,
                        nrow = length(fragment_sizes),
                        ncol = length(query_gr))
   ShiftMatCor[is.nan(ShiftMatCor)] = 0
-
+  
   colnames(ShiftMatCor) = query_gr$name
   rownames(ShiftMatCor) = fragment_sizes
   shift_dt = as.data.table(ShiftMatCor, keep.rownames = TRUE)
@@ -141,7 +144,7 @@ bfcif = function(bfc, rname, FUN,
   vrname = paste0(rname, "_", version)
   if(nrow(BiocFileCache::bfcquery(bfc, query = vrname, field = "rname")) == 0){
     cache_path = BiocFileCache::bfcnew(bfc, rname = vrname)
-
+    
   }else{
     cache_path = BiocFileCache::bfcrpath(bfc, vrname)
   }
@@ -165,31 +168,38 @@ gather_metrics = function(peak_strand_corr, read_length = NULL){
   #     fl = round(.my_mode(max_dt[shift != read_length][shift != min(shift, na.rm = TRUE) & shift != max(shift, na.rm = TRUE)]$shift, na.rm = TRUE))
   # }
   flex_frag_corrs = max_dt[, list(shift, id, correlation)]
-
-
+  
+  
   average_corr = peak_strand_corr[, list(correlation = mean(correlation)), list(shift)]
-
+  
   fl = average_corr[, shift[which.max(correlation)[1]]]
-
-
+  
+  
   stable_frag_corrs = peak_strand_corr[shift == fl]
-
-
+  
+  
   if(!is.null(read_length)){
     read_corrs = peak_strand_corr[shift == read_length]
-    out = list(read_length = read_length,
-               fragment_length = fl,
-               read_correlation = read_corrs,
-               flex_fragment_correlation = flex_frag_corrs,
-               stable_fragment_correlation = stable_frag_corrs,
-               full_correlation_results = peak_strand_corr,
-               average_correlation = average_corr)
+    out = list(
+      read_length = read_length,
+      fragment_length = fl,
+      read_correlation = read_corrs,
+      flex_fragment_correlation = flex_frag_corrs,
+      stable_fragment_correlation = stable_frag_corrs,
+      full_correlation_results = peak_strand_corr,
+      average_correlation = average_corr)
   }else{
-    out = list(fragment_length = fl,
-               flex_fragment_correlation = flex_frag_corrs,
-               stable_fragment_correlation = stable_frag_corrs,
-               full_correlation_results = peak_strand_corr,
-               average_correlation = average_corr)
+    read_corrs = copy(flex_frag_corrs)
+    read_corrs$shift = NA
+    read_corrs$correlation = NA
+    out = list(
+      read_length = NA,
+      fragment_length = fl,
+      read_correlation = read_corrs,
+      flex_fragment_correlation = flex_frag_corrs,
+      stable_fragment_correlation = stable_frag_corrs,
+      full_correlation_results = peak_strand_corr,
+      average_correlation = average_corr)
   }
   out
 }

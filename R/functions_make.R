@@ -690,6 +690,9 @@ make_scc_dt.single = function(bam_file,
   grps = ceiling(seq_along(query_gr)/ nper)
   table(grps)
   rl = getReadLength(bam_file, query_gr)
+  if(length(rl) == 0){
+    rl = NULL
+  }
   lres = pbmcapply::pbmclapply(unique(grps), function(g){
     k = grps == g
     crossCorrByRle(bam_file, query_gr[k], fragment_sizes = frag_sizes, read_length = rl, ...)

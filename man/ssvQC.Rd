@@ -32,11 +32,11 @@ ssvQC(
 
 ssvQC.runAll(object)
 
-ssvQC.prepFragLens(object, query, bfc)
+ssvQC.prepFragLens(object, query, bfc, use_matched)
 
 ssvQC.prepMappedReads(object)
 
-ssvQC.prepCapValue(object, query, bfc)
+ssvQC.prepCapValue(object, query, bfc, use_matched)
 
 ssvQC.plotMappedReads(object)
 
