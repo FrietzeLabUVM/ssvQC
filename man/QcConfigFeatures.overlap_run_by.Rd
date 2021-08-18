@@ -22,15 +22,15 @@ QcConfigFeatures.overlap_run_by(
 
 \item{n_peaks}{}
 
-\item{balance_groups}{}
+\item{balance_groups}{If TRUE, will attempt to represent imbalanced groups more equally}
 
 \item{overlap_extension}{}
 
-\item{consensus_fraction}{}
+\item{consensus_fraction}{A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.}
 
-\item{consensus_n}{}
+\item{consensus_n}{An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.}
 
-\item{process_features}{}
+\item{process_features}{if TRUE, features are loaded and overlapped to generate assement regions as part of creating QcConfigFeatures object}
 }
 \value{
 

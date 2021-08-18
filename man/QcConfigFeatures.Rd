@@ -67,9 +67,9 @@ impact on the configuration.}
 
 \item{run_by}{character that defines the column of config_df that groups the features.  The default of "All" will simply group all features into a single comparison.}
 
-\item{to_run}{}
+\item{to_run}{group name to run}
 
-\item{to_run_reference}{}
+\item{to_run_reference}{group name to included in all runs}
 
 \item{color_by}{character that defines the column of config_df that controls color mapping. The default of "file" will assign a unique color to every feature set.}
 
@@ -79,19 +79,21 @@ impact on the configuration.}
 
 \item{n_peaks}{number of peaks to subset for}
 
-\item{balance_groups}{}
+\item{balance_groups}{If TRUE, will attempt to represent imbalanced groups more equally}
 
-\item{overlap_extension}{}
+\item{overlap_extension}{bp to extends regions by before calculating overlaps}
 
 \item{consensus_fraction}{A numeric between 0 and 1 specifying the fraction of grs that must overlap to be considered consensus.}
 
 \item{consensus_n}{An integer number specifying the absloute minimum of input grs that must overlap for a site to be considered consensus.}
 
-\item{process_features}{}
+\item{process_features}{if TRUE, features are loaded and overlapped to generate assement regions as part of creating QcConfigFeatures object}
 
-\item{is_null}{}
+\item{is_null}{if TRUE this object will be treated as NULL}
 
 \item{file_paths}{character paths to files}
+
+\item{run_separately}{If TRUE, each item is considered a separate group. Default is TRUE.}
 
 \item{group_names}{vector of group names to assign from according to groups}
 
