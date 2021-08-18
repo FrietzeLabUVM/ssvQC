@@ -213,7 +213,6 @@ ssvQC = function(features_config = NULL,
     if(!"QcConfigFeatures" %in% class(features_config)){
       stop("features_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
     }  
-    stopifnot(file.exists(features_config@meta_data$file))
   }
   features_config
 }
@@ -317,12 +316,19 @@ setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
   if(use_matched){
     matched_dt = merge(sig_dt[, .(bam_file = file, name)], peak_dt[, .(peak_file = file, name)], by = "name")
     
-    matched_peaks_gr = query@feature_load_FUN(matched_dt$peak_file)
-    matched_dt = matched_dt[lengths(matched_peaks_gr) > 0,]
-    matched_peaks_gr = matched_peaks_gr[lengths(matched_peaks_gr) > 0]
-    
-    unmatched_dt = sig_dt[!name %in% matched_dt$name]  
-  }else{
+    if(nrow(matched_dt) == 0){
+      use_matched = FALSE
+    }else if(any(!file.exists(matched_dt$peak_file))){
+      use_matched = FALSE
+    }else{
+      matched_peaks_gr = query@feature_load_FUN(matched_dt$peak_file)
+      matched_dt = matched_dt[lengths(matched_peaks_gr) > 0,]
+      matched_peaks_gr = matched_peaks_gr[lengths(matched_peaks_gr) > 0]
+      
+      unmatched_dt = sig_dt[!name %in% matched_dt$name]    
+    }
+  }
+  if(!use_matched){
     matched_dt = data.table()
     unmatched_dt = sig_dt
   }
