@@ -213,7 +213,6 @@ ssvQC = function(features_config = NULL,
     if(!"QcConfigFeatures" %in% class(features_config)){
       stop("features_config must be either a QcConfigFeatures object or the path to valid configuration file to create one.")
     }  
-    stopifnot(file.exists(features_config@meta_data$file))
   }
   features_config
 }
