@@ -770,6 +770,8 @@ setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
     p_dt[, label := format(round(value, digits = 2))]
     if(is.factor(p_dt$row_name_split)){
       p_dt$row_name_split = factor(p_dt$row_name_split, rev(levels(p_dt$row_name_split)))  
+    }else{
+      p_dt$row_name_split = factor(p_dt$row_name_split, rev(sort(p_dt$row_name_split)))  
     }
     
     p_gg = ggplot(corr_res$dt, aes(x = col_name_split, y = row_name_split, fill = value, label = label)) +
