@@ -773,12 +773,14 @@ setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
     }else{
       p_dt$row_name_split = factor(p_dt$row_name_split, rev(sort(p_dt$row_name_split)))  
     }
-    
-    p_gg = ggplot(corr_res$dt, aes(x = col_name_split, y = row_name_split, fill = value, label = label)) +
+    p_gg = ggplot(p_dt, aes(x = col_name_split, y = row_name_split, fill = value, label = label)) +
       geom_tile() +
       geom_text() +
       scale_fill_gradientn(colors = color, limits = range(brks)) +
-      labs(title = main_title, fill = "pearson correlation", subtitle = "correlation of read count at assessed peaks") +
+      labs(title = main_title, 
+           fill = "pearson correlation", 
+           subtitle = "correlation of read count at assessed peaks", 
+           x = "", y = "") +
       theme(panel.background = element_blank(), panel.grid = element_blank())
     
     # cowplot::plot_grid(p_pheat, p_gg)
