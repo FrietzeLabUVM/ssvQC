@@ -7,14 +7,17 @@
 #' @slot signal_var 
 #' @slot facet_var 
 #' @slot extra_var 
+#' @slot manual_assigned
 #' @export
 setClass("ClusteredSignal",
          representation = list(
            signal_data = "data.table",
            query_gr = "GRanges",
            signal_var = "character",
+           signal_var.within = "character",
            facet_var = "character",
-           extra_var = "character"
+           extra_var = "character",
+           manual_assigned = "list"
          ))
 
 #' Title
@@ -57,8 +60,10 @@ ClusteredSignal = function(signal_profile_dt,
         signal_data =  clust_dt,
         query_gr = query_gr,
         signal_var = signal_var,
+        signal_var.within = signal_var.within,
         facet_var = facet_var,
-        extra_var = extra_var)
+        extra_var = extra_var,
+        manual_assigned = manual_assigned)
   })
 }
 
@@ -157,14 +162,16 @@ ClusteredSignal.null = function(){
       signal_data =  data.table(),
       query_gr = GRanges(),
       signal_var = character(),
+      signal_var.within = character(),
       facet_var = character(),
-      extra_var = character())
+      extra_var = character(),
+      manual_assigned = list())
 }
 
 setMethod("names", "ClusteredSignal",
           function(x)
           {
-            c("signal_data", "query_gr", "assignment_data", "query_gr.cluster_list", "signal_data.mean_per_cluster")
+            c("signal_data", "query_gr", "assignment_data", "query_gr.cluster_list", "signal_data.mean_per_cluster", "manual_assigned")
             
           })
 
@@ -186,6 +193,9 @@ setMethod("$", "ClusteredSignal",
                       agg_dt = x@signal_data[, .(y = mean(get(sig_var))), c("x", "cluster_id", union(x@facet_var, x@extra_var))]
                       setnames(agg_dt, "y", sig_var)
                       agg_dt
+                    },
+                    manual_assigned = {
+                      x@manual_assigned
                     }
             )
           })

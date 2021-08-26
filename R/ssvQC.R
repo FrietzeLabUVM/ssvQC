@@ -40,12 +40,12 @@ setMethod("initialize","ssvQC", function(.Object,...){
     message("Signal data has NOT been loaded.")
   }
   if(length(qc@other_data) > 0){
-    message(paste(names(qc@other_data), collapse = ", "), "have been LOADED.")
+    message(paste(names(qc@other_data), collapse = ", "), " have been LOADED.")
   }else{
     message("NO other data have been loaded.")
   }
   if(length(qc@plots) > 0){
-    message(paste(names(qc@plots), collapse = ", "), "have been PLOTTED.")
+    message(paste(names(qc@plots), collapse = ", "), " have been PLOTTED.")
   }else{
     message("NO plots have been made.")
   }
@@ -757,12 +757,12 @@ setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
     
     color = rgb(cr(scales::rescale(brks, c(0,1)))/255)
     p_pheat = pheatmap::pheatmap(corr_res$mat, main = main_title,
-                       cluster_rows = corr_res$row_hclust, 
-                       cluster_cols = corr_res$col_hclust, 
-                       scale = "none", 
-                       breaks = brks, 
-                       color = color, 
-                       silent = TRUE)[[4]]
+                                 cluster_rows = corr_res$row_hclust, 
+                                 cluster_cols = corr_res$col_hclust, 
+                                 scale = "none", 
+                                 breaks = brks, 
+                                 color = color, 
+                                 silent = TRUE)[[4]]
     p_pheat = ggplotify::as.ggplot(p_pheat)
     
     p_dt = corr_res$dt
@@ -771,7 +771,7 @@ setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
     if(is.factor(p_dt$row_name_split)){
       p_dt$row_name_split = factor(p_dt$row_name_split, rev(levels(p_dt$row_name_split)))  
     }else{
-      p_dt$row_name_split = factor(p_dt$row_name_split, rev(sort(p_dt$row_name_split)))  
+      p_dt$row_name_split = factor(p_dt$row_name_split, rev(sort(unique(p_dt$row_name_split))))  
     }
     p_gg = ggplot(p_dt, aes(x = col_name_split, y = row_name_split, fill = value, label = label)) +
       geom_tile() +
@@ -795,7 +795,7 @@ setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
   plots = dbl_lapply(Correlation_data, wrap_corr_plots, dbl_names)
   object@plots$correlation$read_count_pheatmap = dbl_extract(plots, "pheatmap")
   object@plots$correlation$read_count_ggplot_heatmap = dbl_extract(plots, "ggplot_heatmap")
- 
+  
   Correlation_data = object@other_data$signal_profile_correlation
   plots = dbl_lapply(Correlation_data, wrap_corr_plots, dbl_names)
   object@plots$correlation$signal_profile_pheatmap = dbl_extract(plots, "pheatmap")
@@ -1090,8 +1090,11 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
     feat_label = sub("_features", " features", feat_nam)
     peak_grs = feat_config$loaded_features[[feat_nam]]
     peak_dt = data.table(N = lengths(peak_grs), name_split = names(peak_grs))
-    peak_dt = merge(feat_config@meta_data, peak_dt, by = "name_split")
+    peak_dt = merge(as.data.table(feat_config@meta_data), peak_dt, by = "name_split")
     
+    
+    
+    setkey(peak_dt, "name_split")
     out = list()
     
     p_peak_count = ggplot(peak_dt, aes_string(x = "name_split", y = "N", fill = feat_config@color_by)) +
@@ -1100,13 +1103,16 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
       labs(x = "", y = "feature count", title = feat_label)
     
     olap_gr = feat_config$overlapped_features[[feat_nam]]
+    #colors assigned by color_by in order of GRanges names
+    name_o_cols = feat_config@color_mapping[peak_dt[.(colnames(mcols(olap_gr)))][[feat_config@color_by]]]
+    
     n_feature_sets = ncol(mcols(olap_gr))
     
     p_binary_heatmap = seqsetvis::ssvFeatureBinaryHeatmap(olap_gr, raster_approximation = TRUE)
     p_upset = seqsetvis::ssvFeatureUpset(olap_gr)
     
     if(n_feature_sets < 4){
-      p_venn = seqsetvis::ssvFeatureVenn(olap_gr, circle_colors = feat_config@color_mapping[peak_dt[[feat_config@color_by]]])  
+      p_venn = seqsetvis::ssvFeatureVenn(olap_gr, circle_colors = name_o_cols)  
       
     }else{
       venn_msg = "Venn diagrams not supported for more than 3 feature sets."
@@ -1115,7 +1121,9 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
     }
     
     if(n_feature_sets < 9 | force_euler){
-      p_euler = seqsetvis::ssvFeatureEuler(olap_gr, circle_colors = feat_config@color_mapping[peak_dt[[feat_config@color_by]]])  
+      colnames(mcols(olap_gr))
+      
+      p_euler = seqsetvis::ssvFeatureEuler(olap_gr, circle_colors = name_o_cols)  
       
     }else{
       euler_msg = "Euler diagrams not generated for more than 8 feature sets by default due to slow computation speed.  You may override this behavior by calling ssvQC.plotFeatures with force_euler = TRUE."
@@ -1208,3 +1216,214 @@ setReplaceMethod("$", "ssvQC",
                    #TODO, some assignments may be appropriate
                    x
                  })
+
+
+
+.remove_SCC_ids = function(x, keep_ids){
+    new_corr_res = x$full_correlation_results[id %in% keep_ids]  
+    new_corr_res_l = split(new_corr_res, new_corr_res$name)
+    
+    rls = sapply(split(x$read_length, x$read_length$name), function(x)x$read_length)
+    todo = names(new_corr_res_l)
+    names(todo) = todo
+    scc_res_l = lapply(todo, function(nam){
+      corr_res = gather_metrics(peak_strand_corr = new_corr_res_l[[nam]], read_length = rls[nam])
+      vnames = names(corr_res)
+      corr_res = lapply(vnames, function(nam){
+        xv = corr_res[[nam]]
+        if(!is.data.table(xv)){
+          xv = data.table(xv)
+          setnames(xv, nam)
+        }
+        xv
+      })
+      names(corr_res) = vnames
+      corr_res
+    })
+    
+    vnames = names(scc_res_l[[1]])
+    
+    nam = "read_correlation"
+    scc_res = lapply(vnames, function(nam){
+      
+      part = lapply(scc_res_l, function(x){
+        xv = x[[nam]]
+        # if(!is.data.table(xv)){
+        #   xv = data.table(xv)
+        #   setnames(xv, nam)
+        # }
+        xv
+      })
+      dt = rbindlist(part, idcol = "name")
+      mdt = as.data.table(sqc$signal_config$meta_data)
+      mdt = mdt[, union("name", setdiff(colnames(mdt), colnames(dt))), with = FALSE]
+      if(ncol(mdt) > 1){
+        merge(dt, mdt, by = "name")  
+      }else{
+        dt
+      }
+      
+    })
+    names(scc_res) = vnames
+    scc_res
+}
+
+.remove_FRIP_ids = function(x, keep_ids){
+  x[id %in% keep_ids]
+}
+
+#'
+#' @param sqc 
+#' @param ids 
+#' @param grs 
+#' @param invert 
+#' @example 
+#' library(ssvQC)
+#' options(mc.cores = 1)
+#' set.seed(0)
+#' features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+#' features_config = QcConfigFeatures.parse(features_config_file)
+#'
+#' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+#' bam_config = QcConfigSignal.parse(bam_config_file)
+#'
+#' sqc.complete.file = ssvQC(features_config_file, bam_config_file)
+#'
+#' sqc.complete = ssvQC(features_config, bam_config)
+#' sqc = ssvQC.runAll(sqc.complete)
+#' ids = c("region_1", "region_2")
+#' grs = NULL
+#' invert = FALSE
+#' features_name = NULL
+#' 
+#' sqc.filtered = ssvQC.removeFeatures(sqc, ids = c("region_1", "region_2"))
+#' sqc.filtered2 = ssvQC.removeFeatures(sqc.filtered, ids = c("region_1", "region_2"))
+ssvQC.removeFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NULL, invert = FALSE){
+  stopifnot(is(sqc, "ssvQC"))
+  stopifnot(is.logical(invert))
+  
+  poss_feature_names = names(sqc$features_config$assessment_features)
+  if(is.null(features_name)){
+    if(length(poss_feature_names) > 1){
+      stop("features_name is required when there is more than one feature assessment group. Should be one of: ", paste(poss_feature_names, collapse = ", ") )
+    }else{
+      features_name = poss_feature_names[1]
+    }
+  }
+  stopifnot(is.character(features_name))
+  stopifnot(length(features_name) == 1)
+  stopifnot(features_name %in% poss_feature_names)
+  
+  if(is.null(ids) && is.null(grs)){
+    stop("One of ids or grs is required.")
+  }
+  if(!is.null(ids) && !is.null(grs)){
+    stop("Only one of ids or grs is allowed.")
+  }
+  if(!is.null(grs)){
+    stopifnot(is(grs, "GRanges"))
+    #select ids based on grs
+  }
+  if(is.factor(ids)) ids = as.character(ids)
+  stopifnot(is(ids, "character"))
+  
+  assessed_grs = sqc$features_config$assessment_features[[features_name]]
+  if(invert){
+    keep_ids = ids
+    remv_ids = setdiff(names(assessed_grs), ids)
+    
+    
+    
+  }else{
+    keep_ids = setdiff(names(assessed_grs), ids)
+    remv_ids = intersect(ids, names(assessed_grs))
+    if(!setequal(ids, remv_ids)){
+      message("Not all ids present in current assessment set.")
+    }
+    
+    keep_grs = assessed_grs[keep_ids]
+    remv_grs = assessed_grs[remv_ids]
+    
+    
+    sqc$features_config@assessment_gr[[features_name]] = keep_grs
+    sqc$features_config@overlap_gr[[features_name]] = subsetByOverlaps(sqc$features_config$overlapped_features[[features_name]], remv_grs, invert = TRUE)
+    sqc$features_config@loaded_features[[features_name]] = lapply(sqc$features_config@loaded_features[[features_name]], function(gr){
+      subsetByOverlaps(gr, remv_grs, invert = TRUE)
+    })
+    feat_sig = sqc$signal_data[[features_name]][[1]]
+    sqc@signal_data[[features_name]] = lapply(sqc$signal_data[[features_name]], function(feat_sig){
+      new_sig_dt = feat_sig$signal_data[id %in% keep_ids]
+      
+      new_nclust = length(unique(new_sig_dt$cluster_id))
+      
+      new_sig_dt$cluster_id = NULL
+      new_sig_dt$id = as.character(new_sig_dt$id)
+      
+      new_sig_dt
+      new_query_gr = feat_sig$query_gr[keep_ids]
+      
+      new_man = lapply(feat_sig@manual_assigned, function(x){
+        intersect(x, keep_ids)
+      })
+      
+      ClusteredSignal(signal_profile_dt = new_sig_dt, 
+                      query_gr = new_query_gr, 
+                      manual_assigned = new_man,
+                      nclust = new_nclust,
+                      signal_var = feat_sig@signal_var,
+                      signal_var.within = feat_sig@signal_var.within,
+                      facet_var = feat_sig@facet_var,
+                      extra_var = feat_sig@extra_var)
+    })
+  }
+  
+  ###TODO need to remove or filter dependent data and plots
+  if(!is.null(sqc@other_data$SCC)){
+    sqc@other_data$SCC[[features_name]] = lapply(sqc@other_data$SCC[[features_name]], function(x){
+      .remove_SCC_ids(x, keep_ids)
+    })  
+  }
+  if(!is.null(sqc@other_data$FRIP)){
+    sqc@other_data$FRIP[[features_name]] = lapply(sqc@other_data$FRIP[[features_name]], function(x){
+      .remove_FRIP_ids(x, keep_ids)
+    })  
+  }
+  
+  if(!is.null(sqc@other_data$read_count_correlation) | !is.null(sqc@other_data$signal_profile_correlation)){
+    sqc@other_data$read_count_correlation = NULL
+    sqc@other_data$signal_profile_correlation = NULL
+    sqc = ssvQC.prepCorrelation(sqc)
+  }
+  
+  if(!is.null(sqc$plots$features)){
+    sqc = ssvQC.plotFeatures(sqc)
+  }
+  if(!is.null(sqc$plots$signal)){
+    sqc = ssvQC.plotSignal(sqc)
+  }
+  if(!is.null(sqc$plots$SCC)){
+    sqc = ssvQC.plotSCC(sqc)
+  }
+  if(!is.null(sqc$plots$FRIP)){
+    sqc = ssvQC.plotFRIP(sqc)
+  }
+  if(!is.null(sqc$plots$correlation)){
+    sqc = ssvQC.plotCorrelation(sqc)
+  }
+  
+  sqc
+}
+
+ssvQC.removeClusters = function(sqc){
+  
+  sqc = ssvQC.plotSignal(sqc)
+  sqc$plots$signal$heatmaps
+  
+  good_id = as.character(sqc$signal_data$query_features$All_signal$assignment_data[cluster_id %in% c(3, 4, 5, 6)]$id)
+  query_gr.good = query_gr[good_id]
+  query_gr.bad = query_gr[setdiff(names(query_gr), good_id)]
+  
+  sig_dt = sqc$signal_data$query_features$All_signal@signal_data  
+  ssvSignalHeatmap.ClusterBars(sig_dt[id %in% names(query_gr.bad)], facet_ = "name_split", fill_limits = c(0, 100))
+  
+}
