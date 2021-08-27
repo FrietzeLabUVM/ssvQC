@@ -1243,7 +1243,7 @@ setReplaceMethod("$", "ssvQC",
                   extra_var = x@extra_var)
 }
 
-.remove_SCC_ids = function(x, keep_ids){
+.remove_SCC_ids = function(x, keep_ids, meta_dt){
   new_corr_res = x$full_correlation_results[id %in% keep_ids]  
   new_corr_res_l = split(new_corr_res, new_corr_res$name)
   
@@ -1279,7 +1279,7 @@ setReplaceMethod("$", "ssvQC",
       xv
     })
     dt = rbindlist(part, idcol = "name")
-    mdt = as.data.table(sqc$signal_config$meta_data)
+    mdt = meta_dt
     mdt = mdt[, union("name", setdiff(colnames(mdt), colnames(dt))), with = FALSE]
     if(ncol(mdt) > 1){
       merge(dt, mdt, by = "name")  
@@ -1363,6 +1363,8 @@ ssvQC.removeFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NUL
   stopifnot(is(sqc, "ssvQC"))
   stopifnot(is.logical(invert))
   
+  if(length(sqc$features_config$assessment_features) == 0) stop("Call ssvQC.prepFeatures first.")
+  
   poss_feature_names = names(sqc$features_config$assessment_features)
   if(is.null(features_name)){
     if(length(poss_feature_names) > 1){
@@ -1424,12 +1426,9 @@ ssvQC.removeFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NUL
     })  
   }
   
-  
-  
-  ###TODO need to remove or filter dependent data and plots
   if(!is.null(sqc@other_data$SCC)){
     sqc@other_data$SCC[[features_name]] = lapply(sqc@other_data$SCC[[features_name]], function(x){
-      .remove_SCC_ids(x, keep_ids)
+      .remove_SCC_ids(x, keep_ids, as.data.table(sqc$signal_config$meta_data))
     })  
   }
   if(!is.null(sqc@other_data$FRIP)){
@@ -1499,6 +1498,8 @@ ssvQC.removeClusters = function(sqc, cluster_numbers, features_name = NULL, sign
   stopifnot(is(sqc, "ssvQC"))
   stopifnot(is.logical(invert))
   
+  if(length(sqc$features_config$assessment_features) == 0) stop("Call ssvQC.prepFeatures first.")
+  
   poss_feature_names = names(sqc$features_config$assessment_features)
   if(is.null(features_name)){
     if(length(poss_feature_names) > 1){
@@ -1510,6 +1511,8 @@ ssvQC.removeClusters = function(sqc, cluster_numbers, features_name = NULL, sign
   stopifnot(is.character(features_name))
   stopifnot(length(features_name) == 1)
   stopifnot(features_name %in% poss_feature_names)
+  
+  if(length(sqc$signal_data) == 0) stop("Call ssvQC.prepSignal first.")
   
   poss_signal_names = names(sqc$signal_data[[features_name]])
   if(is.null(signals_name)){
@@ -1523,7 +1526,7 @@ ssvQC.removeClusters = function(sqc, cluster_numbers, features_name = NULL, sign
   stopifnot(length(signals_name) == 1)
   stopifnot(signals_name %in% poss_signal_names)
   
-  if(length(sqc$signal_data) == 0) stop("run ssvQC.prepSignal first.")
+  
   
   x = sqc$signal_data[[features_name]][[signals_name]]
   sel = x$signal_data[cluster_id %in% cluster_numbers]
