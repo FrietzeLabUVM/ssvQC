@@ -80,3 +80,36 @@ test_that("can remove by cluster after running ssvQC.prepSignal", {
   expect_true(all(id_removed.ran %in% names(sqc.complete.ran$features_config$assessment_features$CTCF_features)))
   expect_true(all(id_removed.ran %in% sqc.complete.ran$signal_data$CTCF_features$CTCF_signal$signal_data$id))
 })
+
+###selection
+test_that("error if not yet ssvQC.prepFeatures", {
+  expect_error(ssvQC.selectClusters(sqc.complete, "region_1", features_name = "CTCF_features"), regexp = "Call ssvQC.prepFeatures first.")
+  expect_error(ssvQC.selectClusters(sqc.complete, "1", features_name = "CTCF_features"), regexp = "Call ssvQC.prepFeatures first.")
+})
+
+test_that("can select by id if not yet ssvQC.prepSignal, but not cluster", {
+  expect_error(ssvQC.selectFeatures(sqc.complete.prepFeatures, "region_45", features_name = "CTCF_features"), "Currently, fewer than 5 regions are not allowed. This will be addressed in future versions.")
+  sqc.rm1 = ssvQC.selectFeatures(sqc.complete.prepFeatures, paste0("region_", 45:50), features_name = "CTCF_features")
+  expect_equal(length(sqc.rm1$features_config$assessment_features[[1]]), 6)
+  expect_true(all(paste0("region_", 45:50) %in% names(sqc.complete.prepFeatures$features_config$assessment_features[[1]])))
+  #can't select fewer than 5
+  sqc.complete.ran.rm1 = ssvQC.selectFeatures(sqc.complete.ran, paste0("region_", 45:50), features_name = "CTCF_features")
+  expect_equal(length(sqc.complete.ran.rm1$features_config$assessment_features[[1]]), 6)
+  expect_true(all(paste0("region_", 45:50) %in% names(sqc.complete.ran.rm1$features_config$assessment_features[[1]])))
+  
+  expect_failure(expect_equivalent(sqc.complete.ran$plots$signal$heatmaps, sqc.complete.ran.rm1$plots$signal$heatmaps))
+  expect_failure(expect_equivalent(sqc.complete.ran$plots$SCC$dots, sqc.complete.ran.rm1$plots$SCC$dots))
+  expect_failure(expect_equivalent(sqc.complete.ran$plots$FRIP$total, sqc.complete.ran.rm1$plots$FRIP$total))
+  
+  expect_error(ssvQC.selectClusters(sqc.complete.prepFeatures, "1", features_name = "CTCF_features"), regexp = "Call ssvQC.prepSignal first.")
+})
+
+test_that("can select by cluster after running ssvQC.prepSignal", {
+  id_selectd.ran = names(sqc.complete.ran$signal_data$CTCF_features$CTCF_signal$query_gr.cluster_list$`1`)
+  
+  sqc.complete.prepSignal.rm1 = ssvQC.selectClusters(sqc.complete.prepSignal, "1", features_name = "CTCF_features")
+  sqc.complete.ran.rm1 = ssvQC.selectClusters(sqc.complete.ran, "1", features_name = "CTCF_features")
+  
+  expect_true(all(id_selectd.ran %in% names(sqc.complete.ran.rm1$features_config$assessment_features$CTCF_features)))
+  expect_true(all(id_selectd.ran %in% sqc.complete.ran.rm1$signal_data$CTCF_features$CTCF_signal$signal_data$id))
+})
