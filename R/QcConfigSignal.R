@@ -246,13 +246,13 @@ QcConfigSignal = function(config_df,
                           read_mode = NULL,
                           view_size = getOption("SQC_VIEW_SIZE", 3e3), 
                           fetch_options = list(),
-                          cluster_value = signal_vars[1],
+                          cluster_value = NULL,
                           linearQuantile_cutoff = .98,
-                          sort_value = signal_vars[1],
+                          sort_value = NULL,
                           sort_method = c("hclust", "sort")[2],
-                          plot_value = signal_vars[1],
-                          heatmap_limit_values = NULL,
-                          lineplot_free_limits = FALSE,
+                          plot_value = NULL,
+                          heatmap_limit_values = c(0, 10),
+                          lineplot_free_limits = TRUE,
                           is_null = FALSE){
   .enforce_file_var(config_df)
   if(!run_by %in% colnames(config_df)){
@@ -264,12 +264,6 @@ QcConfigSignal = function(config_df,
   }
   if(!color_by %in% colnames(config_df)){
     stop("color_by ", color_by, " was not in column names.")
-  }
-  if(!cluster_value %in% signal_vars){
-    stop("cluster_value of ", cluster_value, " was not one of : ", paste(signal_vars, collapse = ", "))
-  }
-  if(!sort_value %in% signal_vars){
-    stop("sort_value of ", sort_value, " was not one of : ", paste(signal_vars, collapse = ", "))
   }
   if(linearQuantile_cutoff <= 0 | linearQuantile_cutoff > 1){
     stop("linearQuantile_cutoff must be between 0 and 1. Was ", linearQuantile_cutoff)
@@ -301,11 +295,33 @@ QcConfigSignal = function(config_df,
   
   stopifnot(config_df[[color_by]] %in% names(color_mapping))
   
+  #Guess read mode
   if(is.null(read_mode)){
     read_mode = guess_read_mode(config_df$file[1])
   }
+  #Value defaults
+  if(is.null(cluster_value)){
+    cluster_value = get_default_signal_var(read_mode)
+  }
+  if(is.null(sort_value)){
+    sort_value = get_default_signal_var(read_mode)
+  }
+  if(is.null(plot_value)){
+    plot_value = get_default_signal_var(read_mode)
+  }
+  #Value checks
+  if(!cluster_value %in% signal_vars){
+    stop("cluster_value of ", cluster_value, " was not one of : ", paste(signal_vars, collapse = ", "))
+  }
+  if(!sort_value %in% signal_vars){
+    stop("sort_value of ", sort_value, " was not one of : ", paste(signal_vars, collapse = ", "))
+  }
+  if(!plot_value %in% signal_vars){
+    stop("plot_value of ", plot_value, " was not one of : ", paste(signal_vars, collapse = ", "))
+  }
   
-  stopifnot(read_mode %in% c("bam_SE", "bam_PE", "bigwig", "null"))
+  
+  stopifnot(read_mode %in% sqc_read_modes)
   
   if(is.null(to_run)){
     to_run = unique(config_df[[run_by]])   
@@ -397,14 +413,14 @@ QcConfigSignal.parse = function(signal_config_file){
                   run_by = NULL, 
                   to_run = NULL, 
                   to_run_reference = NULL,
-                  cluster_value = signal_vars[1],
+                  cluster_value = NULL,
                   linearQuantile_cutoff = .98,
-                  sort_value = signal_vars[1],
+                  sort_value = NULL,
                   sort_method = c("hclust", "sort")[2],
-                  plot_value = signal_vars[1],
+                  plot_value = NULL,
                   fetch_options = list(), 
-                  heatmap_limit_values = NULL, 
-                  lineplot_free_limits = FALSE, 
+                  heatmap_limit_values = c(0, 10), 
+                  lineplot_free_limits = TRUE, 
                   is_null = FALSE){
     QcConfigSignal(config_df = config_dt, 
                    run_by = run_by, 
@@ -460,9 +476,10 @@ QcConfigSignal.files = function(file_paths,
                                 group_colors = NULL,
                                 view_size = getOption("SQC_VIEW_SIZE", 3e3), 
                                 read_mode = NULL,
-                                cluster_value = signal_vars[1],
+                                cluster_value = NULL,
                                 linearQuantile_cutoff = .98,
-                                sort_value = signal_vars[1],
+                                sort_value = NULL,
+                                plot_value = NULL,
                                 sort_method = c("hclust", "sort")[2]
 ){
   if(is.null(group_names)){
@@ -491,11 +508,15 @@ QcConfigSignal.files = function(file_paths,
     config_df$name_split = sample_names.split
   }
   
-  QcConfigSignal(config_df, run_by = "All", color_by = "group", color_mapping = group_colors,
+  QcConfigSignal(config_df, 
+                 run_by = "All", 
+                 color_by = "group", 
+                 color_mapping = group_colors,
                  cluster_value = cluster_value,
                  linearQuantile_cutoff = linearQuantile_cutoff,
                  sort_value = sort_value,
-                 sort_method = sort_method)
+                 sort_method = sort_method,
+                 plot_value = plot_value)
 }
 
 get_fetch_fun = function(read_mode){

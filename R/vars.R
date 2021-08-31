@@ -1,4 +1,5 @@
-signal_vars= c("raw", "RPM", "linearQuantile", "RPM_linearQuantile")
+signal_vars= c(raw = "raw", RPM = "RPM", linearQuantile = "linearQuantile", RPM_linearQuantile = "RPM_linearQuantile")
+sqc_read_modes = list(bam_SE = "bam_SE", bam_PE = "bam_PE", bigwig = "bigwig", null = "null")
 
 val2var = c(
   raw = "y",
@@ -27,3 +28,14 @@ stopifnot(setequal(signal_vars, names(val2bwlab)))
 
 sqc_signal_values = as.list(signal_vars)
 names(sqc_signal_values) = signal_vars
+
+get_default_signal_var = function(read_mode){
+  if(read_mode %in% c(sqc_read_modes$bigwig, sqc_read_modes$null)){
+    sqc_signal_values$raw
+  }else if (read_mode %in% c(sqc_read_modes$bam_SE, sqc_read_modes$bam_PE)){
+    sqc_signal_values$RPM
+  }else{
+    stop("Unrecognized read_mode: ", read_mode)
+  }
+}
+

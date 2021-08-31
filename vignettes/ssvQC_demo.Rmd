@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 ## Objective
@@ -20,6 +20,7 @@ This will be done using a variety of different datasets to demonstrate the flexi
 
 ```{r libs, warning=FALSE, message=FALSE}
 library(ssvQC)
+SQC_OPTIONS$SQC_FORCE_CACHE_OVERWRITE = TRUE
 ```
 
 ## Simple Replicate Comparison
@@ -48,8 +49,8 @@ As we'll see in the next section, this isn't a very good ssvQC configuration but
 Note the use of the $ accessor.  This is the primary intended way to access, meaning get or set, data in ssvQC object.
 
 ```{r h4 ac ssvQC config plot}
-# plot(sqc1$signal_config)
-# plot(sqc1$features_config)
+plot(sqc1$signal_config)
+plot(sqc1$features_config)
 ```
 
 The names are rather long and don't match between the signal and config files. The colors are also automatically selected but work fine with just 2 color groups like this.
@@ -62,9 +63,20 @@ Most ssvQC.plot* functions will run the matching ssvQC.prep* function as needed 
 
 ```{r h4 ac features}
 set.seed(0)
+#NEED TO TWEAK DEFAULT BEHAVIOR SO THIS IS SIMPLER
+sqc1$features_config$run_by = "All" #default would run the 2 sets of peaks separately, this will overlap and compare together
+sqc1$features_config$to_run = "All"
+sqc1$features_config$meta_data$rep = c("rep1", "rep2")
+sqc1$features_config$color_by = "rep" 
 sqc1$features_config$n_peaks = 100
 sqc1$features_config$consensus_fraction
 sqc1$features_config$consensus_n
+
+sqc1$signal_config$meta_data$rep = c("rep1", "rep2")
+sqc1$signal_config$to_run = "All"
+sqc1$signal_config$color_by = "rep" #default would run the 2 sets of peaks separately, this will overlap and compare together
+
+undebug(ssvQC:::prepFeatures)
 sqc1 = ssvQC.prepFeatures(sqc1) #ssvQC.plotFeatures would call this automatically.
 sqc1 = ssvQC.plotFeatures(sqc1)
 ```
@@ -105,10 +117,8 @@ names(sqc1$plots)
 First let's look at the average read pileup across assessed peaks.
 
 ```{r}
-sqc1$plots$signal$lines
+sqc1$plots$signal$lines$All_features$All_signal
 ```
-
-A big difference! The FRIP plots are very informative as to what's going on here.
 
 Now the signal clustered:
 
@@ -119,10 +129,14 @@ cowplot::plot_grid(
 )
 ```
 
-We can tweak a couple setting that impact the color scale limits of the heatmap and y-axis limits of the line plots.
+The default is to plot using RPM values and scale the plot to 0-10. We can tweak a couple setting that impact the color scale limits of the heatmap and y-axis limits of the line plots.
 
 ```{r heatmap2}
-sqc1$signal_config$lineplot_free_limits = TRUE
+sqc1$signal_config$lineplot_free_limits = FALSE
+sqc1$signal_config$plot_value = SQC_SIGNAL_VALUES$raw
+sqc1$signal_config$cluster_value = SQC_SIGNAL_VALUES$raw
+sqc1$signal_config$sort_value = SQC_SIGNAL_VALUES$raw
+
 sqc1$signal_config$heatmap_limit_values = c(0, 50)
 
 sqc1 = ssvQC.plotSignal(sqc1)
@@ -133,21 +147,11 @@ cowplot::plot_grid(
 )
 ```
 
-```{r heatmap3}
-sqc1$signal_config$cluster_value = SQC_SIGNAL_VALUES$linearQuantile
-sqc1$signal_config$sort_value = SQC_SIGNAL_VALUES$linearQuantile
-sqc1$signal_config$plot_value = SQC_SIGNAL_VALUES$linearQuantile
-sqc1$signal_config$heatmap_limit_values = NULL
+See how the raw value heatmap show what might look like differences between the reps?  This is due to the read depth being substanitally different.  We can see this in the reads plot.
 
-sqc1 = ssvQC.plotSignal(sqc1)
-
-cowplot::plot_grid(
-  sqc1$plots$signal$heatmaps$All_features$All_signal,
-  sqc1$plots$signal$heatmaps.lines$All_features$All_signal
-)
+```{r}
+sqc1$plots$reads$All_signal
 ```
-
-All peaks are not created equal! Some clusters have much stronger signal.  Also, some peaks look iffy in terms of spikiness/extremely high signal. It's hard to be certain only looking at the pulldown samples.
 
 ### SCC
 
@@ -158,9 +162,9 @@ cowplot::plot_grid(ncol = 2,
 )
 ```
 
-The good news is, neither peak set has peaks with high correlation at read length. That kind of peak is typically an artifact from over-amplification or just mapping to artifact prone regions of the genome (i.e. peri-centromere, rDNA, other repetitive or high copy-number regions).
+Neither peak set has peaks with high correlation at read length. This is good! That kind of peak is typically an artifact from over-amplification or just mapping to artifact prone regions of the genome (i.e. peri-centromere, rDNA, other repetitive or high copy-number regions).
 
-That said, the correlation at estimated fragment length isn't great though either. It averages .16 for rep2 when values of .6 to .8 are typical of high-quality data. The dots plot shows that all peaks fall into the same distribution (blob of dots), indicating the issue isn't a mix of low-quality and high-quality peaks, just generally low enrichment.
+The dots plot shows that the peaks have a spread of correlations.  This visualization can help reveal the presence of peaks that should be removed.
 
 ### FRIP
 
@@ -168,15 +172,14 @@ That said, the correlation at estimated fragment length isn't great though eithe
 sqc1$plots$reads$All_signal
 sqc1$plots$features$count$All_features
 sqc1$plots$FRIP$reads_per_peak
-sqc1$plots$FRIP$reads_per_peak
-sqc1$plots$FRIP$reads_per_peak
+sqc1$plots$FRIP$per_peak
 ```
 
-The FRIP (Fraction of Reads in Peaks) series of plots assesses the strenght of the signal enrichment.  Keep in mind we're only looking at a small sampling of peaks in this case so the total FRIP will be lower than expected. If the FRIP per peak plots show rough equivalence, that suggests the samples are of similar quality to one another. If that's true, and the read count per peak plots show an imbalance, and that imbalance holds in the mapped reads and peak count plots, that strongly indicates that more reads would be a benefit to the weaker replicate.
+The FRIP (Fraction of Reads in Peaks) series of plots assesses the strenght of the signal enrichment.  Keep in mind we're only looking at a small sampling of peaks in this case so the total FRIP will be lower than expected. If the FRIP per peak plots show rough equivalence, that suggests the samples are of similar quality to one another despite differences in read depth. If that's true, and the read count per peak plots show an imbalance, that strongly indicates that more reads would be a benefit to the weaker replicate.
 
 ## Batch Replicate Comparison
 
-For this next example we'll be working with more of the same dataset.  Where before we only considered teh H4K5AC data, here we'll look at 2 addtional H4 marks and ATAD2B, a transcription factor.
+For this next example we'll be working with more of the same dataset.  Where before we only considered the H4K5AC data, here we'll look at 2 addtional H4 marks and ATAD2B, a transcription factor.
 
 ```{r files2}
 in_dir = "/slipstream/galaxy/uploads/working/qc_framework/output_SF_mcf7.repeak"
@@ -252,7 +255,7 @@ Let's first repeat some plots from before.
 
 ```{r}
 cowplot::plot_grid(
-  sqc2$plots$signal$heatmaps$H4K5AC_features$H4K5AC_signal,
+  sqc2$plots$signal$heatmaps$H4K5AC_signal,
   sqc2$plots$signal$heatmaps.lines$H4K5AC_features$H4K5AC_signal
 )
 ```

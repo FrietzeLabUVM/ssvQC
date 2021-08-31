@@ -15,6 +15,7 @@
   options("SQC_CACHE_PATH" = "~/.cache")
   SQC_OPTIONS <<- new("SQC_OPTIONS")
   SQC_SIGNAL_VALUES <<- sqc_signal_values
+  SQC_READ_MODES <<- sqc_read_modes
 }
 
 setClass("SQC_OPTIONS", representation = list(
