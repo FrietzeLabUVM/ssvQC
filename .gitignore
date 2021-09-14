@@ -18,3 +18,5 @@ dev_object.ssvQC.plotSignal.Rds
 dev_corr.R
 *.txt
 *.csv
+*.Rds
+*.pdf

@@ -1,4 +1,31 @@
 
+.check_QcConfigFeatures = function(object){
+  errors <- character()
+  if(object@is_null){
+    return(TRUE)
+  }
+  #check attributes are present
+  if(is.null(object$meta_data[["name"]])){
+    msg = "'name' attribute must be present in meta_data"
+    errors = c(errors, msg)
+  }
+  if(is.null(object$meta_data[["name_split"]])){
+    msg = "'name_split' attribute must be present in meta_data"
+    errors = c(errors, msg)
+  }
+  #check attributes are valid
+  if(any(duplicated(object$meta_data[["name"]]))){
+    msg = paste0("'name' values must be unique. Following have been duplicated: ", paste(unique(object$meta_data$name[duplicated(object$meta_data$name)]), collapse = ", "))
+    errors = c(errors, msg)
+  }
+  if(any(duplicated(object$meta_data[["name_split"]]))){
+    msg = paste0("'name_split' values must be unique. Following have been duplicated: ", paste(unique(object$meta_data$name_split[duplicated(object$meta_data$name_split)]), collapse = ", "))
+    errors = c(errors, msg)
+  }
+  
+  if (length(errors) == 0) TRUE else errors
+}
+
 #' QcConfigFeatures
 #'
 #' @slot feature_load_FUN function.
@@ -19,17 +46,19 @@ setClass("QcConfigFeatures", contains = "QcConfig",
            overlap_extension = "numeric",
            assessment_gr = "list"
            
-         ))
+         ), 
+         validity = .check_QcConfigFeatures)
 
 setMethod("initialize","QcConfigFeatures", function(.Object,...){
   .Object <- callNextMethod()
-  validObject(.Object)
   .Object@loaded_features = list()
   .Object@overlap_gr = list()
   .Object@assessment_gr = list()
   
   .Object
 })
+
+
 
 #' @export
 setMethod("plot", "QcConfigFeatures", definition = function(x).plot_QcConfig(x))
@@ -125,6 +154,7 @@ setReplaceMethod("$", "QcConfigFeatures",
                            },
                            {warning(warn_msg)}
                    )
+                   validObject(x)
                    x
                  })
 
@@ -202,7 +232,7 @@ setReplaceMethod("$", "QcConfigFeatures",
 #' @rdname QcConfigFeatures
 #' @examples
 prepFeatures = function(object, bfc = new_cache()){
-  object@meta_data[[object@run_by]]
+  if(object@is_null) return(object)
   to_run = object@to_run
   for(tr in to_run){
     tr_name = paste0(tr, "_features")
@@ -355,8 +385,7 @@ QcConfigFeatures = function(config_df,
 #' @examples
 #' QcConfigFeatures.null()
 QcConfigFeatures.null = function(){
-  qc = suppressWarnings({QcConfigFeatures(data.frame(file = "null", stringsAsFactors = FALSE), process_features = FALSE)})
-  qc@is_null = TRUE
+  qc = suppressWarnings({QcConfigFeatures(data.frame(file = "null", stringsAsFactors = FALSE), process_features = FALSE, is_null = TRUE)})
   qc
 }
 

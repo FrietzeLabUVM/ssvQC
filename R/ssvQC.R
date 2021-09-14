@@ -306,7 +306,6 @@ setMethod("ssvQC.prepFragLens", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
   if(object@read_mode != "bam_SE"){
     stop("ssvQC.prepFragLens only appropriate for read_mode bam_SE")
   }
-  
   #bam specific independent of peaks
   
   sig_dt = as.data.table(object@meta_data)[, .(file, name)][order(file)]
