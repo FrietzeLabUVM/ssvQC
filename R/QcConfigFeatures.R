@@ -508,7 +508,8 @@ QcConfigFeatures.GRanges = function(query_gr,
             balance_groups = balance_groups,
             overlap_extension = overlap_extension,
             consensus_fraction = consensus_fraction,
-            consensus_n = consensus_n
+            consensus_n = consensus_n,
+            is_null = FALSE
   )
   
   #3 scenarios, list of GRanges to overlap, already overlapped GRanges with memb table in mcols, or single GRanges
@@ -635,7 +636,8 @@ QcConfigFeatures.files = function(file_paths,
             balance_groups = balance_groups,
             overlap_extension = overlap_extension,
             consensus_fraction = consensus_fraction,
-            consensus_n = consensus_n
+            consensus_n = consensus_n,
+            is_null = FALSE
   )
   if(process_features){
     obj = prepFeatures(obj)
