@@ -47,7 +47,12 @@ ClusteredSignal = function(signal_profile_dt,
     query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
     
     if(is.null(signal_profile_dt[[signal_var]])) stop("signal_var \"", signal_var, "\" not found in signal_data." )
-    clust_dt = seqsetvis::ssvSignalClustering(signal_profile_dt, nclust = nclust, facet_ = "name_split", max_cols = Inf, max_rows = Inf, fill_ = signal_var)
+    clust_dt = seqsetvis::ssvSignalClustering(signal_profile_dt, 
+                                              nclust = nclust, 
+                                              facet_ = "name_split", 
+                                              max_cols = Inf, 
+                                              max_rows = Inf, 
+                                              fill_ = signal_var)
     if(signal_var != signal_var.within){
       clust_dt = within_clust_sort(clust_dt = clust_dt, facet_ = "name_split", fill_ = signal_var.within)
     }

@@ -185,6 +185,9 @@ ssvQC.removeFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NUL
       message("Not all ids present in current assessment set.")
     }
   }
+  if(length(keep_ids) < 5){
+    stop("Currently, fewer than 5 regions are not allowed. This will be addressed in future versions.")
+  }
   
   keep_grs = assessed_grs[keep_ids]
   remv_grs = assessed_grs[remv_ids]

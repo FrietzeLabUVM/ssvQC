@@ -249,6 +249,10 @@ prepFeatures = function(object, bfc = new_cache()){
         bfc = bfc)
     }
     
+    if(length(object@overlap_gr[[tr_name]]) < 5){
+      stop("Currently, fewer than 5 regions are not allowed. This will be addressed in future versions.")
+    }
+    
     if(is.null(object@assessment_gr[[tr_name]])){
       object@assessment_gr[[tr_name]] = .process_assessment(
         feat_list = object@loaded_features[[tr_name]], 
@@ -259,6 +263,10 @@ prepFeatures = function(object, bfc = new_cache()){
         consensus_fraction = object@consensus_fraction, 
         consensus_n = object@consensus_n, 
         bfc = bfc)
+    }
+    
+    if(length(object@assessment_gr[[tr_name]]) < 5){
+      stop("Currently, fewer than 5 regions are not allowed. This will be addressed in future versions.")
     }
   }
   object
