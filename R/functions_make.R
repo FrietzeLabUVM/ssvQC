@@ -684,7 +684,6 @@ make_scc_dt.single = function(bam_file,
   }
   stopifnot(!any(duplicated(names(query_gr))))
   
-  
   message("cached results not found, gathering correlation info.")
   nper = ceiling(length(query_gr) / n_cores)
   grps = ceiling(seq_along(query_gr)/ nper)
@@ -697,6 +696,10 @@ make_scc_dt.single = function(bam_file,
     k = grps == g
     crossCorrByRle(bam_file, query_gr[k], fragment_sizes = frag_sizes, read_length = rl, ...)
   })
+  # if(grepl("PDX2_GFP_STAT5_r2_S30", bam_file)){
+  #   browser()  
+  # }
+  
   peak_strand_corr = rbindlist(lres)
   corr_res =   gather_metrics(peak_strand_corr, rl)
   
