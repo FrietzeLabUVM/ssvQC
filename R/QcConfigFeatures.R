@@ -715,7 +715,6 @@ QcConfigFeatures.parse = function(feature_config_file,
 #' @param process_features if TRUE, features are loaded and overlapped to generate assement regions as part of creating QcConfigFeatures object
 #'
 #' @return
-#' @export
 #'
 #' @examples
 #' np_files = dir(system.file(package = "ssvQC", "extdata"), pattern = "Peak$", full.names = TRUE)

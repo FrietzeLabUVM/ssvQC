@@ -4,6 +4,7 @@
 \name{QcConfigSignal-class}
 \alias{QcConfigSignal-class}
 \alias{QcConfigSignal}
+\alias{QcConfigSignal.null}
 \alias{QcConfigSignal.parse}
 \alias{QcConfigSignal.files}
 \alias{fetch_signal_at_features}
@@ -20,15 +21,17 @@ QcConfigSignal(
   read_mode = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
   fetch_options = list(),
-  cluster_value = signal_vars[1],
+  cluster_value = NULL,
   linearQuantile_cutoff = 0.98,
-  sort_value = signal_vars[1],
+  sort_value = NULL,
   sort_method = c("hclust", "sort")[2],
-  plot_value = signal_vars[1],
-  heatmap_limit_values = NULL,
-  lineplot_free_limits = FALSE,
+  plot_value = NULL,
+  heatmap_limit_values = c(0, 10),
+  lineplot_free_limits = TRUE,
   is_null = FALSE
 )
+
+QcConfigSignal.null()
 
 QcConfigSignal.parse(signal_config_file)
 
@@ -43,9 +46,10 @@ QcConfigSignal.files(
   group_colors = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
   read_mode = NULL,
-  cluster_value = signal_vars[1],
+  cluster_value = NULL,
   linearQuantile_cutoff = 0.98,
-  sort_value = signal_vars[1],
+  sort_value = NULL,
+  plot_value = NULL,
   sort_method = c("hclust", "sort")[2]
 )
 
@@ -99,6 +103,8 @@ QcConfigSignal.save_config(object, file)
 \value{
 
 
+QcConfigSignal object
+
 
 
 a QcConfigSignal object
@@ -111,6 +117,8 @@ a QcConfigSignal object
 QcConfigSignal
 
 QcConfigSignal
+
+QcConfigSignal null placeholder
 
 QcConfigSignal.files
 }
@@ -146,6 +154,7 @@ sig_conf = QcConfigSignal(bam_config_df)
 bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 bigwig_config_df = .parse_config_body(bigwig_config_file)
 sig_conf.bw = QcConfigSignal(bigwig_config_df)
+QcConfigSignal.null()
 bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 QcConfigSignal.parse(bam_config_file)
 

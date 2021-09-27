@@ -352,6 +352,13 @@ QcConfigSignal = function(config_df,
       is_null = is_null)
 }
 
+#' QcConfigSignal null placeholder
+#'
+#' @return QcConfigSignal object
+#' @export
+#' @rdname QcConfigSignal
+#' @examples
+#' QcConfigSignal.null()
 QcConfigSignal.null = function(){
   qc = suppressWarnings({QcConfigSignal(data.frame(file = "null", stringsAsFactors = FALSE))})
   qc@is_null = TRUE

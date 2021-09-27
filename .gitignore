@@ -14,9 +14,9 @@ example.*
 dev.spp.R
 dev_spp.R
 sts_dev.save
-dev_object.ssvQC.plotSignal.Rds
-dev_corr.R
+dev_*
 *.txt
 *.csv
 *.Rds
 *.pdf
+dev_debug_empty_SCC.R
