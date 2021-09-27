@@ -3,10 +3,7 @@
 #' @rdname ssvQC
 setGeneric("ssvQC.prepFRIP", function(object){standardGeneric("ssvQC.prepFRIP")})
 setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
-  if(length(object@features_config$assessment_features) == 0){
-    object = ssvQC.prepFeatures(object)
-  }
-  
+  object = ssvQC.prepFetch(object)
   feature_names = names(object@features_config$assessment_features)
   names(feature_names) = feature_names
   FRIP_data = lapply(feature_names, function(name){
