@@ -23,7 +23,6 @@ setClass("QcConfig",
 setMethod("initialize","QcConfig", function(.Object,...){
     .Object <- callNextMethod()
     validObject(.Object)
-    .Object@is_null = FALSE
     .Object
 })
 
@@ -182,17 +181,23 @@ setMethod("QcScaleFill", c("QcConfig"), function(object){
 }
 
 .plot_QcConfig = function(qc){
-    plot_dt = as.data.table(qc@meta_data)
-    plot_dt[, y := rev(seq_len(.N)), c(qc@run_by)]
-    ggplot(plot_dt, aes_string(x = qc@run_by, y = "y", fill = qc@color_by, label = "name_split")) +
-        geom_label() +
-        scale_fill_manual(values = qc@color_mapping) +
-        theme(panel.background = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
-        labs(y = "") +
-        guides(
-            fill = guide_legend(
-                override.aes = aes(label = "")
-            ))
+    if(qc@is_null){
+        msg = "This QcConfig is a NULL placeholder."
+        ggplot() + labs(title = "This QcConfig is a NULL placeholder.")
+    }else{
+        plot_dt = as.data.table(qc@meta_data)
+        plot_dt[, y := rev(seq_len(.N)), c(qc@run_by)]
+        ggplot(plot_dt, aes_string(x = qc@run_by, y = "y", fill = qc@color_by, label = "name_split")) +
+            geom_label() +
+            scale_fill_manual(values = qc@color_mapping) +
+            theme(panel.background = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
+            labs(y = "") +
+            guides(
+                fill = guide_legend(
+                    override.aes = aes(label = "")
+                ))
+    }
+    
 }
 
 #' @export

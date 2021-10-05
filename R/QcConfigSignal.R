@@ -1,7 +1,11 @@
 
 check_QcConfigSignal = function(object){
   errors <- character()
-  
+  #is_null can't be invalid
+  if(object@is_null){
+    return(TRUE)
+  }
+  #read_mode sensitive checks.
   if(grepl("bam", object@read_mode)){#bam checks
     
   }else{#bigwig checks
@@ -11,6 +15,39 @@ check_QcConfigSignal = function(object){
     if(object@sort_value == "RPM"){
       errors = c(errors, "sort_value cannot be RPM for bigwig files.")
     }
+  }
+  #check attributes are present
+  if(is.null(object$meta_data[["name"]])){
+    msg = "'name' attribute must be present in meta_data"
+    errors = c(errors, msg)
+  }
+  if(is.null(object$meta_data[["name_split"]])){
+    msg = "'name_split' attribute must be present in meta_data"
+    errors = c(errors, msg)
+  }
+  #check attributes are valid
+  if(any(duplicated(object$meta_data[["name"]]))){
+    msg = paste0("'name' values must be unique. Following have been duplicated: ", paste(unique(object$meta_data$name[duplicated(object$meta_data$name)]), collapse = ", "))
+    errors = c(errors, msg)
+  }
+  if(any(duplicated(object$meta_data[["name_split"]]))){
+    msg = paste0("'name_split' values must be unique. Following have been duplicated: ", paste(unique(object$meta_data$name_split[duplicated(object$meta_data$name_split)]), collapse = ", "))
+    errors = c(errors, msg)
+  }
+  #check to_run and reference
+  if(!all(object@to_run %in% object@meta_data[[object@run_by]])){
+    msg = paste0("Items in to_run are missing from '", object@run_by, "'. Missing:\n",
+                 paste0(setdiff(object@to_run, object@meta_data[[object@run_by]]), collapse = "\n"))
+    errors = c(errors, msg)
+  }
+  if(!all(object@to_run_reference %in% object@meta_data[[object@run_by]])){
+    msg = paste0("Items in to_run_reference are missing from '", object@run_by, "'. Missing:\n",
+                 paste0(setdiff(object@to_run_reference, object@meta_data[[object@run_by]]), collapse = "\n"))
+    errors = c(errors, msg)
+  }
+  if(length(object@to_run) == 0){
+    msg = "Length of to_run must be greater than 1 or nothing will be run."
+    errors = c(errors, msg)
   }
   
   if (length(errors) == 0) TRUE else errors
@@ -50,7 +87,6 @@ setClass("QcConfigSignal", contains = "QcConfig",
 
 setMethod("initialize","QcConfigSignal", function(.Object,...){
   .Object <- callNextMethod()
-  validObject(.Object)
   .Object
 })
 
@@ -173,12 +209,34 @@ setReplaceMethod("$", "QcConfigSignal",
                            },
                            run_by = {
                              x@run_by = value
+                             if(!all(x@to_run %in% x@meta_data[[x@run_by]])){
+                               message("Updating to_run to all items in '", x@run_by, "'.")
+                               if(is.factor(x@meta_data[[x@run_by]])){
+                                 x@to_run = levels(x@meta_data[[x@run_by]])
+                               }else{
+                                 x@to_run = unique(x@meta_data[[x@run_by]])
+                               }
+                             }
+                             if(!all(x@to_run_reference %in% x@meta_data[[x@run_by]])){
+                               message("Clearing to_run_reference.")
+                               x@to_run_reference = character()
+                             }
                            },
                            to_run = {
                              x@to_run = value
+                             if(any(x@to_run %in% x@to_run_reference)){
+                               message("Removing to_run items from to_run_reference. Removed:\n",
+                                       paste0(intersect(x@to_run_reference, x@to_run), collapse = "\n"))
+                               x@to_run_reference = setdiff(x@to_run_reference, x@to_run)
+                             }
                            },
                            to_run_reference = {
                              x@to_run_reference = value
+                             if(any(x@to_run_reference %in% x@to_run)){
+                               message("Removing to_run_reference items from to_run. Removed:\n",
+                                       paste0(intersect(x@to_run_reference, x@to_run), collapse = "\n"))
+                               x@to_run = setdiff(x@to_run, x@to_run_reference)
+                             }
                            },
                            color_by = {
                              x@color_by = value
@@ -206,6 +264,7 @@ setReplaceMethod("$", "QcConfigSignal",
                            },
                            warning(warn_msg)
                    )
+                   validObject(x)
                    x
                  })
 
@@ -360,8 +419,7 @@ QcConfigSignal = function(config_df,
 #' @examples
 #' QcConfigSignal.null()
 QcConfigSignal.null = function(){
-  qc = suppressWarnings({QcConfigSignal(data.frame(file = "null", stringsAsFactors = FALSE))})
-  qc@is_null = TRUE
+  qc = suppressWarnings({QcConfigSignal(data.frame(file = "null", stringsAsFactors = FALSE), is_null = TRUE)})
   qc
 }
 
@@ -445,7 +503,7 @@ QcConfigSignal.parse = function(signal_config_file){
                    plot_value = plot_value,
                    heatmap_limit_values = heatmap_limit_values,
                    lineplot_free_limits = lineplot_free_limits,
-                   is_null = TRUE)
+                   is_null = is_null)
   }
   do.call(tfun, c(list(config_dt = signal_config_dt), cfg_vals))
 }
@@ -605,7 +663,8 @@ setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definit
         plot_value = x@plot_value,
         fetch_options = x@fetch_options,
         heatmap_limit_values = x@heatmap_limit_values,
-        lineplot_free_limits = x@lineplot_free_limits
+        lineplot_free_limits = x@lineplot_free_limits, 
+        is_null = FALSE
     )
   })
 })

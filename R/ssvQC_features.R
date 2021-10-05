@@ -7,17 +7,17 @@ setMethod("ssvQC.prepFeatures", "ssvQC.complete", function(object){
   object
 })
 setMethod("ssvQC.prepFeatures", "ssvQC.featureOnly", function(object){
-  object@features_config = prepFeatures(object@features_config)
+  object@features_config = .prepFeatures(object@features_config)
   object
 })
 setMethod("ssvQC.prepFeatures", "ssvQC.signalOnly", function(object){
   stop("Cannot run prepFeatures on ssvQC with no QcConfigFeature component")
 })
 setMethod("ssvQC.prepFeatures", c("QcConfigFeatures", "BiocFileCache"), function(object, bfc){
-  prepFeatures(object, bfc)
+  .prepFeatures(object, bfc)
 })
 setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
-  prepFeatures(object)
+  .prepFeatures(object)
 })
 
 .plotFeatures = function(object, force_euler = FALSE){
@@ -36,8 +36,7 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
     peak_grs = feat_config$loaded_features[[feat_nam]]
     peak_dt = data.table(N = lengths(peak_grs), name_split = names(peak_grs))
     peak_dt = merge(as.data.table(feat_config@meta_data), peak_dt, by = "name_split")
-    
-    
+    peak_dt$name_split = factor(peak_dt$name_split, levels = levels(feat_config@meta_data$name_split))
     
     setkey(peak_dt, "name_split")
     out = list()
@@ -45,7 +44,8 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
     p_peak_count = ggplot(peak_dt, aes_string(x = "name_split", y = "N", fill = feat_config@color_by)) +
       geom_bar(stat = "identity", color = "black") +
       scale_fill_manual(values = feat_config@color_mapping) +
-      labs(x = "", y = "feature count", title = feat_label)
+      labs(x = "", y = "feature count", title = feat_label) +
+      scale_y_continuous(labels = function(x)paste(x/1e3, " k"))
     
     olap_gr = feat_config$overlapped_features[[feat_nam]]
     #colors assigned by color_by in order of GRanges names

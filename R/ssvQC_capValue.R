@@ -1,26 +1,15 @@
 ##CapValue used by linearQuantile
 
-#' @export
-#' @rdname ssvQC
-setGeneric("ssvQC.prepCapValue", function(object, query, bfc, use_matched){standardGeneric("ssvQC.prepCapValue")})
-setMethod("ssvQC.prepCapValue", "ssvQC.complete", function(object){
-  object@signal_config = ssvQC.prepCapValue(object@signal_config, object@features_config, object@bfc, object@matched_only)
-  object
-})
-setMethod("ssvQC.prepCapValue", "ssvQC.featureOnly", function(object){
-  stop("Cannot run prepCapValue on ssvQC with no QcConfigSignal component")
-})
-setMethod("ssvQC.prepCapValue", "ssvQC.signalOnly", function(object){
-  stop("Cannot run prepCapValue on ssvQC with no QcConfigFeatures component")
-})
-setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFileCache"), function(object, query, bfc, use_matched){
+.prepCapValue = function(object, query, bfc, use_matched){
   #bam specific independent of peaks
   if(is.null(object@meta_data$fragLens)){
     sig_dt = as.data.table(object@meta_data)[, .(file, name)][order(file)]
   }else{
     sig_dt = as.data.table(object@meta_data)[, .(file, name, fragLens)][order(file)]  
   }
-  object = ssvQC.prepMappedReads(object)
+  if(object@read_mode != SQC_READ_MODES$bigwig){
+    object = ssvQC.prepMappedReads(object)  
+  }
   
   setkey(sig_dt, "name")
   peak_dt = as.data.table(query@meta_data)[, .(file, name)][order(file)]
@@ -143,4 +132,21 @@ setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFil
     object@meta_data$RPM_cap_value = cap_dt[.(object@meta_data$name)]$y_RPM_cap_value  
   }
   object
+}
+
+#' @export
+#' @rdname ssvQC
+setGeneric("ssvQC.prepCapValue", function(object, query, bfc, use_matched){standardGeneric("ssvQC.prepCapValue")})
+setMethod("ssvQC.prepCapValue", "ssvQC.complete", function(object){
+  object@signal_config = ssvQC.prepCapValue(object@signal_config, object@features_config, object@bfc, object@matched_only)
+  object
+})
+setMethod("ssvQC.prepCapValue", "ssvQC.featureOnly", function(object){
+  stop("Cannot run prepCapValue on ssvQC with no QcConfigSignal component")
+})
+setMethod("ssvQC.prepCapValue", "ssvQC.signalOnly", function(object){
+  stop("Cannot run prepCapValue on ssvQC with no QcConfigFeatures component")
+})
+setMethod("ssvQC.prepCapValue", c("QcConfigSignal", "QcConfigFeatures", "BiocFileCache"), function(object, query, bfc, use_matched){
+  .prepCapValue(object, query, bfc, use_matched)
 })

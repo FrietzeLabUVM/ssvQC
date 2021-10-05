@@ -18,6 +18,9 @@ setClass("ssvQC.featureOnly", contains = "ssvQC")
 setClass("ssvQC.signalOnly", contains = "ssvQC")
 setClass("ssvQC.complete", contains = "ssvQC")
 
+setClass("ssvQC.signalOnly.bw", contains = "ssvQC.signalOnly")
+setClass("ssvQC.complete.bw", contains = "ssvQC.complete")
+
 setMethod("initialize","ssvQC", function(.Object,...){
   .Object <- callNextMethod()
   validObject(.Object)
@@ -162,16 +165,29 @@ ssvQC = function(features_config = NULL,
   dir.create(out_dir, showWarnings = FALSE)
   
   if(!is.null(features_config) & !is.null(signal_config)){
-    new("ssvQC.complete",
-        features_config = features_config,
-        signal_config = signal_config,
-        signal_data = list(),
-        other_data = list(),
-        out_dir = out_dir,
-        bfc = bfc,
-        saving_enabled = TRUE,
-        matched_only = matched_only
-    )
+    if(signal_config@read_mode == SQC_READ_MODES$bigwig){
+      new("ssvQC.complete.bw",
+          features_config = features_config,
+          signal_config = signal_config,
+          signal_data = list(),
+          other_data = list(),
+          out_dir = out_dir,
+          bfc = bfc,
+          saving_enabled = TRUE,
+          matched_only = matched_only
+      )
+    }else{
+      new("ssvQC.complete",
+          features_config = features_config,
+          signal_config = signal_config,
+          signal_data = list(),
+          other_data = list(),
+          out_dir = out_dir,
+          bfc = bfc,
+          saving_enabled = TRUE,
+          matched_only = matched_only
+      )  
+    }
   }else if(!is.null(features_config)){
     new("ssvQC.featureOnly",
         features_config = features_config,
@@ -184,16 +200,29 @@ ssvQC = function(features_config = NULL,
         matched_only = matched_only
     )
   }else if(!is.null(signal_config)){
-    new("ssvQC.signalOnly",
-        features_config = QcConfigFeatures.null(),
-        signal_config = signal_config,
-        signal_data = list(),
-        other_data = list(),
-        out_dir = out_dir,
-        bfc = bfc,
-        saving_enabled = TRUE,
-        matched_only = matched_only
-    )
+    if(signal_config@read_mode == SQC_READ_MODES$bigwig){
+      new("ssvQC.signalOnly.bw",
+          features_config = QcConfigFeatures.null(),
+          signal_config = signal_config,
+          signal_data = list(),
+          other_data = list(),
+          out_dir = out_dir,
+          bfc = bfc,
+          saving_enabled = TRUE,
+          matched_only = matched_only
+      )
+    }else{
+      new("ssvQC.signalOnly",
+          features_config = QcConfigFeatures.null(),
+          signal_config = signal_config,
+          signal_data = list(),
+          other_data = list(),
+          out_dir = out_dir,
+          bfc = bfc,
+          saving_enabled = TRUE,
+          matched_only = matched_only
+      )
+    }
   }else{
     stop("At least one of features_config or signal_config must be specified. This should have been caught earlier.")
   }
@@ -231,7 +260,10 @@ ssvQC = function(features_config = NULL,
     if(!"QcConfigSignal" %in% class(signal_config)){
       stop("signal_config must be either a QcConfigSignal object or the path to valid configuration file to create one.")
     }  
-    stopifnot(file.exists(signal_config@meta_data$file))
+    f_exists = file.exists(as.character(signal_config@meta_data$file))
+    if(!all(f_exists)){
+      stop("Not all signal files found! Missing:\n", paste(signal_config@meta_data$file[!f_exists], collapse = "\n"))
+    }
   }
   signal_config
 }
@@ -269,12 +301,28 @@ setMethod("ssvQC.runAll", "ssvQC.complete", function(object){
   object = ssvQC.plotCorrelation(object)
   object
 })
+setMethod("ssvQC.runAll", "ssvQC.complete.bw", function(object){
+  message("run+plot features overlaps")
+  object = ssvQC.plotFeatures(object)
+  message("run signal normalization")
+  object = ssvQC.prepCapValue(object)
+  message("plot signal")
+  object = ssvQC.plotSignal(object)
+  message("plot correlation")
+  object = ssvQC.plotCorrelation(object)
+  object
+})
+
 setMethod("ssvQC.runAll", "ssvQC.featureOnly", function(object){
   object = ssvQC.plotFeatures(object)
   object
 })
 setMethod("ssvQC.runAll", "ssvQC.signalOnly", function(object){
   object = ssvQC.plotMappedReads(object)
+  object
+})
+setMethod("ssvQC.runAll", "ssvQC.signalOnly.bw", function(object){
+  message("Nothing to do with signalOnly for bigwigs.")
   object
 })
 

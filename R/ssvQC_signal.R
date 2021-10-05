@@ -1,8 +1,5 @@
-##Signal
-#' @export
-#' @rdname ssvQC
-setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
-setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+
+.prepSignal = function(object){
   object = ssvQC.prepFetch(object)
   object@signal_data = lapply(object@features_config$assessment_features, function(query_gr){
     sig_configs = .make_query_signal_config(object@signal_config)
@@ -15,6 +12,14 @@ setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
     })
   })
   object
+}
+
+##Signal
+#' @export
+#' @rdname ssvQC
+setGeneric("ssvQC.prepSignal", function(object){standardGeneric("ssvQC.prepSignal")})
+setMethod("ssvQC.prepSignal", "ssvQC.complete", function(object){
+  .prepSignal(object)
 })
 setMethod("ssvQC.prepSignal", "ssvQC.featureOnly", function(object){
   stop("Cannot run prepSignal on ssvQC with no QcConfigSignal component")
@@ -49,10 +54,27 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
                                                         FUN_format_heatmap = function(p){
                                                           p + labs(x = x_label, fill = value_label, title = main_title)
                                                         })
-    clust_sig.agg = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ), y_RPM_linQ = mean(y_RPM_linQ)), 
-                                          c("x", extra_vars)]
-    clust_sig.agg_per_cluster = clust_sig@signal_data[, .(y = mean(y), y_RPM = mean(y_RPM), y_linQ = mean(y_linQ), y_RPM_linQ = mean(y_RPM_linQ)), 
-                                                      c("x", "cluster_id", extra_vars)]
+    if(is.null(clust_sig@signal_data$y_RPM)){
+      clust_sig.agg = clust_sig@signal_data[, .(y = mean(y), 
+                                                y_linQ = mean(y_linQ)), 
+                                            c("x", extra_vars)]
+      clust_sig.agg_per_cluster = clust_sig@signal_data[, .(y = mean(y),
+                                                            y_linQ = mean(y_linQ)), 
+                                                        c("x", "cluster_id", extra_vars)]
+    }else{
+      clust_sig.agg = clust_sig@signal_data[, .(y = mean(y), 
+                                                y_RPM = mean(y_RPM), 
+                                                y_linQ = mean(y_linQ), 
+                                                y_RPM_linQ = mean(y_RPM_linQ)), 
+                                            c("x", extra_vars)]
+      clust_sig.agg_per_cluster = clust_sig@signal_data[, .(y = mean(y),
+                                                            y_RPM = mean(y_RPM), 
+                                                            y_linQ = mean(y_linQ), 
+                                                            y_RPM_linQ = mean(y_RPM_linQ)), 
+                                                        c("x", "cluster_id", extra_vars)]
+    }
+    
+    
     
     p_line = ggplot(clust_sig.agg, 
                     aes_string(x = "x", 

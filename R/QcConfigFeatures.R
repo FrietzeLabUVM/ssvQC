@@ -1,6 +1,7 @@
 
 .check_QcConfigFeatures = function(object){
   errors <- character()
+  #is_null can't be invalid
   if(object@is_null){
     return(TRUE)
   }
@@ -22,7 +23,21 @@
     msg = paste0("'name_split' values must be unique. Following have been duplicated: ", paste(unique(object$meta_data$name_split[duplicated(object$meta_data$name_split)]), collapse = ", "))
     errors = c(errors, msg)
   }
-  
+  #check to_run and reference
+  if(!all(object@to_run %in% object@meta_data[[object@run_by]])){
+    msg = paste0("Items in to_run are missing from '", object@run_by, "'. Missing:\n",
+                 paste0(setdiff(object@to_run, object@meta_data[[object@run_by]]), collapse = "\n"))
+    errors = c(errors, msg)
+  }
+  if(!all(object@to_run_reference %in% object@meta_data[[object@run_by]])){
+    msg = paste0("Items in to_run_reference are missing from '", object@run_by, "'. Missing:\n",
+                 paste0(setdiff(object@to_run_reference, object@meta_data[[object@run_by]]), collapse = "\n"))
+    errors = c(errors, msg)
+  }
+  if(length(object@to_run) == 0){
+    msg = "Length of to_run must be greater than 1 or nothing will be run."
+    errors = c(errors, msg)
+  }
   if (length(errors) == 0) TRUE else errors
 }
 
@@ -118,15 +133,36 @@ setReplaceMethod("$", "QcConfigFeatures",
                              x@assessment_gr = list()
                              x@consensus_fraction = value
                            },
-                           #TODO add checks, call validity?
                            run_by = {
                              x@run_by = value
+                             if(!all(x@to_run %in% x@meta_data[[x@run_by]])){
+                               message("Updating to_run to all items in '", x@run_by, "'.")
+                               if(is.factor(x@meta_data[[x@run_by]])){
+                                 x@to_run = levels(x@meta_data[[x@run_by]])
+                               }else{
+                                 x@to_run = unique(x@meta_data[[x@run_by]])
+                               }
+                             }
+                             if(!all(x@to_run_reference %in% x@meta_data[[x@run_by]])){
+                               message("Clearing to_run_reference.")
+                               x@to_run_reference = character()
+                             }
                            },
                            to_run = {
                              x@to_run = value
+                             if(any(x@to_run %in% x@to_run_reference)){
+                               message("Removing to_run items from to_run_reference. Removed:\n",
+                                       paste0(intersect(x@to_run_reference, x@to_run), collapse = "\n"))
+                               x@to_run_reference = setdiff(x@to_run_reference, x@to_run)
+                             }
                            },
                            to_run_reference = {
                              x@to_run_reference = value
+                             if(any(x@to_run_reference %in% x@to_run)){
+                               message("Removing to_run_reference items from to_run. Removed:\n",
+                                       paste0(intersect(x@to_run_reference, x@to_run), collapse = "\n"))
+                               x@to_run = setdiff(x@to_run, x@to_run_reference)
+                             }
                            },
                            color_by = {
                              x@color_by = value
@@ -231,8 +267,14 @@ setReplaceMethod("$", "QcConfigFeatures",
 #' @return
 #' @rdname QcConfigFeatures
 #' @examples
-prepFeatures = function(object, bfc = new_cache()){
+.prepFeatures = function(object, bfc = new_cache()){
   if(object@is_null) return(object)
+  
+  if(length(object$assessment_features) > 0){
+    # message("Not prepping features.  Call resetFeatures() on object to reset before prepping.")
+    return(object)
+  }
+  
   to_run = object@to_run
   for(tr in to_run){
     tr_name = paste0(tr, "_features")
@@ -270,6 +312,15 @@ prepFeatures = function(object, bfc = new_cache()){
     }
   }
   object
+}
+
+#' @param object 
+#'
+#' @return
+#' @rdname QcConfigFeatures
+#' @examples
+resetFeatures = function(object){
+  stop("NYI")
 }
 
 #' QcConfigFeatures
@@ -379,7 +430,7 @@ QcConfigFeatures = function(config_df,
             consensus_n = consensus_n,
             is_null = is_null)
   if(process_features){
-    obj = prepFeatures(obj)
+    obj = .prepFeatures(obj)
   }
   obj
   
@@ -553,7 +604,7 @@ QcConfigFeatures.GRanges = function(query_gr,
     }
   
   if(process_features){
-    obj = prepFeatures(obj)
+    obj = .prepFeatures(obj)
   }
   obj
 }
@@ -648,7 +699,7 @@ QcConfigFeatures.files = function(file_paths,
             is_null = FALSE
   )
   if(process_features){
-    obj = prepFeatures(obj)
+    obj = .prepFeatures(obj)
   }
   obj
 }

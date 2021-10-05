@@ -17,7 +17,6 @@ sqc.signal = ssvQC(signal_config = bam_config)
 sqc.feature = ssvQC(features_config = features_config)
 
 sqc.complete.prepFeatures = suppressWarnings({ssvQC.prepFeatures(sqc.complete)})
-
 sqc.complete.prepSignal = suppressWarnings({ssvQC.prepSignal(sqc.complete)})
 
 sqc.complete.ran = ssvQC.runAll(sqc.complete)
