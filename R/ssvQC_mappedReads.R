@@ -20,8 +20,8 @@ setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
   if(grepl("bam", object@read_mode)){
     object@meta_data$mapped_reads = sapply(object@meta_data$file, get_mapped_reads)
   }else{
-    warning("ssvQC.prepMappedReads called on bigwig read_mode QcConfigSignal.")
-    object@meta_data$mapped_reads = NA
+    # warning("ssvQC.prepMappedReads called on bigwig read_mode QcConfigSignal.")
+    # object@meta_data$mapped_reads = NA
   }
   object
 })

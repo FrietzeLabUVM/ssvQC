@@ -20,3 +20,4 @@ dev_*
 *.Rds
 *.pdf
 dev_debug_empty_SCC.R
+*.png
