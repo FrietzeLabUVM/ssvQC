@@ -1,7 +1,7 @@
 Package: ssvQC
 Type: Package
 Title: QC for enrichment based NGS
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: person("Joseph R", "Boyd", email = "jrboyd@uvm.edu",
                   role = c("aut", "cre"))
 Description: Peak comparison augmented with signal.  Fraction of Reads in Peaks (FRIP). Strand Cross-Correlation (SCC)
@@ -42,5 +42,5 @@ Imports:
     S4Vectors,
     stats,
     UpSetR
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 biocViews: Software, ChIPSeq, MultipleComparison, Sequencing, Visualization

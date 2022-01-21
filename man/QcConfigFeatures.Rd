@@ -3,7 +3,8 @@
 \docType{class}
 \name{QcConfigFeatures-class}
 \alias{QcConfigFeatures-class}
-\alias{prepFeatures}
+\alias{.prepFeatures}
+\alias{resetFeatures}
 \alias{QcConfigFeatures}
 \alias{QcConfigFeatures.null}
 \alias{QcConfigFeatures.files}
@@ -11,7 +12,9 @@
 \alias{QcConfigFeatures.save_config}
 \title{QcConfigFeatures}
 \usage{
-prepFeatures(object, bfc = new_cache())
+.prepFeatures(object, bfc = new_cache())
+
+resetFeatures(object)
 
 QcConfigFeatures(
   config_df,
@@ -104,6 +107,8 @@ impact on the configuration.}
 \item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
 }
 \value{
+
+
 
 
 QcConfigFeatures object

@@ -73,6 +73,15 @@ setMethod("plot", "ssvQC", definition = function(x).plot_ssvQC(x))
 #' @examples
 setMethod("show", "ssvQC", definition = function(object).show_ssvQC(object))
 
+#' ssvQC.save_config
+#'
+#' @param object A ssvQC object
+#' @param file A .features.csv and .signal.csv file will be written with this prefix.
+#'
+#' @return invisibly returns config file paths.
+#' @export
+#'
+#' @examples
 ssvQC.save_config = function(object, file){
   feature_file = paste0(sub(".csv", "",  file), ".features.csv")
   signal_file = paste0(sub(".csv", "",  file), ".signal.csv")
