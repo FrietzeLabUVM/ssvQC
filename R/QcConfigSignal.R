@@ -650,7 +650,7 @@ setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definit
     new("QcConfigSignal",
         meta_data =  sel_meta_df,
         run_by = x@run_by,
-        to_run = x@to_run,
+        to_run = setdiff(sel_meta_df[[x@run_by]], x@to_run_reference), #remove empty levels from run_by
         to_run_reference = x@to_run_reference,
         color_by = x@color_by,
         color_mapping = x@color_mapping,

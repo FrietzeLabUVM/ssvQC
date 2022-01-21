@@ -5,4 +5,4 @@ library(seqsetvis)
 library(data.table)
 
 ## test package
-test_check(package = "seqqc")
+test_check(package = "ssvQC")
