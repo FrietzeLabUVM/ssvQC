@@ -204,6 +204,16 @@ get_feature_file_load_function = function(feature_files){
   my_df
 }
 
+.enforce_found_order = function(my_df){
+  for(var in colnames(my_df)){
+    if(is.character(my_df[[var]])){
+      if(var != "file")
+        my_df[[var]] = factor(my_df[[var]], levels = unique(my_df[[var]]))
+    }
+  }
+  my_df
+}
+
 
 #' Title
 #'
@@ -217,6 +227,7 @@ get_feature_file_load_function = function(feature_files){
   config_dt = as.data.table(read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE))
   config_dt = .enforce_file_var(config_dt)
   config_dt = .enforce_name_var(config_dt)
+  config_dt = .enforce_found_order(config_dt)
   #move file to first column
   config_dt = config_dt[, colnames(config_dt)[order(colnames(config_dt) != "file")], with = FALSE]
   config_dt
