@@ -457,11 +457,7 @@ make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), 
     frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(intersect(aes_vars, colnames(frip_dt)), "sample"), with = FALSE]), by = name_var)
     
     message("fetch total mapped reads...")
-    mapped_counts = sapply(query_dt$file, function(f){
-      stats = Rsamtools::idxstatsBam(f)
-      stats = subset(stats, grepl("chr[0-9XY]+$", seqnames ))
-      sum(stats[,3])
-    })
+    mapped_counts = sapply(query_dt$file, get_mapped_reads)
     frip_dt$mapped_reads = mapped_counts[frip_dt$sample]
     frip_dt[, frip := N/mapped_reads]
     
