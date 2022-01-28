@@ -424,9 +424,16 @@ make_centered_query_gr = function(query_dt, query_gr, view_size = NULL, fetch_fu
 #' query_gr = seqsetvis::easyLoad_bed(peak_file)[[1]]
 #'
 #' make_frip_dt(bam_file, query_gr)
-make_frip_dt = function(query_dt, query_gr, n_cores = getOption("mc.cores", 1), name_lev = NULL, name_var = "name_split", color_var = name_var, bfc = new_cache()){
+make_frip_dt = function(query_dt, 
+                        query_gr, 
+                        n_cores = getOption("mc.cores", 1), 
+                        name_lev = NULL, 
+                        name_var = "name_split", 
+                        color_var = name_var, 
+                        bfc = new_cache(),
+                        force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)){
   treatment = qname = id = frip = N = mapped_reads = V1 = NULL#global data.table bindings
-  bfcif(bfc, digest_args(to_ignore = c("bfc", "n_cores")), function(){
+  bfcif(bfc, digest_args(to_ignore = c("bfc", "n_cores")), force_overwrite = force_overwrite, function(){
     aes_vars = union(name_var, color_var)
     if(is.character(query_dt)){
       query_dt = data.table(file = query_dt)

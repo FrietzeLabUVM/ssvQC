@@ -1,14 +1,5 @@
 
 
-#' ClusteredSignal
-#'
-#' @slot signal_data 
-#' @slot query_gr 
-#' @slot signal_var 
-#' @slot facet_var 
-#' @slot extra_var 
-#' @slot manual_assigned
-#' @export
 setClass("ClusteredSignal",
          representation = list(
            signal_data = "data.table",
@@ -20,7 +11,7 @@ setClass("ClusteredSignal",
            manual_assigned = "list"
          ))
 
-#' Title
+#' ClusteredSignal
 #'
 #' @param signal_profile_dt 
 #' @param query_gr 
@@ -29,6 +20,8 @@ setClass("ClusteredSignal",
 #' @param signal_var 
 #' @param facet_var 
 #' @param extra_var 
+#' @param signal_var.within 
+#' @param bfc BiocFileCache to use, uses default location otherwise. 
 #'
 #' @return
 #' @export

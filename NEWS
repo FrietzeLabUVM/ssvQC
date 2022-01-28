@@ -1,3 +1,7 @@
+1.0.3
+
+* enabled force_overwrite option use for ssvQC.prepFRIP
+
 1.0.2
 
 * bugfix for mapped_reads, was always 0 when chromosomes don't start with chr

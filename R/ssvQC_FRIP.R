@@ -17,13 +17,13 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
         must_match = FALSE
       }else{
         out = lapply(sig_configs[feature_name2signal_name(name)], function(sel_sig_config){
-          make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
+          make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by, bfc = object@bfc, force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE))
         })    
       }
     }
     if(!must_match){
       out = lapply(sig_configs, function(sel_sig_config){
-        make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by)
+        make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by, bfc = object@bfc, getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE))
       })  
     }
     out
