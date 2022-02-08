@@ -31,6 +31,14 @@ make_frip_dt.run_by_match = function(sel_sig_config, query_gr, bfc){
   )
 }
 
-make_scc_dt.run_by_match = function(query_gr, sel_sig_config, bfc){
-  
+make_scc_dt.run_by_match = function(sel_sig_config, query_gr, bfc){
+  make_scc_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, bfc = bfc)
+}
+
+ClusteredSignal.fromConfig.run_by_match = function(sel_sig_config, query_gr, bfc){
+  ClusteredSignal.fromConfig(sel_sig_config, 
+                             resize(query_gr, sel_sig_config@view_size, fix = "center"), 
+                             facet_var = "name_split", 
+                             extra_var = union(sel_sig_config@color_by, sel_sig_config@run_by), 
+                             bfc = bfc)
 }

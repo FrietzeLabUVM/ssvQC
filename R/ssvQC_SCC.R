@@ -4,12 +4,9 @@
 setGeneric("ssvQC.prepSCC", function(object){standardGeneric("ssvQC.prepSCC")})
 setMethod("ssvQC.prepSCC", "ssvQC.complete", function(object){
   object = ssvQC.prepFetch(object)
-  SCC_data = lapply(object@features_config$assessment_features, function(query_gr){
-    sig_configs = .make_query_signal_config(object@signal_config)
-    lapply(sig_configs, function(sel_sig_config){
-      make_scc_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, bfc = object@bfc)
-    })
-  })
+  feature_names = names(object@features_config$assessment_features)
+  names(feature_names) = feature_names
+  SCC_data = lapply(feature_names, run_by_match, object = object, callFUN = make_scc_dt.run_by_match)
   object@other_data$SCC = SCC_data
   object
 })

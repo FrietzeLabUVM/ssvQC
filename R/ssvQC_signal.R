@@ -1,16 +1,10 @@
 
 .prepSignal = function(object){
   object = ssvQC.prepFetch(object)
-  object@signal_data = lapply(object@features_config$assessment_features, function(query_gr){
-    sig_configs = .make_query_signal_config(object@signal_config)
-    lapply(sig_configs, function(sel_sig_config){
-      ClusteredSignal.fromConfig(sel_sig_config, 
-                                 resize(query_gr, object@signal_config@view_size, fix = "center"), 
-                                 facet_var = "name_split", 
-                                 extra_var = union(object@signal_config@color_by, object@signal_config@run_by), 
-                                 bfc = object@bfc)
-    })
-  })
+  feature_names = names(object@features_config$assessment_features)
+  names(feature_names) = feature_names
+  signal_data = lapply(feature_names, run_by_match, object = object, callFUN = ClusteredSignal.fromConfig.run_by_match)
+  object@signal_data = signal_data
   object
 }
 

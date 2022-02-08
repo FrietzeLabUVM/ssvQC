@@ -6,7 +6,6 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
   object = ssvQC.prepFetch(object)
   feature_names = names(object@features_config$assessment_features)
   names(feature_names) = feature_names
-  browser
   FRIP_data = lapply(feature_names, run_by_match, object = object, callFUN = make_frip_dt.run_by_match)
   object@other_data$FRIP = FRIP_data
   object
