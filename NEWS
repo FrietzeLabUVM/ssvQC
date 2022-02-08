@@ -1,3 +1,7 @@
+1.0.4
+
+* matched_only now applies to ssvQC.prepSCC and ssvQC.prepSignal.
+
 1.0.3
 
 * enabled force_overwrite option use for ssvQC.prepFRIP
