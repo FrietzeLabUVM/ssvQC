@@ -6,28 +6,7 @@ setMethod("ssvQC.prepFRIP", "ssvQC.complete", function(object){
   object = ssvQC.prepFetch(object)
   feature_names = names(object@features_config$assessment_features)
   names(feature_names) = feature_names
-  FRIP_data = lapply(feature_names, function(name){
-    query_gr = object@features_config$assessment_features[[name]]
-    sig_configs = .make_query_signal_config(object@signal_config)
-    
-    must_match = object@matched_only
-    if(must_match){
-      sig_name = feature_name2signal_name(name)
-      if(!sig_name %in% names(sig_configs)){
-        must_match = FALSE
-      }else{
-        out = lapply(sig_configs[feature_name2signal_name(name)], function(sel_sig_config){
-          make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by, bfc = object@bfc, force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE))
-        })    
-      }
-    }
-    if(!must_match){
-      out = lapply(sig_configs, function(sel_sig_config){
-        make_frip_dt(as.data.table(sel_sig_config@meta_data), query_gr = query_gr, color_var = sel_sig_config@color_by, bfc = object@bfc, getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE))
-      })  
-    }
-    out
-  })
+  FRIP_data = lapply(feature_names, run_by_match, object = object, FUN = make_frip_dt.run_by_match)
   object@other_data$FRIP = FRIP_data
   object
 })

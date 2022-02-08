@@ -49,7 +49,9 @@ setMethod("ssvQC.plotSignal", "ssvQC.complete", function(object){
     p_heatmap = seqsetvis::ssvSignalHeatmap.ClusterBars(clust_sig@signal_data[abs(x) <= ceiling(sig_config@view_size / 2)], 
                                                         fill_ = val2var[sig_config@plot_value],
                                                         facet_ = "name_split", 
-                                                        fill_limits = sig_config@heatmap_limit_values,
+                                                        fill_limits = sig_config@heatmap_limit_values, 
+                                                        max_rows = Inf,
+                                                        max_cols = Inf,
                                                         rel_widths = c(1, 20),
                                                         FUN_format_heatmap = function(p){
                                                           p + labs(x = x_label, fill = value_label, title = main_title)

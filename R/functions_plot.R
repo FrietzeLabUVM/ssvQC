@@ -624,6 +624,7 @@ plot_anno_overlap = function(anno_dt, name_lev = NULL){
 #' bw_files = dir(system.file("extdata", package = "seqqc"), pattern = "^M.+bw$", full.names = TRUE)
 #' query_dt = make_dt(bw_files)
 #' query_dt[, sample := sub("_FE_random100.A", "", name)]
+#' query_dt[, name_split := gsub("_", "\n", name)]
 #'
 #' peak_files = dir(system.file("extdata", package = "seqqc"), pattern = "Peak$", full.names = TRUE)
 #' names(peak_files) = sub("_CTCF_rand.+", "", basename(peak_files))
@@ -632,13 +633,24 @@ plot_anno_overlap = function(anno_dt, name_lev = NULL){
 #' query_gr = resize(overlaps_gr, 6e2, fix = "center")
 #'
 #' group_prof_dt = make_feature_overlap_signal_profiles(query_dt, overlaps_gr)
-#' plot_feature_overlap_signal_profiles(group_prof_dt)
-plot_feature_overlap_signal_profiles = function(grouped_prof_dt, group_var = "overlap_group", rank_var = "rnk", fill_limits = NULL, signal_var = "y", color_var = "name", color_mapping = NULL){
+#' 
+#' plots = plot_feature_overlap_signal_profiles(group_prof_dt)
+#' cowplot::plot_grid(plotlist = plots)
+plot_feature_overlap_signal_profiles = function(grouped_prof_dt, 
+                                                group_var = "overlap_group", 
+                                                rank_var = "rnk", 
+                                                fill_limits = NULL, 
+                                                signal_var = "y", 
+                                                color_var = "name", 
+                                                color_mapping = NULL,
+                                                facet_var = "name_split",
+                                                heatmap_free_y = TRUE){
   plot_fill_ = y = NULL #global binding for data.table
   stopifnot(group_var %in% colnames(grouped_prof_dt))
   if(!is.factor(grouped_prof_dt[[group_var]])){
     grouped_prof_dt[[group_var]] = factor(grouped_prof_dt[[group_var]])
   }
+  levels(grouped_prof_dt[[group_var]]) = gsub(" ", "\n", levels(grouped_prof_dt[[group_var]]))
   stopifnot(rank_var %in% colnames(grouped_prof_dt))
   grouped_prof_dt[[rank_var]] = factor(grouped_prof_dt[[rank_var]])
   grouped_prof_dt[[rank_var]] = factor(grouped_prof_dt[[rank_var]], levels = rev(levels(grouped_prof_dt[[rank_var]])))
@@ -653,19 +665,26 @@ plot_feature_overlap_signal_profiles = function(grouped_prof_dt, group_var = "ov
   p2_heat_overlaps = ggplot(grouped_prof_dt, aes_string(x = "x", y = rank_var, fill = "plot_fill_")) +
     geom_raster() +
     scale_fill_viridis_c(limits = fill_limits) +
-    facet_grid(paste0(group_var, "~name_split")) +
+    facet_grid(paste0(group_var, "~name_split"), scales = ifelse(heatmap_free_y, "free_y", "fixed")) +
     labs(fill = "read pileup", y = "", x = "bp", title = "Signal at peak overlap sets") +
-    theme(panel.background = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())
-  p2_heat_overlaps
+    theme(panel.background = element_blank(), 
+          axis.text.y = element_blank(), 
+          axis.ticks.y = element_blank(),
+          strip.text.y = element_text(angle = 0), 
+          legend.position = "bottom")
+  # p2_heat_overlaps
 
   agg_dt = grouped_prof_dt[, list(plot_fill_ = mean(plot_fill_)), c("name", "name_split", group_var, "x")]
 
   p2_line_facets = ggplot(agg_dt, aes_string(x = "x", y = "plot_fill_", color = color_var)) +
     geom_path() +
     facet_grid(paste0(group_var, "~name_split"), scales = "free_y") +
-    labs(y = "mean read pileup", x = "bp", color = "")
+    labs(y = "mean read pileup", x = "bp", color = "") +
+    theme(strip.text.y = element_text(angle = 0),
+          legend.position = "bottom")
   if(!is.null(color_mapping)){
-    p2_line_facets = p2_line_facets + scale_color_manual(values = color_mapping)
+    p2_line_facets = p2_line_facets + 
+      scale_color_manual(values = color_mapping)
   }
   list(heatmap = p2_heat_overlaps, lineplot = p2_line_facets)
 }
