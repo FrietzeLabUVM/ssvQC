@@ -1,3 +1,7 @@
+1.0.5
+
+* overlap gr now restricts assessment features even when consensus applied.
+
 1.0.4
 
 * matched_only now applies to ssvQC.prepSCC and ssvQC.prepSignal.
