@@ -234,11 +234,13 @@ setReplaceMethod("$", "QcConfigFeatures",
   bfcif(bfc, digest_args(), force_overwrite = force_overwrite, function(){
     f_consensus = floor(consensus_fraction * length(feat_list))
     n_consensus = min(length(feat_list), max(consensus_n, f_consensus))
-    
+    #olap_gr is a strict overlap, not consensus
     if(n_consensus == 1){
       asses_gr.full = olap_gr
     }else{
       asses_gr.full = ssvConsensusIntervalSets(feat_list, min_number = consensus_n, min_fraction = consensus_fraction, ext = overlap_extension)
+      #olap_gr should still limit assessment event when consensus is independently applied
+      asses_gr.full = IRanges::subsetByOverlaps(asses_gr.full, olap_gr)
     }
     if(n_peaks >= length(asses_gr.full)){
       assessment_gr = asses_gr.full
