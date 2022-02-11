@@ -191,13 +191,21 @@ get_feature_file_load_function = function(feature_files){
 .enforce_name_var = function(my_df){
   if(!"name" %in% colnames(my_df)){
     cn = setdiff(colnames(my_df), c("file", "name", "name_split"))
+    message("Creating 'name' from: ", paste(cn, collapse = ", "))
     nams = apply(my_df[, cn], 1, function(x)paste(x, collapse = "_"))
     my_df$name = nams
   }
   if(!"name_split" %in% colnames(my_df)){
     cn = setdiff(colnames(my_df), c("file", "name", "name_split"))
+    message("Creating 'name_split' from: ", paste(cn, collapse = ", "))
     nams = apply(my_df[, cn], 1, function(x)paste(x, collapse = "\n"))
     my_df$name_split = nams
+  }
+  if(any(duplicated(my_df$name))){
+    stop("Duplicate entries in 'name', all values must be unique.")
+  }
+  if(any(duplicated(my_df$name_split))){
+    stop("Duplicate entries in 'name_split', all values must be unique.")
   }
   if(!is.factor(my_df$name))
     my_df$name = factor(my_df$name, levels = my_df$name)

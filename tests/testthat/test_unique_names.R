@@ -6,7 +6,6 @@ library(testthat)
 options(mc.cores = 1)
 set.seed(0)
 
-
 features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 features_config = QcConfigFeatures.parse(features_config_file)
 
@@ -21,19 +20,19 @@ sqc.feature = ssvQC(features_config = features_config)
 #required attributes not NULL
 test_that("get error when setting all name to NULL", {
   to_test = features_config
-  expect_error({to_test$meta_data$name = NULL}, regexp = 'invalid class') 
+  expect_message({to_test$meta_data$name = NULL}, regexp = "Creating 'name'") 
 })
 test_that("get error when setting all name_split to NULL", {
   to_test = features_config
-  expect_error({to_test$meta_data$name_split = NULL}, regexp = 'invalid class') 
+  expect_message({to_test$meta_data$name_split = NULL}, regexp = "Creating 'name_split'") 
 })
 #no duplicates
 test_that("get error when setting all name to A", {
   to_test = features_config
-  expect_error({to_test$meta_data$name = "A"}, regexp = 'invalid class') 
+  expect_error({to_test$meta_data$name = "A"}, regexp = "Duplicate entries in 'name'") 
 })
 
 test_that("get error when setting all name to A", {
   to_test = features_config
-  expect_error({to_test$meta_data$name_split = "A"}, regexp = 'invalid class') 
+  expect_error({to_test$meta_data$name_split = "A"}, regexp = "Duplicate entries in 'name_split'") 
 })
