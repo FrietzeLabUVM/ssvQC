@@ -191,16 +191,18 @@ get_feature_file_load_function = function(feature_files){
 .enforce_name_var = function(my_df){
   if(!"name" %in% colnames(my_df)){
     cn = setdiff(colnames(my_df), c("file", "name", "name_split"))
-    nams = apply(my_df[, cn, with = FALSE], 1, function(x)paste(x, collapse = "_"))
+    nams = apply(my_df[, cn], 1, function(x)paste(x, collapse = "_"))
     my_df$name = nams
   }
   if(!"name_split" %in% colnames(my_df)){
     cn = setdiff(colnames(my_df), c("file", "name", "name_split"))
-    nams = apply(my_df[, cn, with = FALSE], 1, function(x)paste(x, collapse = "\n"))
+    nams = apply(my_df[, cn], 1, function(x)paste(x, collapse = "\n"))
     my_df$name_split = nams
   }
-  my_df$name = factor(my_df$name, levels = my_df$name)
-  my_df$name_split = factor(my_df$name_split, levels = my_df$name_split)
+  if(!is.factor(my_df$name))
+    my_df$name = factor(my_df$name, levels = my_df$name)
+  if(!is.factor(my_df$name_split))
+    my_df$name_split = factor(my_df$name_split, levels = my_df$name_split)
   my_df
 }
 
@@ -224,12 +226,12 @@ get_feature_file_load_function = function(feature_files){
 #'
 #' @examples
 .parse_config_body = function(f){
-  config_dt = as.data.table(read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE))
+  config_dt = read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE)
   config_dt = .enforce_file_var(config_dt)
   config_dt = .enforce_name_var(config_dt)
   config_dt = .enforce_found_order(config_dt)
   #move file to first column
-  config_dt = config_dt[, colnames(config_dt)[order(colnames(config_dt) != "file")], with = FALSE]
+  config_dt = config_dt[, colnames(config_dt)[order(colnames(config_dt) != "file")]]
   config_dt
 }
 

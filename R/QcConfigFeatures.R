@@ -23,6 +23,14 @@
     msg = paste0("'name_split' values must be unique. Following have been duplicated: ", paste(unique(object$meta_data$name_split[duplicated(object$meta_data$name_split)]), collapse = ", "))
     errors = c(errors, msg)
   }
+  if(!is.factor(object$meta_data[["name"]])){
+    msg = "'name' attribute must be a factor."
+    errors = c(errors, msg)
+  }
+  if(!is.factor(object$meta_data[["name_split"]])){
+    msg = "'name_split' attribute must be a factor."
+    errors = c(errors, msg)
+  }
   #check to_run and reference
   if(!all(object@to_run %in% object@meta_data[[object@run_by]])){
     msg = paste0("Items in to_run are missing from '", object@run_by, "'. Missing:\n",
@@ -367,7 +375,8 @@ QcConfigFeatures = function(config_df,
                             consensus_n = getOption("SQC_CONSENSUS_N", 1),
                             process_features = getOption("SQC_PROCESS_FEATURES", TRUE),
                             is_null = FALSE){
-  .enforce_file_var(config_df)
+  config_df = .enforce_file_var(config_df)
+  config_df = .enforce_name_var(config_df)
   if(!run_by %in% colnames(config_df)){
     if(run_by == "All"){
       config_df[[run_by]] = run_by
@@ -731,7 +740,7 @@ QcConfigFeatures.parse = function(feature_config_file,
       rel_path = file.path(main_dir, files)
       ifelse(file.exists(rel_path), rel_path, abs_path)
     }
-    peak_config_dt[, file := choose_file_path(cfg_vals[["main_dir"]], file)]
+    peak_config_dt$file = choose_file_path(cfg_vals[["main_dir"]], peak_config_dt$file)
     cfg_vals[["main_dir"]] = NULL
   }
   if(!all(file.exists(peak_config_dt$file))){

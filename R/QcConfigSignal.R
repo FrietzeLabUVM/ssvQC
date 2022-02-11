@@ -18,11 +18,11 @@ check_QcConfigSignal = function(object){
   }
   #check attributes are present
   if(is.null(object$meta_data[["name"]])){
-    msg = "'name' attribute must be present in meta_data"
+    msg = "'name' attribute must be present in meta_data."
     errors = c(errors, msg)
   }
   if(is.null(object$meta_data[["name_split"]])){
-    msg = "'name_split' attribute must be present in meta_data"
+    msg = "'name_split' attribute must be present in meta_data."
     errors = c(errors, msg)
   }
   #check attributes are valid
@@ -32,6 +32,14 @@ check_QcConfigSignal = function(object){
   }
   if(any(duplicated(object$meta_data[["name_split"]]))){
     msg = paste0("'name_split' values must be unique. Following have been duplicated: ", paste(unique(object$meta_data$name_split[duplicated(object$meta_data$name_split)]), collapse = ", "))
+    errors = c(errors, msg)
+  }
+  if(!is.factor(object$meta_data[["name"]])){
+    msg = "'name' attribute must be a factor."
+    errors = c(errors, msg)
+  }
+  if(!is.factor(object$meta_data[["name_split"]])){
+    msg = "'name_split' attribute must be a factor."
     errors = c(errors, msg)
   }
   #check to_run and reference
@@ -313,7 +321,8 @@ QcConfigSignal = function(config_df,
                           heatmap_limit_values = c(0, 10),
                           lineplot_free_limits = TRUE,
                           is_null = FALSE){
-  .enforce_file_var(config_df)
+  config_df = .enforce_file_var(config_df)
+  config_df = .enforce_name_var(config_df)
   if(!run_by %in% colnames(config_df)){
     if(run_by == "All"){
       config_df[[run_by]] = run_by
@@ -462,7 +471,7 @@ QcConfigSignal.parse = function(signal_config_file){
       rel_path = file.path(main_dir, files)
       ifelse(file.exists(rel_path), rel_path, abs_path)
     }
-    signal_config_dt[, file := choose_file_path(cfg_vals[["main_dir"]], file)]
+    signal_config_dt$file = choose_file_path(cfg_vals[["main_dir"]], signal_config_dt$file)
     cfg_vals[["main_dir"]] = NULL
   }
   if(!all(file.exists(signal_config_dt$file))){

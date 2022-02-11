@@ -1,3 +1,7 @@
+1.0.6
+
+* improved enforcement and consistency of name and name_split in QcConfig*
+
 1.0.5
 
 * overlap gr now restricts assessment features even when consensus applied.
