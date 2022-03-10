@@ -11,7 +11,9 @@ plot_feature_overlap_signal_profiles(
   fill_limits = NULL,
   signal_var = "y",
   color_var = "name",
-  color_mapping = NULL
+  color_mapping = NULL,
+  facet_var = "name_split",
+  heatmap_free_y = TRUE
 )
 }
 \arguments{
@@ -35,6 +37,7 @@ plot_feature_overlap_signal_profiles
 bw_files = dir(system.file("extdata", package = "seqqc"), pattern = "^M.+bw$", full.names = TRUE)
 query_dt = make_dt(bw_files)
 query_dt[, sample := sub("_FE_random100.A", "", name)]
+query_dt[, name_split := gsub("_", "\n", name)]
 
 peak_files = dir(system.file("extdata", package = "seqqc"), pattern = "Peak$", full.names = TRUE)
 names(peak_files) = sub("_CTCF_rand.+", "", basename(peak_files))
@@ -43,5 +46,7 @@ overlaps_gr = seqsetvis::ssvOverlapIntervalSets(peak_grs)
 query_gr = resize(overlaps_gr, 6e2, fix = "center")
 
 group_prof_dt = make_feature_overlap_signal_profiles(query_dt, overlaps_gr)
-plot_feature_overlap_signal_profiles(group_prof_dt)
+
+plots = plot_feature_overlap_signal_profiles(group_prof_dt)
+cowplot::plot_grid(plotlist = plots)
 }

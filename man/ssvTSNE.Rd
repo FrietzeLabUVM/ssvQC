@@ -10,6 +10,10 @@ ssvTSNE(
   out_dir = getwd(),
   bfc = NULL,
   matched_only = TRUE,
+  n_glyphs_x = 10,
+  n_glyphs_y = n_glyphs_x,
+  n_heatmap_pixels_x = 25,
+  n_heatmap_pixels_y = n_heatmap_pixels_x,
   ...
 )
 }
@@ -42,12 +46,27 @@ bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 bam_config = QcConfigSignal.parse(bam_config_file)
 bam_config$view_size = 600
 
-sts = ssvTSNE(features_config, bam_config)
+# TSNE plot paramters can be controlled at ssvTSNE object creation or set later
+# if the y settings aren't specified they are the same as x
+sts = ssvTSNE(
+  features_config, 
+  bam_config, 
+  n_glyphs_x = 3, 
+  n_heatmap_pixels_x = 5)
 sts = ssvQC.plotFeatures(sts)
-sts@perplexity = 10
+sts$perplexity = 10
 sts = ssvQC.prepFetch(sts)
 sts = ssvQC.referenceUsesSameScale(sts)
 sts = ssvQC.prepSignal(sts)
 sts = ssvQC.plotSignal(sts)
 sts$plots$TSNE
+
+sts$n_glyphs_x = 7 
+sts$n_glyphs_y = 5
+
+sts$n_heatmap_pixels_x = 30
+sts$n_heatmap_pixels_y = 60
+sts.replot = ssvQC.plotSignal(sts)
+
+sts.replot$plots$TSNE
 }

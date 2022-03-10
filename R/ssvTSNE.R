@@ -1,6 +1,10 @@
 setClass("ssvTSNE", 
          representation = list(
-           perplexity = "numeric"
+           perplexity = "numeric",
+           n_glyphs_x = "numeric",
+           n_glyphs_y = "numeric",
+           n_heatmap_pixels_x = "numeric",
+           n_heatmap_pixels_y = "numeric"
          ),
          contains = "ssvQC.complete")
 
@@ -26,19 +30,38 @@ setClass("ssvTSNE",
 #' bam_config = QcConfigSignal.parse(bam_config_file)
 #' bam_config$view_size = 600
 #' 
-#' sts = ssvTSNE(features_config, bam_config)
+#' # TSNE plot paramters can be controlled at ssvTSNE object creation or set later
+#' # if the y settings aren't specified they are the same as x
+#' sts = ssvTSNE(
+#'   features_config, 
+#'   bam_config, 
+#'   n_glyphs_x = 3, 
+#'   n_heatmap_pixels_x = 5)
 #' sts = ssvQC.plotFeatures(sts)
-#' sts@perplexity = 10
+#' sts$perplexity = 10
 #' sts = ssvQC.prepFetch(sts)
 #' sts = ssvQC.referenceUsesSameScale(sts)
 #' sts = ssvQC.prepSignal(sts)
 #' sts = ssvQC.plotSignal(sts)
 #' sts$plots$TSNE
+#' 
+#' sts$n_glyphs_x = 7 
+#' sts$n_glyphs_y = 5
+#' 
+#' sts$n_heatmap_pixels_x = 30
+#' sts$n_heatmap_pixels_y = 60
+#' sts.replot = ssvQC.plotSignal(sts)
+#' 
+#' sts.replot$plots$TSNE
 ssvTSNE = function(features_config = NULL,
                    signal_config = NULL,
                    out_dir = getwd(),
                    bfc = NULL, 
                    matched_only = TRUE,
+                   n_glyphs_x = 10,
+                   n_glyphs_y = n_glyphs_x,
+                   n_heatmap_pixels_x = 25,
+                   n_heatmap_pixels_y = n_heatmap_pixels_x,
                    ...){
   if(is.null(features_config) & is.null(signal_config)){
     stop("At least one of features_config or signal_config must be specified.")
@@ -65,6 +88,10 @@ ssvTSNE = function(features_config = NULL,
       out_dir = out_dir,
       bfc = bfc,
       saving_enabled = TRUE,
+      n_glyphs_x = n_glyphs_x,
+      n_glyphs_y = n_glyphs_y,
+      n_heatmap_pixels_x = n_heatmap_pixels_x,
+      n_heatmap_pixels_y = n_heatmap_pixels_y,
       matched_only = matched_only)
 }
 
@@ -87,11 +114,11 @@ setMethod("ssvQC.prepSignal", "ssvTSNE", function(object){
 setMethod("ssvQC.plotSignal", "ssvTSNE", function(object){
   object = callNextMethod()
   
-  n_glyphs_x = 10
-  n_glyphs_y = n_glyphs_x
+  n_glyphs_x = object@n_glyphs_x
+  n_glyphs_y = object@n_glyphs_y
   
-  n_heatmap_pixels_x = 30
-  n_heatmap_pixels_y = n_heatmap_pixels_x
+  n_heatmap_pixels_x = object@n_heatmap_pixels_x
+  n_heatmap_pixels_y = object@n_heatmap_pixels_y
   
   object@plots$TSNE$regional_glyphs = lapply(object@signal_data, function(signal_data_groups){
     lapply(signal_data_groups, function(signal_data){
@@ -135,8 +162,6 @@ setMethod("ssvQC.plotSignal", "ssvTSNE", function(object){
       prof_dt = signal_data@signal_data
       xy_dt = signal_data@xy_data
       
-      
-      
       x_var = "x" 
       y_var = "y" 
       id_var = "id"
@@ -146,9 +171,6 @@ setMethod("ssvQC.plotSignal", "ssvTSNE", function(object){
       
       y_var = val2var[object@signal_config@plot_value]
       y_lab = names(y_var)
-      
-      n_heatmap_pixels_x = 5
-      n_heatmap_pixels_y = n_heatmap_pixels_x
       
       xy_dt[, xbin := bin_values(tx, n_heatmap_pixels_x, c(-.5, .5))]
       xy_dt[, ybin := bin_values(ty, n_heatmap_pixels_y, c(-.5, .5))]
@@ -167,3 +189,73 @@ setMethod("ssvQC.plotSignal", "ssvTSNE", function(object){
   saveRDS(object, "dev_object.ssvQC.plotSignal.Rds")
   object
 })
+
+
+### $ Accessor
+setMethod("names", "ssvTSNE",
+          function(x)
+          {
+            c("plots", "signal_data", "signal_config", "features_config", "SCC", "FRIP", "correlation",
+              "perplexity",
+              "n_glyphs_x",
+              "n_glyphs_y",
+              "n_heatmap_pixels_x",
+              "n_heatmap_pixels_y")
+            
+          })
+
+
+setMethod("$", "ssvTSNE",
+          function(x, name)
+          {
+            switch (name,
+                    plots = x@plots,
+                    signal_data = x@signal_data,
+                    SCC = x@other_data$SCC,
+                    FRIP = x@other_data$FRIP,
+                    correlation = list(read_count = x@other_data$read_count_correlation, signal_profile = x@other_data$signal_profile_correlation),
+                    bfc = x@bfc,
+                    features_config = x@features_config,
+                    signal_config = x@signal_config,
+                    perplexity = x@perplexity,
+                    n_glyphs_x = x@n_glyphs_x,
+                    n_glyphs_y = x@n_glyphs_y,
+                    n_heatmap_pixels_x = x@n_heatmap_pixels_x,
+                    n_heatmap_pixels_y = x@n_heatmap_pixels_y
+                    
+            )
+          })
+
+setReplaceMethod("$", "ssvTSNE",
+                 function(x, name, value)
+                 {
+                   warn_msg = "This assignment is not supported.  No effect."
+                   switch (name,
+                           features_config = {
+                             x@features_config = value
+                           },
+                           signal_config = {
+                             x@signal_config = value
+                           },
+                           perplexity = {
+                             x@perplexity = value
+                           },
+                           n_glyphs_x = {
+                             x@n_glyphs_x = value
+                           },
+                           n_glyphs_y = {
+                             x@n_glyphs_y = value
+                           },
+                           n_heatmap_pixels_x = {
+                             x@n_heatmap_pixels_x = value
+                           },
+                           n_heatmap_pixels_y = {
+                             x@n_heatmap_pixels_y = value
+                           },
+                           {warning(warn_msg)}
+                           
+                   )
+                   
+                   #TODO, some assignments may be appropriate
+                   x
+                 })

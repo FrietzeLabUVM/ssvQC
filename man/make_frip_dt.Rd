@@ -11,7 +11,8 @@ make_frip_dt(
   name_lev = NULL,
   name_var = "name_split",
   color_var = name_var,
-  bfc = new_cache()
+  bfc = new_cache(),
+  force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)
 )
 }
 \arguments{

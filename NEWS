@@ -1,3 +1,7 @@
+1.0.7
+
+* ssvTSNE plot control via $ attribs
+
 1.0.6
 
 * improved enforcement and consistency of name and name_split in QcConfig*

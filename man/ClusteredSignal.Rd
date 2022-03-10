@@ -2,7 +2,7 @@
 % Please edit documentation in R/ClusteredSignal.R
 \name{ClusteredSignal}
 \alias{ClusteredSignal}
-\title{Title}
+\title{ClusteredSignal}
 \usage{
 ClusteredSignal(
   signal_profile_dt,
@@ -27,13 +27,17 @@ ClusteredSignal(
 
 \item{signal_var}{}
 
+\item{signal_var.within}{}
+
 \item{facet_var}{}
 
 \item{extra_var}{}
+
+\item{bfc}{BiocFileCache to use, uses default location otherwise.}
 }
 \value{
 
 }
 \description{
-Title
+ClusteredSignal
 }

@@ -11,6 +11,8 @@
 # }
 ###
 
+
+#' @import concaveman
 stsPlotClusterProfiles = function (profile_dt,
                                    cluster_dt = profile_dt,
                                    cluster_ = "cluster_id",
