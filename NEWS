@@ -1,3 +1,8 @@
+1.0.8
+
+* fetch_FUN uses "name" not "sample" for unique_names
+* give useful error when feature_load_FUN is wrong
+
 1.0.7
 
 * ssvTSNE plot control via $ attribs
