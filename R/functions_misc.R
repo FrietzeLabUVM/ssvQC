@@ -120,7 +120,7 @@ guess_feature_file_format = function(feature_files){
     }else if(grepl("bed$", feature_file)){
       file_format = "bed"
     }else{
-      warning("Could not guess file format for feature file: ", feature_file)
+      warning("Could not guess file format for feature file:\n  ", paste(feature_file, collapse = "\n  "))
     }
     file_format
   }
