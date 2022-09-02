@@ -634,7 +634,7 @@ fetch_signal_at_features = function(qc_signal, query_gr, bfc = new_cache()){
     }
     extra_args$fragLens = qc_signal@meta_data$fragLens
   }
-  call_args = c(list(file_paths = qc_signal@meta_data, qgr = query_gr, return_data.table = TRUE), extra_args)
+  call_args = c(list(file_paths = qc_signal@meta_data, qgr = query_gr, return_data.table = TRUE, names_variable = "name"), extra_args)
   fetch_FUN = get_fetch_fun(qc_signal@read_mode)
   prof_dt = bfcif(bfc, digest(list(fetch_FUN, call_args)), function(){
     do.call(fetch_FUN, call_args)

@@ -433,7 +433,9 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
   p_heat_sb = seqsetvis::ssvSignalHeatmap.ClusterBars(clust_dt[id %in% toplot_id],
                                            fill_ = fill_var,
                                            max_cols = Inf,
-                                           facet_ = "facet", show_cluster_bars = FALSE, return_unassembled_plots = TRUE)
+                                           facet_ = "facet", 
+                                           show_cluster_bars = FALSE, 
+                                           return_unassembled_plots = TRUE)
   p_heat_sb$heatmap = p_heat_sb$heatmap +
     labs(x = paste(view_size, "bp view size"), fill = "relative pileup") +
     theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), legend.position = "bottom")

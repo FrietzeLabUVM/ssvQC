@@ -52,7 +52,6 @@ setClass("ssvTSNE",
 #' sts$n_heatmap_pixels_y = 60
 #' sts.replot = ssvQC.plotSignal(sts)
 #' 
-#' sts.replot$plots$TSNE
 ssvTSNE = function(features_config = NULL,
                    signal_config = NULL,
                    out_dir = getwd(),

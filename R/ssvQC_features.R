@@ -20,6 +20,65 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
   .prepFeatures(object)
 })
 
+
+#' @param object 
+#'
+#' @return
+#' @rdname QcConfigFeatures
+#' @examples
+.prepFeatures = function(object, bfc = new_cache()){
+  if(object@is_null) return(object)
+  
+  if(length(object$assessment_features) > 0){
+    # message("Not prepping features.  Call resetFeatures() on object to reset before prepping.")
+    return(object)
+  }
+  
+  to_run = object@to_run
+  for(tr in to_run){
+    tr_name = paste0(tr, "_features")
+    rb = object@meta_data[[object@run_by]]
+    sel_dt = object@meta_data[rb %in% union(tr, object@to_run_reference),]
+    if(is.null(object@loaded_features[[tr_name]])){
+      object@loaded_features[[tr_name]] = .process_features(sel_dt, object@feature_load_FUN, bfc = bfc)
+    }
+    is_error = sapply(object@loaded_features[[tr_name]], is, class2 = "try-error")
+    if(any(is_error)){
+      stop("Failed to load some feature files:\n  ",
+           paste(sel_dt$file[is_error], collapse = "\n  "),
+           "\nPlease supply appropriate feature_load_FUN when creating QcConfigFeatures.")
+    }
+    
+    if(is.null(object@overlap_gr[[tr_name]])){
+      object@overlap_gr[[tr_name]] = .process_overlaps(
+        loaded_features = object@loaded_features[[tr_name]], 
+        overlap_extension = object@overlap_extension,
+        bfc = bfc)
+    }
+    
+    if(length(object@overlap_gr[[tr_name]]) < 5){
+      stop("Currently, fewer than 5 regions are not allowed. This will be addressed in future versions.")
+    }
+    
+    if(is.null(object@assessment_gr[[tr_name]])){
+      object@assessment_gr[[tr_name]] = .process_assessment(
+        feat_list = object@loaded_features[[tr_name]], 
+        olap_gr = object@overlap_gr[[tr_name]], 
+        overlap_extension = object@overlap_extension, 
+        n_peaks = object@n_peaks, 
+        balance_groups = object@balance_groups,
+        consensus_fraction = object@consensus_fraction, 
+        consensus_n = object@consensus_n, 
+        bfc = bfc)
+    }
+    
+    if(length(object@assessment_gr[[tr_name]]) < 5){
+      stop("Currently, fewer than 5 regions are not allowed. This will be addressed in future versions.")
+    }
+  }
+  object
+}
+
 .plotFeatures = function(object, force_euler = FALSE){
   feat_config = object@features_config
   need_prep_features = 
