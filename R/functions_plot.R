@@ -220,7 +220,7 @@ plot_frip_dt = function(frip_dt, sort_by = c("none", "frip", "reads_in_peak")[1]
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
     labs(y = "FRIP per peak", x = "")
 
-  tmp = frip_dt[, list(reads_in_peak = sum(reads_in_peak), mapped_reads = unique(mapped_reads)), c("sample", union(color_var, name_var))]
+  tmp = frip_dt[, list(reads_in_peak = sum(reads_in_peak), mapped_reads = unique(mapped_reads)), c(union(color_var, name_var))]
   tmp[, frip := reads_in_peak / mapped_reads]
   p_fripSum1 = ggplot(tmp,
                       aes_string(x = name_var, y = "frip", fill = color_var)) +

@@ -44,7 +44,7 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
     }
     is_error = sapply(object@loaded_features[[tr_name]], is, class2 = "try-error")
     if(any(is_error)){
-      stop("Failed to load some feature files:\n  ",
+      stop("\nFailed to load some feature files:\n  ",
            paste(sel_dt$file[is_error], collapse = "\n  "),
            "\nPlease supply appropriate feature_load_FUN when creating QcConfigFeatures.")
     }

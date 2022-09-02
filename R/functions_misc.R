@@ -120,7 +120,7 @@ guess_feature_file_format = function(feature_files){
     }else if(grepl("bed$", feature_file)){
       file_format = "bed"
     }else{
-      warning("Could not guess file format for feature file:\n  ", paste(feature_file, collapse = "\n  "))
+      warning("\n", paste0("Could not guess file format for feature file:\n  ", feature_file), "\n")
     }
     file_format
   }
@@ -169,7 +169,7 @@ get_feature_file_load_function = function(feature_files){
             seacr = seqsetvis::easyLoad_seacr,
             bed = seqsetvis::easyLoad_bed,
             unknown = {
-              warning("Treating unknown file type as bed but if you see errors, check file type.")
+              warning("Treating unknown file type as bed but if you see errors, check file type and specify appropriate feature_load_FUN when creating QcConfigFeatures.")
               seqsetvis::easyLoad_bed
             },
             stop("'", file_type, "' is not a supported file_type")

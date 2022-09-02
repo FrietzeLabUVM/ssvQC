@@ -453,19 +453,35 @@ make_frip_dt = function(query_dt,
     message("fetch read counts...")
     # reads_dt = seqsetvis::ssvFetchBam(query_dt, query_gr, fragLens = NA, return_unprocessed = TRUE, n_region_splits = n_region_splits, n_cores = n_cores)
     # frip_dt = reads_dt[, list(N = length(unique(qname))), list(id, name, treatment, sample)]
-    frip_dt = bfcif(bfc, digest::digest(list(query_dt, query_gr, "make_frip_dt")), function(){
-      seqsetvis::ssvFetchBam(query_dt, query_gr, fragLens = 1, win_size = 1, win_method = "summary", summary_FUN = function(x,w){sum(x)}, n_region_splits = n_region_splits, n_cores = n_cores, return_data.table = TRUE)
+    frip_dt = bfcif(bfc, 
+                    rname = digest::digest(list(query_dt, query_gr, "make_frip_dt")), 
+                    force_overwrite = force_overwrite, 
+                    function(){
+      seqsetvis::ssvFetchBam(
+        query_dt, 
+        query_gr,
+        names_variable =  name_var,
+        fragLens = 1, 
+        win_size = 1, 
+        win_method = "summary", 
+        summary_FUN = function(x,w){sum(x)}, 
+        n_region_splits = n_region_splits, 
+        n_cores = n_cores, 
+        return_data.table = TRUE
+      )
     })
     
     
     setnames(frip_dt, "y", "N")
     
     frip_dt_filled = melt(dcast(frip_dt, paste0("id~", name_var), value.var = "N", fill = 0), id.vars = "id", value.name = "N", variable.name = name_var)
-    frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(intersect(aes_vars, colnames(frip_dt)), "sample"), with = FALSE]), by = name_var)
+    frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(intersect(aes_vars, colnames(frip_dt))), with = FALSE]), by = name_var)
     
     message("fetch total mapped reads...")
-    mapped_counts = sapply(query_dt$file, get_mapped_reads)
-    frip_dt$mapped_reads = mapped_counts[frip_dt$sample]
+    todo = query_dt$file
+    names(todo) = query_dt[[name_var]]
+    mapped_counts = sapply(todo, get_mapped_reads)
+    frip_dt$mapped_reads = mapped_counts[frip_dt[[name_var]]]
     frip_dt[, frip := N/mapped_reads]
     
     if(!is.null(name_lev)){
@@ -473,7 +489,6 @@ make_frip_dt = function(query_dt,
       stopifnot(all(frip_dt[[name_var]] %in% name_lev))
       frip_dt[[name_var]] = factor(frip_dt[[name_var]], levels = name_lev)
     }
-    
     
     setnames(frip_dt, "N", "reads_in_peak")
     frip_dt
@@ -699,10 +714,6 @@ make_scc_dt.single = function(bam_file,
     k = grps == g
     crossCorrByRle(bam_file, query_gr[k], fragment_sizes = frag_sizes, read_length = rl, ...)
   })
-  # if(grepl("PDX2_GFP_STAT5_r2_S30", bam_file)){
-  #   browser()  
-  # }
-  
   peak_strand_corr = rbindlist(lres)
   corr_res =   gather_metrics(peak_strand_corr, rl)
   

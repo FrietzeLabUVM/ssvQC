@@ -68,5 +68,4 @@ sts$n_heatmap_pixels_x = 30
 sts$n_heatmap_pixels_y = 60
 sts.replot = ssvQC.plotSignal(sts)
 
-sts.replot$plots$TSNE
 }

@@ -1,3 +1,7 @@
+1.0.9
+
+* removed residual references to "sample" in frip functions.
+
 1.0.8
 
 * fetch_FUN uses "name" not "sample" for unique_names
