@@ -143,13 +143,11 @@ ClusteredSignal_TSNE.fromConfig = function(signal_config,
                                  signal_var.within = val2var[signal_config@sort_value],
                                  facet_var = facet_var,
                                  extra_var = extra_var)
-      clust_dt
     }else{
-      
+      stop("NYI")
     }
-    
+    clust_dt
   })
-  
 }
 
 #' Title

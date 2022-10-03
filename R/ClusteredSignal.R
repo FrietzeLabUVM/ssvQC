@@ -111,7 +111,6 @@ ClusteredSignal.fromConfig = function(signal_config,
         if(is.null(signal_config@meta_data$RPM_cap_value)){
           stop("Call ssvQC.prepCapValue() on signal_config first.")
         }
-        
       }
     }else{
       if(signal_config@cluster_value == "linearQuantile" | signal_config@sort_value == "linearQuantile"){
@@ -119,7 +118,6 @@ ClusteredSignal.fromConfig = function(signal_config,
           stop("Call ssvQC.prepCapValue() on signal_config first.")
         }
       }
-      
     }
     
     query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
@@ -147,7 +145,7 @@ ClusteredSignal.fromConfig = function(signal_config,
   
 }
 
-#' Title
+#' ClusteredSignal.null
 #'
 #' @return
 #' @export

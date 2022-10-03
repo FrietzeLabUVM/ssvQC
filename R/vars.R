@@ -1,5 +1,6 @@
 signal_vars= c(raw = "raw", RPM = "RPM", linearQuantile = "linearQuantile", RPM_linearQuantile = "RPM_linearQuantile")
 sqc_read_modes = list(bam_SE = "bam_SE", bam_PE = "bam_PE", bigwig = "bigwig", null = "null")
+flip_signal_modes = list(high_on_right = "high_on_right", high_on_left = 'high_on_left', none = "none")
 
 val2var = c(
   raw = "y",
