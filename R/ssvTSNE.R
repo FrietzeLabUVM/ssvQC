@@ -176,9 +176,8 @@ setMethod("ssvQC.plotSignal", "ssvTSNE", function(object){
       
       heat_dt = merge(prof_dt, xy_dt[, .(id, xbin, ybin)], by = "id")[, .(y = agg_FUN(get(y_var))), c(id_var, wide_var, "xbin", "ybin")]
       
-      
       ggplot(heat_dt, aes(x = xbin, y = ybin, fill = y)) + 
-        geom_raster() +
+        geom_tile() +
         facet_wrap(~name) +
         scale_fill_viridis_c()
     })

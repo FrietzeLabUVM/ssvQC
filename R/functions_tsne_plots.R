@@ -27,13 +27,10 @@ stsPlotClusterProfiles = function (profile_dt,
   cent_dt = cluster_dt[, .(tx = median(tx), ty = median(ty)),
                        by = cluster_]
   if(is.null(profile_dt[[tall_var]])){
-    profile_dt[[tall_var]] = "none"
+    set(profile_dt, j = tall_var, value = "none")
+    # profile_dt[[tall_var]] = "none"
   }
-  # if(is.null(profile_dt[[tall_var]])){
-  #   profile_dt[, `:=`(tid, get(id_var))]
-  # }else{
   profile_dt[, `:=`(tid, paste(get(tall_var), get(id_var)))]
-  # }
   if(is.null(cluster_dt[["tid"]])){
     if(is.null(cluster_dt[[tall_var]])){
       cluster_dt[, `:=`(tid, get(id_var))]
