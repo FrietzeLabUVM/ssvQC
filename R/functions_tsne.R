@@ -1,5 +1,5 @@
 
-#' Title
+#' run_tsne
 #'
 #' @param profile_dt 
 #' @param perplexity 
@@ -34,7 +34,7 @@ run_tsne = function (profile_dt,
   stopifnot(valid_vars %in% colnames(profile_dt))
   
   if(is.null(profile_dt[[tall_var]])){
-    profile_dt[[tall_var]] = "none"
+    set(profile_dt, j = tall_var, value = "none")
   }
   tsne_mat = dt2mat(profile_dt, 
                     unique(profile_dt[[wide_var]]), 
@@ -45,9 +45,10 @@ run_tsne = function (profile_dt,
                     tall_var = tall_var)
   bad_col = apply(tsne_mat, 2, stats::var) == 0
   if (any(bad_col)) {
-    stop("zero variance columns detected in tsne matrix input.", 
+    warning("zero variance columns detected in tsne matrix input.", 
          "\n", round(sum(bad_col)/length(bad_col) * 100, 
-                     2), "% of columns affected.")
+                     2), "% of columns removed.")
+    tsne_mat = tsne_mat[, bad_col, drop = FALSE]
   }
   if (is.data.table(Y_init)) {
     if(tall_var != "tall_none"){
@@ -63,13 +64,18 @@ run_tsne = function (profile_dt,
   else {
     stopifnot(is.null(Y_init))
   }
+  max_perplexity = floor(nrow(tsne_mat)/4)
+  if(perplexity > max_perplexity){
+    perplexity = max_perplexity
+    warning("Reducing perplexity to ", perplexity, " to accommodate data of ", nrow(tsne_mat), " rows.")
+  }
   res_tsne = Rtsne::Rtsne(tsne_mat, 
                           Y_init = Y_init, 
                           num_threads = n_cores, 
                           perplexity = perplexity, 
                           check_duplicates = FALSE)
   tsne_dt = as.data.table(res_tsne$Y)
-  colnames(tsne_dt) = c("tx", "ty")
+  setnames(tsne_dt, c("tx", "ty"))
   tsne_dt$rn = rownames(tsne_mat)
   
   tsne_dt[, `:=`(c(id_var, tall_var), tstrsplit(rn, " ", keep = seq(2)))]

@@ -35,9 +35,6 @@ ClusteredSignal(
 
 \item{bfc}{BiocFileCache to use, uses default location otherwise.}
 }
-\value{
-
-}
 \description{
 ClusteredSignal
 }

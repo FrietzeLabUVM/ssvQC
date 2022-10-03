@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions_tsne.R
 \name{run_tsne}
 \alias{run_tsne}
-\title{Title}
+\title{run_tsne}
 \usage{
 run_tsne(
   profile_dt,
@@ -41,9 +41,6 @@ run_tsne(
 
 \item{tall_var}{}
 }
-\value{
-
-}
 \description{
-Title
+run_tsne
 }

@@ -18,15 +18,25 @@ sts = ssvTSNE(
   n_glyphs_x = 3,
   n_heatmap_pixels_x = 5)
 # 
-# sts = ssvQC.plotFeatures(sts)
-# sts$perplexity = 10
+# 
+# sts$perplexity
+# 
+# # sts = ssvQC.plotFeatures(sts)
+# # sts$perplexity = 10
 # sts = ssvQC.prepFetch(sts)
+# # debug(ssvQC:::ClusteredSignal_TSNE.from_ClusteredSignal)
+# sts = ssvQC.prepSignal(sts)
+# sts$signal_data
 # sts = ssvQC.referenceUsesSameScale(sts)
 # sts = ssvQC.prepSignal(sts)
 # sts = ssvQC.plotSignal(sts)
 
+suppressWarnings({
+  sts = ssvQC.plotSignal(sts)  
+})
+
+
 test_that("QcConfigFeatures.parse", {
-  sts = ssvQC.plotSignal(sts)
   expect_is(sts$plots$TSNE, "list")
   expect_is(sts$plots$TSNE$regional_glyphs$CTCF_features$CTCF_signal, "ggplot")
   expect_is(sts$plots$TSNE$cluster_glyphs$CTCF_features$CTCF_signal, "ggplot")

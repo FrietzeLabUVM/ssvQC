@@ -23,9 +23,6 @@ ssvQC.removeClusters(
 
 \item{invert}{}
 }
-\value{
-
-}
 \description{
 ssvQC.removeClusters
 }

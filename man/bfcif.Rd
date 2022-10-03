@@ -23,9 +23,6 @@ bfcif(
 
 \item{force_overwrite}{}
 }
-\value{
-
-}
 \description{
 Title
 }

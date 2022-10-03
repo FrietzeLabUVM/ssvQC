@@ -9,9 +9,6 @@
 \arguments{
 \item{qc}{A QcConfig object}
 }
-\value{
-
-}
 \description{
 used by show
 }

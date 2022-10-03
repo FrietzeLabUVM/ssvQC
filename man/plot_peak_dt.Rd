@@ -9,9 +9,6 @@ plot_peak_dt(peak_dt, name_lev = NULL)
 \arguments{
 \item{name_lev}{}
 }
-\value{
-
-}
 \description{
 plot_peak_dt
 }

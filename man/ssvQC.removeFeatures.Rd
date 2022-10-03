@@ -21,9 +21,6 @@ ssvQC.removeFeatures(
 
 \item{invert}{}
 }
-\value{
-
-}
 \description{
 ssvQC.removeFeatures
 }

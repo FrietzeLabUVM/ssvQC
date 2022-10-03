@@ -15,6 +15,7 @@ setClass("ClusteredSignal_TSNE",
 
 ClusteredSignal_TSNE.from_ClusteredSignal = function(object, sts_parent){
   stopifnot("ClusteredSignal" %in% class(object))
+  object@signal_data = setalloccol(object@signal_data) #hacky fix
   tsne_dt = run_tsne(object@signal_data, sts_parent@perplexity, y_var = val2var[sts_parent@signal_config@cluster_value])
   
   new("ClusteredSignal_TSNE",

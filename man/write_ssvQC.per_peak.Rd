@@ -11,9 +11,6 @@ write_ssvQC.per_peak(sqc, out_dir = getwd())
 
 \item{f}{}
 }
-\value{
-
-}
 \description{
 write_ssvQC.per_peak
 }

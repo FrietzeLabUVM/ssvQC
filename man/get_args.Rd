@@ -11,9 +11,6 @@ get_args(env = parent.frame(), to_ignore = character(), ...)
 
 \item{...}{}
 }
-\value{
-
-}
 \description{
 returns parameters of calling function as a named list.
 }

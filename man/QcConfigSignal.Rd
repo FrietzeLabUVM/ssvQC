@@ -101,17 +101,9 @@ QcConfigSignal.save_config(object, file)
 \item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
 }
 \value{
-
-
 QcConfigSignal object
 
-
-
 a QcConfigSignal object
-
-
-
-
 }
 \description{
 QcConfigSignal

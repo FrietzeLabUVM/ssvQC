@@ -14,9 +14,6 @@ ClusteredSignal_TSNE.fromConfig(
   bfc = new_cache()
 )
 }
-\value{
-
-}
 \description{
 ClusteredSignal_TSNE.fromConfig
 }

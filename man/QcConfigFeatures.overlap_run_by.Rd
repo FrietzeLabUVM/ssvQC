@@ -32,9 +32,6 @@ QcConfigFeatures.overlap_run_by(
 
 \item{process_features}{if TRUE, features are loaded and overlapped to generate assement regions as part of creating QcConfigFeatures object}
 }
-\value{
-
-}
 \description{
 Title
 }

@@ -11,9 +11,6 @@
 
 \item{valid_feature_var}{}
 }
-\value{
-
-}
 \description{
 Title
 }

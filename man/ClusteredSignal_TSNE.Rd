@@ -30,9 +30,6 @@ ClusteredSignal_TSNE(
 
 \item{extra_var}{}
 }
-\value{
-
-}
 \description{
 Title
 }

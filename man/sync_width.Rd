@@ -9,9 +9,6 @@ sync_width(my_plots)
 \arguments{
 \item{my_plots}{}
 }
-\value{
-
-}
 \description{
 Title
 }

@@ -23,9 +23,6 @@ ssvQC.selectFeatures(
 
 \item{invert}{}
 }
-\value{
-
-}
 \description{
 ssvQC.selectFeatures
 }

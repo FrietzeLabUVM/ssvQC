@@ -296,7 +296,8 @@ prep_images = function (summary_dt,
   }
   else {
     img_dt = unique(summary_dt[, list(bx, by, plot_id, get(facet_by))])
-    colnames(img_dt)[4] = facet_by
+    # colnames(img_dt)[4] = facet_by
+    setnames(img_dt, colnames(img_dt)[4], facet_by)
     img_dt[, `:=`(png_file, file.path(odir, paste0(get(facet_by), 
                                                    "_", plot_id, ".png")))]
   }
@@ -322,7 +323,7 @@ prep_images = function (summary_dt,
   else {
     count_dt = unique(summary_dt[, .(bx, by, get(facet_by), 
                                      N)])
-    colnames(count_dt)[colnames(count_dt) == "V3"] = facet_by
+    setnames(count_dt, "V3", facet_by)
     img_dt = merge(img_dt, count_dt, by = c("bx", "by", 
                                             facet_by))
   }

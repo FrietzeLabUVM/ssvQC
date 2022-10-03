@@ -11,9 +11,6 @@ digest_args(env = parent.frame(), to_ignore = character(), ...)
 
 \item{...}{}
 }
-\value{
-
-}
 \description{
 returns digest results of name list of parameters of calling function
 }

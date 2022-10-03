@@ -53,10 +53,6 @@ A QcConfig object
 a named vector of colors
 
 a ggplot2 scale_fill_manual
-
-
-
-
 }
 \description{
 QcConfig

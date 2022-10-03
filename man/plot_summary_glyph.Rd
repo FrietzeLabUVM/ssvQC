@@ -53,9 +53,6 @@ plot_summary_glyph(
 
 \item{wide_var}{}
 }
-\value{
-
-}
 \description{
 Title
 }

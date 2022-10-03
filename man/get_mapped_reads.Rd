@@ -9,9 +9,6 @@ get_mapped_reads(f)
 \arguments{
 \item{f}{}
 }
-\value{
-
-}
 \description{
 Title
 }

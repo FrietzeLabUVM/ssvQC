@@ -43,5 +43,5 @@ Imports:
     S4Vectors,
     stats,
     UpSetR
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 biocViews: Software, ChIPSeq, MultipleComparison, Sequencing, Visualization

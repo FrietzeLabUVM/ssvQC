@@ -9,9 +9,6 @@ guess_feature_file_format(feature_files)
 \arguments{
 \item{feature_files}{}
 }
-\value{
-
-}
 \description{
 guess_feature_file_format
 }

@@ -11,9 +11,6 @@ write_ssvQC.correlation(sqc, out_dir = getwd())
 
 \item{out_dir}{}
 }
-\value{
-
-}
 \description{
 write_ssvQC.correlation
 }

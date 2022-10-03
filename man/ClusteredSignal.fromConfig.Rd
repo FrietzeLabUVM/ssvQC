@@ -14,9 +14,6 @@ ClusteredSignal.fromConfig(
   bfc = new_cache()
 )
 }
-\value{
-
-}
 \description{
 ClusteredSignal.fromConfig
 }

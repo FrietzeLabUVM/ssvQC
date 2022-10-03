@@ -9,9 +9,6 @@ get_feature_file_load_function(feature_files)
 \arguments{
 \item{feature_files}{}
 }
-\value{
-
-}
 \description{
 Title
 }

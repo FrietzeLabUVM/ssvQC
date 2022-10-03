@@ -9,9 +9,6 @@ parse_fetch_options(fop)
 \arguments{
 \item{fop}{}
 }
-\value{
-
-}
 \description{
 Title
 }

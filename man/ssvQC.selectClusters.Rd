@@ -23,9 +23,6 @@ ssvQC.selectClusters(
 
 \item{invert}{}
 }
-\value{
-
-}
 \description{
 Title
 }

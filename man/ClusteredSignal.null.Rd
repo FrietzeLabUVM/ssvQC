@@ -6,9 +6,6 @@
 \usage{
 ClusteredSignal.null()
 }
-\value{
-
-}
 \description{
 Title
 }

@@ -9,9 +9,6 @@ guess_read_mode(signal_file)
 \arguments{
 \item{signal_file}{}
 }
-\value{
-
-}
 \description{
 Title
 }

@@ -90,8 +90,6 @@ new_cache() will be used.}
 \item{ssvQC}{}
 }
 \value{
-
-
 A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods ssvQC.plot*.
 }
 \description{

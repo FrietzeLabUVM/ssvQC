@@ -10,6 +10,7 @@ ssvTSNE(
   out_dir = getwd(),
   bfc = NULL,
   matched_only = TRUE,
+  perplexity = 50,
   n_glyphs_x = 10,
   n_glyphs_y = n_glyphs_x,
   n_heatmap_pixels_x = 25,
@@ -29,9 +30,6 @@ ssvTSNE(
 \item{matched_only}{}
 
 \item{...}{}
-}
-\value{
-
 }
 \description{
 ssvTSNE

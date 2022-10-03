@@ -11,9 +11,6 @@ sampleCap(x, n = 500)
 
 \item{n}{}
 }
-\value{
-
-}
 \description{
 Title
 }
