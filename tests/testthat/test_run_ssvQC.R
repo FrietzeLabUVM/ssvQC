@@ -3,6 +3,7 @@ library(ssvQC)
 
 options(mc.cores = 1)
 set.seed(0)
+SQC_OPTIONS$SQC_FORCE_CACHE_OVERWRITE = TRUE
 
 
 features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
@@ -21,7 +22,7 @@ sqc.feature.ran = ssvQC.runAll(sqc.feature)
 
 plot_names = c("features",    "reads",       "signal",      "SCC",         "FRIP",        "correlation")
 SCC_names = c("read_length", "fragment_length", "read_correlation", "flex_fragment_correlation", "stable_fragment_correlation", "full_correlation_results", "average_correlation")
-FRIP_names = c("name_split", "id", "reads_in_peak", "cell", "sample", "mapped_reads", "frip")
+FRIP_names = c("name_split", "id", "reads_in_peak", "cell", "mapped_reads", "frip")
 SCC_partnames = list(
     read_length = c("name_split", "read_length", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value"),
     fragment_length = c("name_split", "fragment_length", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value"),

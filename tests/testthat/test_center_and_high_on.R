@@ -77,48 +77,48 @@ test_that("ssvQC center_at_max and high_on_right", {
   #### test for   query_gr ####
   #test start change properly
   expect_false(all(  
-    start(sqc.default$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      start(sqc.default.centered$features_config$assessment_features$CTCF_features$CTCF_signal)
+    start(sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr) == 
+      start(sqc.default.centered$features_config$assessment_features$CTCF_features)
   ))
   
   expect_true(all(  
-    start(sqc.default$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      start(sqc.high_on_left$features_config$assessment_features$CTCF_features$CTCF_signal)
+    start(sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr) == 
+      start(sqc.high_on_left$features_config$assessment_features$CTCF_features)
   ))
   
   expect_true(all(  
-    start(sqc.default$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      start(sqc.high_on_right$features_config$assessment_features$CTCF_features$CTCF_signal)
+    start(sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr) == 
+      start(sqc.high_on_right$features_config$assessment_features$CTCF_features)
   ))
   
   expect_false(all(  
-    start(sqc.default$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      start(sqc.high_on_right.centered$features_config$assessment_features$CTCF_features$CTCF_signal)
+    start(sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr) == 
+      start(sqc.high_on_right.centered$features_config$assessment_features$CTCF_features)
   ))
   #test strand change properly
   expect_true(all(  
-    strand(sqc.default$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      strand(sqc.default.centered$features_config$assessment_features$CTCF_features$CTCF_signal)
+    strand(sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr) == 
+      strand(sqc.default.centered$features_config$assessment_features$CTCF_features)
   ))
   
   expect_false(all(  
-    strand(sqc.default$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      strand(sqc.high_on_left$features_config$assessment_features$CTCF_features$CTCF_signal)
+    strand(sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr) == 
+      strand(sqc.high_on_left$features_config$assessment_features$CTCF_features)
   ))
   
   expect_false(all(  
-    strand(sqc.default$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      strand(sqc.high_on_right$features_config$assessment_features$CTCF_features$CTCF_signal)
+    strand(sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr) == 
+      strand(sqc.high_on_right$features_config$assessment_features$CTCF_features)
   ))
   
   expect_false(all(  
-    strand(sqc.default$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      strand(sqc.high_on_right.centered$features_config$assessment_features$CTCF_features$CTCF_signal)
+    strand(sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr) == 
+      strand(sqc.high_on_right.centered$features_config$assessment_features$CTCF_features)
   ))
   #high_on_right and high_on_left should have no match
   expect_false(all(  
-    strand(sqc.high_on_right$features_config$assessment_features$CTCF_features$CTCF_signal) == 
-      strand(sqc.high_on_left$features_config$assessment_features$CTCF_features$CTCF_signal)
+    strand(sqc.high_on_right$features_config$assessment_features$CTCF_features) == 
+      strand(sqc.high_on_left$features_config$assessment_features$CTCF_features)
   ))
   #### test for   signal_data ####
   prof_dt.default = sqc.default$signal_data$CTCF_features$CTCF_signal$signal_data
@@ -154,6 +154,27 @@ test_that("ssvQC center_at_max and high_on_right", {
   
   expect_false(setequal(prof_dt.default$y, prof_dt.default.centered$y))
   expect_false(setequal(prof_dt.default$start, prof_dt.default.centered$start))
+
+  expect_equal(
+    sqc.default$signal_data$CTCF_features$CTCF_signal$query_gr,
+    resize(sqc.default$features_config$assessment_features$CTCF_features, 600, fix = "center")
+  )  
+  expect_equal(
+    sqc.default.centered$signal_data$CTCF_features$CTCF_signal$query_gr,
+    sqc.default.centered$features_config$assessment_features$CTCF_features
+  )
+  expect_equal(
+    sqc.high_on_left$signal_data$CTCF_features$CTCF_signal$query_gr,
+    sqc.high_on_left$features_config$assessment_features$CTCF_features
+  )
+  expect_equal(
+    sqc.high_on_right$signal_data$CTCF_features$CTCF_signal$query_gr,
+    sqc.high_on_right$features_config$assessment_features$CTCF_features
+  )
+  expect_equal(
+    sqc.high_on_right.centered$signal_data$CTCF_features$CTCF_signal$query_gr,
+    sqc.high_on_right.centered$features_config$assessment_features$CTCF_features
+  )
 })
 
 # cowplot::plot_grid(

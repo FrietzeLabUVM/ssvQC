@@ -1,7 +1,7 @@
 #CFG main_dir=$SSVQC_DATA read_mode=bam_SE
 #CFG color_by=cell color_mapping=MCF10A:blue2,MCF10AT1:darkmagenta,MCF10CA1:violetred1
 #CFG run_by=mark to_run=CTCF to_run_reference=input view_size=3e3
-#CFG fetch_options=win_size:10,win_method:"summary",summary_FUN:weighted.mean,fragLens:180
+#CFG fetch_options=win_size:10,win_method:"summary",summary_FUN:weighted.mean
 file,cell,mark,rep
 MCF10A_CTCF_R1.100peaks.bam,MCF10A,CTCF,rep1
 MCF10AT1_CTCF_R1.100peaks.bam,MCF10AT1,CTCF,rep1

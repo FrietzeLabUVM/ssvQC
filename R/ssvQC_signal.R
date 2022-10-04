@@ -5,7 +5,16 @@
   names(feature_names) = feature_names
   signal_result = lapply(feature_names, run_by_match, object = object, callFUN = ClusteredSignal.fromConfig.run_by_match)
   object@signal_data = dbl_extract(signal_result, "signal_data")
-  object@features_config@assessment_gr = dbl_extract(signal_result, "query_gr")
+  query_gr.l = dbl_extract(signal_result, "query_gr")
+  #these two things can result in changes to query_gr
+  if(object@signal_config@flip_signal_mode != "none" | object@signal_config@center_signal_at_max){
+    if(lengths(query_gr.l) == 1){
+      object@features_config@assessment_gr = lapply(query_gr.l, function(x)x[[1]])
+    }else{
+      message("Cannot unambiguously store center/flipped query_gr when multiple signals retrieved per feature set. Center/flipped query_gr is stored in signal_data$feature$signal$query_gr.")
+    }
+  }
+  
   object
 }
 

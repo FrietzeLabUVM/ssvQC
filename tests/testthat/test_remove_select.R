@@ -4,6 +4,7 @@ library(testthat)
 
 options(mc.cores = 1)
 set.seed(0)
+SQC_OPTIONS$SQC_FORCE_CACHE_OVERWRITE = TRUE 
 
 
 features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
@@ -19,23 +20,11 @@ sqc.feature = ssvQC(features_config = features_config)
 sqc.complete.prepFeatures = suppressWarnings({ssvQC.prepFeatures(sqc.complete)})
 sqc.complete.prepSignal = suppressWarnings({ssvQC.prepSignal(sqc.complete)})
 
+sqc.complete.ran = ssvQC.plotSignal(sqc.complete)
 sqc.complete.ran = ssvQC.runAll(sqc.complete)
+
 sqc.signal.ran = ssvQC.runAll(sqc.signal)
 sqc.feature.ran = ssvQC.runAll(sqc.feature)
-
-plot_names = c("features",    "reads",       "signal",      "SCC",         "FRIP",        "correlation")
-SCC_names = c("read_length", "fragment_length", "read_correlation", "flex_fragment_correlation", "stable_fragment_correlation", "full_correlation_results", "average_correlation")
-FRIP_names = c("name_split", "id", "reads_in_peak", "cell", "sample", "mapped_reads", "frip")
-SCC_partnames = list(
-    read_length = c("name_split", "read_length", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value"),
-    fragment_length = c("name_split", "fragment_length", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value"),
-    read_correlation = c("name_split", "shift", "id", "correlation", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value"),
-    flex_fragment_correlation = c("name_split", "shift", "id", "correlation", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value"),
-    stable_fragment_correlation = c("name_split", "shift", "id", "correlation", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value"),
-    full_correlation_results = c("name_split", "shift", "id", "correlation", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value"),
-    average_correlation = c("name_split", "shift", "correlation", "file", "cell", "mark", "rep", "name", "mapped_reads", "fragLens", "cap_value", "RPM_cap_value")
-)
-
 
 print_names = function(x){
     (paste0('c("', paste(x, collapse = '", "'), '")'))
@@ -106,9 +95,12 @@ test_that("can select by id if not yet ssvQC.prepSignal, but not cluster", {
 test_that("can select by cluster after running ssvQC.prepSignal", {
   id_selectd.ran = names(sqc.complete.ran$signal_data$CTCF_features$CTCF_signal$query_gr.cluster_list$`1`)
   
-  sqc.complete.prepSignal.rm1 = ssvQC.selectClusters(sqc.complete.prepSignal, "1", features_name = "CTCF_features")
+  sqc.complete.prepSignal.rm1 = ssvQC.selectClusters(sqc.complete.prepSignal, c("1", "2", "3"), features_name = "CTCF_features")
   sqc.complete.ran.rm1 = ssvQC.selectClusters(sqc.complete.ran, "1", features_name = "CTCF_features")
   
   expect_true(all(id_selectd.ran %in% names(sqc.complete.ran.rm1$features_config$assessment_features$CTCF_features)))
   expect_true(all(id_selectd.ran %in% sqc.complete.ran.rm1$signal_data$CTCF_features$CTCF_signal$signal_data$id))
+  
+  expect_setequal(names(sqc.complete.ran.rm1$features_config$assessment_features$CTCF_features), id_selectd.ran)
+  expect_setequal(sqc.complete.ran.rm1$signal_data$CTCF_features$CTCF_signal$signal_data$id, id_selectd.ran)
 })
