@@ -681,7 +681,7 @@ fetch_signal_at_features = function(qc_signal, query_gr, bfc = new_cache()){
   prof_dt = bfcif(bfc, digest(list(fetch_FUN, call_args)), function(){
     do.call(fetch_FUN, call_args)
   })
-  browser()
+  #### apply center_signal_at_max ####
   if(qc_signal@center_signal_at_max == TRUE){
     query_gr.center = centerGRangesAtMax(prof_dt = prof_dt, qgr = query_gr, width = width(query_gr))
     message("Centering signal profiles...")
@@ -692,18 +692,26 @@ fetch_signal_at_features = function(qc_signal, query_gr, bfc = new_cache()){
       names_variable = "name"), 
       extra_args)
     prof_dt = bfcif(bfc, digest(list(fetch_FUN, call_args.center)), function(){
-      do.call(fetch_FUN, call_args)
+      do.call(fetch_FUN, call_args.center)
     })
     query_gr = query_gr.center
   }
+  #### apply flip_signal_mode ####
   if(qc_signal@flip_signal_mode != flip_signal_modes$none){
     #need to bring query_gr with flip info out
     balance_dt = prof_dt[, list(right_sum = sum(y[x > 0]),
                                 left_sum = sum(y[x < 0])),
                          by = list(name, id)]
-    balance_dt = balance_dt[, list(needs_flip = left_sum > right_sum,
-                                   name,
-                                   id)]
+    if(qc_signal@flip_signal_mode == flip_signal_modes$high_on_right){
+      balance_dt = balance_dt[, list(needs_flip = left_sum > right_sum,
+                                     name,
+                                     id)]  
+    }else{
+      balance_dt = balance_dt[, list(needs_flip = left_sum < right_sum,
+                                     name,
+                                     id)]  
+    }
+    
     most_flipped = balance_dt[,
                               list(fraction_flipped = sum(needs_flip) / .N),
                               by = list(id)]

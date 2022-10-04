@@ -30,6 +30,8 @@ stopifnot(setequal(signal_vars, names(val2bwlab)))
 sqc_signal_values = as.list(signal_vars)
 names(sqc_signal_values) = signal_vars
 
+
+
 get_default_signal_var = function(read_mode){
   if(read_mode %in% c(sqc_read_modes$bigwig, sqc_read_modes$null)){
     sqc_signal_values$raw

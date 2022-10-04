@@ -1,3 +1,4 @@
+testthat::context("ssvTSNE")
 library(ssvQC)
 library(testthat)
 options(mc.cores = 1)

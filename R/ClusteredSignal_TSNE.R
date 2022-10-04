@@ -120,8 +120,9 @@ ClusteredSignal_TSNE.fromConfig = function(signal_config,
       
       query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
       
-      
-      prof_dt = fetch_signal_at_features(signal_config, query_gr, bfc)
+      fetch_res = fetch_signal_at_features(signal_config, query_gr, bfc)
+      prof_dt = fetch_res$prof_dt
+      query_gr = fetch_res$query_gr
       
       if(!is.null(prof_dt$mapped_reads)){
         prof_dt[, y_RPM := y / mapped_reads * 1e6] 
@@ -146,7 +147,7 @@ ClusteredSignal_TSNE.fromConfig = function(signal_config,
     }else{
       stop("NYI")
     }
-    clust_dt
+    list(clust_dt = clust_dt, query_gr = query_gr)
   })
 }
 

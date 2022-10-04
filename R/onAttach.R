@@ -16,6 +16,7 @@
   SQC_OPTIONS <<- new("SQC_OPTIONS")
   SQC_SIGNAL_VALUES <<- sqc_signal_values
   SQC_READ_MODES <<- sqc_read_modes
+  SQC_FLIP_SIGNAL_MODES <<- flip_signal_modes
 }
 
 setClass("SQC_OPTIONS", representation = list(

@@ -3,8 +3,9 @@
   object = ssvQC.prepFetch(object)
   feature_names = names(object@features_config$assessment_features)
   names(feature_names) = feature_names
-  signal_data = lapply(feature_names, run_by_match, object = object, callFUN = ClusteredSignal.fromConfig.run_by_match)
-  object@signal_data = signal_data
+  signal_result = lapply(feature_names, run_by_match, object = object, callFUN = ClusteredSignal.fromConfig.run_by_match)
+  object@signal_data = dbl_extract(signal_result, "signal_data")
+  object@features_config@assessment_gr = dbl_extract(signal_result, "query_gr")
   object
 }
 

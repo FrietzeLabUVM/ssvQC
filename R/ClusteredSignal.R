@@ -121,7 +121,10 @@ ClusteredSignal.fromConfig = function(signal_config,
     }
     
     query_gr = seqsetvis::prepare_fetch_GRanges_names(query_gr)
-    prof_dt = fetch_signal_at_features(signal_config, query_gr, bfc)
+    fetch_res = fetch_signal_at_features(signal_config, query_gr, bfc)
+    prof_dt = fetch_res$prof_dt
+    query_gr = fetch_res$query_gr
+
     if(!is.null(prof_dt$mapped_reads)){
       prof_dt[, y_RPM := y / mapped_reads * 1e6] 
     }
@@ -133,14 +136,14 @@ ClusteredSignal.fromConfig = function(signal_config,
       prof_dt[, y_linQ := y / cap_value]
       prof_dt[y_linQ > 1, y_linQ := 1]
     }
-    clust_dt = ClusteredSignal(prof_dt, query_gr, 
+    signal_data = ClusteredSignal(prof_dt, query_gr, 
                                manual_assigned = manual_assigned,
                                nclust = nclust,
                                signal_var = val2var[signal_config@cluster_value],
                                signal_var.within = val2var[signal_config@sort_value],
                                facet_var = facet_var,
                                extra_var = extra_var)
-    clust_dt
+    list(signal_data = signal_data, query_gr = query_gr)
   })
   
 }
