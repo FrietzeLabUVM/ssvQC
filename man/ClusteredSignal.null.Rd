@@ -2,10 +2,10 @@
 % Please edit documentation in R/ClusteredSignal.R
 \name{ClusteredSignal.null}
 \alias{ClusteredSignal.null}
-\title{Title}
+\title{ClusteredSignal.null}
 \usage{
 ClusteredSignal.null()
 }
 \description{
-Title
+ClusteredSignal.null
 }

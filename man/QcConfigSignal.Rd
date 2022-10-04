@@ -28,6 +28,8 @@ QcConfigSignal(
   plot_value = NULL,
   heatmap_limit_values = c(0, 10),
   lineplot_free_limits = TRUE,
+  center_signal_at_max = FALSE,
+  flip_signal_mode = flip_signal_modes$none,
   is_null = FALSE
 )
 
@@ -50,7 +52,9 @@ QcConfigSignal.files(
   linearQuantile_cutoff = 0.98,
   sort_value = NULL,
   plot_value = NULL,
-  sort_method = c("hclust", "sort")[2]
+  sort_method = c("hclust", "sort")[2],
+  center_signal_at_max = FALSE,
+  flip_signal_mode = flip_signal_modes$none
 )
 
 fetch_signal_at_features(qc_signal, query_gr, bfc = new_cache())
@@ -83,6 +87,8 @@ QcConfigSignal.save_config(object, file)
 \item{sort_value}{}
 
 \item{sort_method}{}
+
+\item{flip_signal_mode}{}
 
 \item{is_null}{}
 

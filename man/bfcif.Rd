@@ -8,7 +8,7 @@ bfcif(
   bfc,
   rname,
   FUN,
-  version = getOption("SQC_CACHE_VERSION", "v1"),
+  version = getOption("SQC_CACHE_VERSION", "v3"),
   force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)
 )
 }

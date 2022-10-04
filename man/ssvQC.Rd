@@ -100,19 +100,27 @@ ssvQC
 \examples{
 options(mc.cores = 1)
 set.seed(0)
-features_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
+# To make an ssvQC object, confiugration for features (peaks, other genomic 
+regions) and signal (numeric values on the genome from bam pileups or bigwigs)
+features_config_file = system.file(
+  package = "ssvQC", 
+  "extdata/ssvQC_peak_config.csv"
+)
 features_config = QcConfigFeatures.parse(features_config_file)
 
-bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
+bam_config_file = system.file(
+  package = "ssvQC", 
+  "extdata/ssvQC_bam_config.csv"
+)
 bam_config = QcConfigSignal.parse(bam_config_file)
 
 bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 bigwig_config = QcConfigSignal.parse(bigwig_config_file)
 
+# Different ways to make ssvQC objects
 sqc.complete.file = ssvQC(features_config_file, bam_config_file)
 
 sqc.complete = ssvQC(features_config, bam_config)
-object = sqc.complete
 
 sqc.complete.bw = ssvQC(features_config, bigwig_config_file)
 
@@ -120,7 +128,9 @@ sqc.signal = ssvQC(signal_config = bam_config)
 
 sqc.feature = ssvQC(features_config = features_config)
 
+# ssvQC.runAll will run all appropriate QC methods
 sqc.signal = ssvQC.runAll(sqc.signal)
+
 sqc.feature = ssvQC.runAll(sqc.feature)
 
 sqc.complete = ssvQC.runAll(sqc.complete)
