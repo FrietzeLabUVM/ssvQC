@@ -1,5 +1,5 @@
 
-
+#' @export
 setClass("ClusteredSignal",
          representation = list(
            signal_data = "data.table",

@@ -13,12 +13,16 @@ setClass("ssvQC",
            plots = "list",
            matched_only = "logical"
          ))
-
+#' @export
 setClass("ssvQC.featureOnly", contains = "ssvQC")
+#' @export
 setClass("ssvQC.signalOnly", contains = "ssvQC")
+#' @export
 setClass("ssvQC.complete", contains = "ssvQC")
 
+#' @export
 setClass("ssvQC.signalOnly.bw", contains = "ssvQC.signalOnly")
+#' @export
 setClass("ssvQC.complete.bw", contains = "ssvQC.complete")
 
 setMethod("initialize","ssvQC", function(.Object,...){
