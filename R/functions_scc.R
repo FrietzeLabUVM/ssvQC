@@ -121,43 +121,6 @@ harmonize_seqlengths = function(gr, bam_file){
   gr
 }
 
-new_cache = function(cache_path = getOption("SQC_CACHE_PATH", "~/.cache")){
-  BiocFileCache::BiocFileCache(cache_path)
-}
-
-#' Title
-#'
-#' @param bfc 
-#' @param rname 
-#' @param FUN 
-#' @param version 
-#' @param force_overwrite 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-bfcif = function(bfc, rname, FUN, 
-                 version = getOption("SQC_CACHE_VERSION", "v3"),
-                 force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)){
-  # is rname in cache?
-  vrname = paste0(rname, "_", version)
-  if(nrow(BiocFileCache::bfcquery(bfc, query = vrname, field = "rname")) == 0){
-    cache_path = BiocFileCache::bfcnew(bfc, rname = vrname)
-    
-  }else{
-    cache_path = BiocFileCache::bfcrpath(bfc, vrname)
-  }
-  # does cached file exist?
-  if(file.exists(cache_path) && !force_overwrite){
-    load(BiocFileCache::bfcrpath(bfc, vrname))
-  }else{
-    res = FUN()
-    save(res, file = cache_path)
-  }
-  # return either new results or cached results
-  res
-}
 
 gather_metrics = function(peak_strand_corr, read_length = NULL){
   correlation = id = NULL

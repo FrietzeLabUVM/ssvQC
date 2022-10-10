@@ -412,37 +412,6 @@ is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam
   invisible(file)
 }
 
-#' get_args
-#' 
-#' returns parameters of calling function as a named list.
-#'
-#' @param env 
-#' @param ... 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-get_args = function(env = parent.frame(), to_ignore = character(), ...){
-  args = c(as.list(env), list(...))
-  args = args[!names(args) %in% to_ignore]
-  args[order(names(args))]
-}
-#' digest_args
-#' 
-#' returns digest results of name list of parameters of calling function
-#'
-#' @param env 
-#' @param ... 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-digest_args = function(env = parent.frame(), to_ignore = character(), ...){
-  digest::digest(get_args(env, to_ignore, ...))
-}
-
 get_group_colors = function(group_names){
   cols = SQC_OPTIONS$SQC_COLORS[(seq_along(group_names)-1) %% length(SQC_OPTIONS$SQC_COLORS) + 1]
   names(cols) = group_names
