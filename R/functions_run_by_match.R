@@ -25,7 +25,7 @@ run_by_match = function(name, object = NULL, callFUN = NULL){
 make_frip_dt.run_by_match = function(sel_sig_config, query_gr, bfc){
   make_frip_dt(as.data.table(sel_sig_config@meta_data), 
                query_gr = query_gr, 
-               color_var = sel_sig_config@color_by, 
+               color_var = sel_sig_config@color_by,
                bfc = bfc, 
                force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE)
   )
@@ -36,8 +36,9 @@ make_scc_dt.run_by_match = function(sel_sig_config, query_gr, bfc){
 }
 
 ClusteredSignal.fromConfig.run_by_match = function(sel_sig_config, query_gr, bfc){
-  ClusteredSignal.fromConfig(sel_sig_config, 
-                             resize(query_gr, sel_sig_config@view_size, fix = "center"), 
+  ClusteredSignal.fromConfig(signal_config = sel_sig_config, 
+                             query_gr = resize(query_gr, sel_sig_config@view_size, fix = "center"), 
+                             nclust = sel_sig_config@n_clusters,
                              facet_var = "name_split", 
                              extra_var = union(sel_sig_config@color_by, sel_sig_config@run_by), 
                              bfc = bfc)
