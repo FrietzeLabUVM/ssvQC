@@ -419,7 +419,7 @@ QcConfigSignal = function(config_df,
   stopifnot(read_mode %in% sqc_read_modes)
   
   if(is.null(to_run)){
-    to_run = unique(config_df[[run_by]])   
+    to_run = as.character(unique(config_df[[run_by]]))
   }
   stopifnot(all(to_run %in% config_df[[run_by]]))
   if(is.null(to_run_reference)){

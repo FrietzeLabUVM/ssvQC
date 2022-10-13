@@ -1,4 +1,14 @@
 
+#' ClusteredSignal
+#'
+#' @slot signal_data data.table. 
+#' @slot query_gr GRanges. 
+#' @slot signal_var character. 
+#' @slot signal_var.within character. 
+#' @slot facet_var character. 
+#' @slot extra_var character. 
+#' @slot manual_assigned list. 
+#'
 #' @export
 setClass("ClusteredSignal",
          representation = list(
@@ -13,26 +23,30 @@ setClass("ClusteredSignal",
 
 #' ClusteredSignal
 #'
-#' @param signal_profile_dt 
-#' @param query_gr 
-#' @param manual_assigned 
-#' @param nclust 
-#' @param signal_var 
-#' @param facet_var 
-#' @param extra_var 
-#' @param signal_var.within 
+#' @param signal_profile_dt Tidy data.table containing profile information.  See output of seqsetvis::ssvFetchBam.
+#' @param query_gr A GRanges containing regions to retrieve signal data at.
+#' @param manual_assigned NYI but should allow manual cluster assignment.
+#' @param nclust Number of k-means clusters to calculate. Default is 6.
+#' @param signal_var Variable name for signal information to cluster upon in signal_profile_dt. Default is "y".
+#' @param signal_var.within Variable name for ranking items within clusters.  The Default is the same as signal_var.
+#' @param facet_var Variable that will eventually be used in heatmap facets.  Ensures it is preserved and not aggregated away.  Default is "name_split".
+#' @param extra_var Any extra variables to preserve and avaoid aggregating away.
 #' @param bfc BiocFileCache to use, uses default location otherwise. 
 #'
-#' @return
+#' @return A ClusteredSignal object containing clustering information.
 #' @export
 #'
 #' @examples
+#' signal_profile_dt = seqsetvis::CTCF_in_10a_profiles_dt
+#' setnames(signal_profile_dt, "sample", "name_split")
+#' query_gr = seqsetvis::CTCF_in_10a_overlaps_gr
+#' clust_sig = ClusteredSignal(signal_profile_dt, query_gr)
 ClusteredSignal = function(signal_profile_dt,
                            query_gr,
                            manual_assigned = list(),
                            nclust = 6,
                            signal_var = "y",
-                           signal_var.within = "y",
+                           signal_var.within = signal_var,
                            facet_var = "name_split",
                            extra_var = character(),
                            bfc = new_cache()){
