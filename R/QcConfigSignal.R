@@ -80,7 +80,8 @@ check_QcConfigSignal = function(object){
 #' @slot sort_method 
 #' @slot plot_value 
 #' @slot heatmap_limit_values 
-#' @slot lineplot_free_limits 
+#' @slot lineplot_free_limits
+#' @slot n_clusters 
 #'
 #' @slot  
 #'
@@ -100,7 +101,8 @@ setClass("QcConfigSignal", contains = "QcConfig",
            heatmap_limit_values = "ANY",
            lineplot_free_limits = "logical",
            center_signal_at_max = "logical",
-           flip_signal_mode = "character"
+           flip_signal_mode = "character",
+           n_clusters = "numeric"
          ), validity = check_QcConfigSignal)
 
 setMethod("initialize","QcConfigSignal", function(.Object,...){
@@ -132,7 +134,8 @@ setMethod("names", "QcConfigSignal",
               "color_by",
               "color_mapping",
               "center_signal_at_max",
-              "flip_signal_mode"
+              "flip_signal_mode",
+              "n_clusters"
             )
             
           })
@@ -159,7 +162,8 @@ setMethod("$", "QcConfigSignal",
                     color_by = x@color_by,
                     color_mapping = as.list(x@color_mapping),
                     center_signal_at_max = x@center_signal_at_max,
-                    flip_signal_mode = x@flip_signal_mode
+                    flip_signal_mode = x@flip_signal_mode,
+                    n_clusters = x@n_clusters
             )
           })
 
@@ -293,6 +297,9 @@ setReplaceMethod("$", "QcConfigSignal",
                            flip_signal_mode = {
                              x@flip_signal_mode = value
                            },
+                           n_clusters = {
+                             x@n_clusters = value
+                           },
                            warning(warn_msg)
                    )
                    validObject(x)
@@ -316,7 +323,11 @@ setReplaceMethod("$", "QcConfigSignal",
 #' @param sort_method 
 #' @param center_signal_at_max
 #' @param flip_signal_mode 
-#' @param is_null 
+#' @param is_null
+#' @param plot_value 
+#' @param heatmap_limit_values 
+#' @param lineplot_free_limits 
+#' @param n_clusters 
 #'
 #' @return
 #' @export
@@ -347,7 +358,8 @@ QcConfigSignal = function(config_df,
                           lineplot_free_limits = TRUE,
                           center_signal_at_max = FALSE,
                           flip_signal_mode = flip_signal_modes$none,
-                          is_null = FALSE){
+                          is_null = FALSE,
+                          n_clusters = 6){
   config_df = .enforce_file_var(config_df)
   config_df = .enforce_name_var(config_df)
   if(!run_by %in% colnames(config_df)){
@@ -446,7 +458,8 @@ QcConfigSignal = function(config_df,
       lineplot_free_limits = lineplot_free_limits,
       center_signal_at_max = center_signal_at_max,
       flip_signal_mode = flip_signal_mode,
-      is_null = is_null)
+      is_null = is_null,
+      n_clusters = n_clusters)
 }
 
 #' QcConfigSignal null placeholder
@@ -492,7 +505,8 @@ QcConfigSignal.parse = function(signal_config_file){
                        "heatmap_limit_values", 
                        "lineplot_free_limits",
                        "center_signal_at_max",
-                       "flip_signal_mode" 
+                       "flip_signal_mode",
+                       "n_clusters"
                        
   )
   cfg_vals = .parse_config_header(signal_config_file, valid_signal_var)
@@ -529,7 +543,8 @@ QcConfigSignal.parse = function(signal_config_file){
                   lineplot_free_limits = TRUE, 
                   center_signal_at_max = FALSE,
                   flip_signal_mode = flip_signal_modes$none,
-                  is_null = FALSE){
+                  is_null = FALSE,
+                  n_clusters = 6){
     QcConfigSignal(config_df = config_dt, 
                    run_by = run_by, 
                    to_run = to_run,
@@ -548,7 +563,8 @@ QcConfigSignal.parse = function(signal_config_file){
                    lineplot_free_limits = lineplot_free_limits,
                    center_signal_at_max = center_signal_at_max,
                    flip_signal_mode = flip_signal_mode,
-                   is_null = is_null)
+                   is_null = is_null,
+                   n_clusters = n_clusters)
   }
   do.call(tfun, c(list(config_dt = signal_config_dt), cfg_vals))
 }
@@ -592,7 +608,8 @@ QcConfigSignal.files = function(file_paths,
                                 plot_value = NULL,
                                 sort_method = c("hclust", "sort")[2],
                                 center_signal_at_max = FALSE,
-                                flip_signal_mode = flip_signal_modes$none
+                                flip_signal_mode = flip_signal_modes$none,
+                                n_clusters = 6
 ){
   if(is.null(group_names)){
     group_names = paste(seq_along(file_paths), basename(file_paths))
@@ -630,7 +647,8 @@ QcConfigSignal.files = function(file_paths,
                  sort_method = sort_method,
                  plot_value = plot_value,
                  center_signal_at_max = center_signal_at_max,
-                 flip_signal_mode = flip_signal_mode)
+                 flip_signal_mode = flip_signal_mode,
+                 n_clusters = n_clusters)
 }
 
 get_fetch_fun = function(read_mode){
@@ -762,7 +780,8 @@ setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definit
         lineplot_free_limits = x@lineplot_free_limits, 
         center_signal_at_max = x@center_signal_at_max,
         flip_signal_mode = x@flip_signal_mode,
-        is_null = FALSE
+        is_null = FALSE,
+        n_clusters = x@n_clusters
     )
   })
 })
@@ -801,7 +820,8 @@ QcConfigSignal.save_config = function(object, file){
     "heatmap_limit_values",
     "lineplot_free_limits",
     "center_signal_at_max",
-    "flip_signal_mode"
+    "flip_signal_mode",
+    "n_clusters"
     
   )
   kvp_slots = c("color_mapping", "fetch_options")

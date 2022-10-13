@@ -20,7 +20,9 @@
                   signal_var = x@signal_var,
                   signal_var.within = x@signal_var.within,
                   facet_var = x@facet_var,
-                  extra_var = x@extra_var)
+                  extra_var = x@extra_var, 
+                  nclust = x@n_clusters
+                  )
 }
 
 .remove_SCC_ids = function(x, keep_ids, meta_dt){
