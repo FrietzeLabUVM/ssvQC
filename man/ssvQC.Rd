@@ -31,8 +31,7 @@ ssvQC(
   signal_config = NULL,
   out_dir = getwd(),
   bfc = NULL,
-  matched_only = TRUE,
-  ...
+  matched_only = TRUE
 )
 
 ssvQC.runAll(object)

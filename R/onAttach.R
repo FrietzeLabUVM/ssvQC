@@ -11,8 +11,9 @@
   options("SQC_FEATURE_FILE_SUFF" = c("narrowPeak", "broadPeak", "bed", "txt", "tab"))
   options("SQC_SIGNAL_FILE_SUFF" = c("bam", "bigwig", "bw", "bigWig", "BigWig"))
   options("SQC_FORCE_CACHE_OVERWRITE" = FALSE)
-  options("SQC_CACHE_VERSION" = "v1")
+  options("SQC_CACHE_VERSION" = "v4")
   options("SQC_CACHE_PATH" = "~/.cache")
+  options("SQC_CACHE_VERBOSE" = FALSE)
   SQC_OPTIONS <<- new("SQC_OPTIONS")
   SQC_SIGNAL_VALUES <<- sqc_signal_values
   SQC_READ_MODES <<- sqc_read_modes

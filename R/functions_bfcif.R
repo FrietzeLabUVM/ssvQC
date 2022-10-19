@@ -9,7 +9,7 @@
 #' @param version A version indicator string to further distinguish cache entries.  Typically, you want to iterate this value when code outside of FUN or input parameters have changed and you want to force FUN to reevaluate. Default is SQC_CACHE_VERSION option or v3 if option is not set.
 #' @param force_overwrite If TRUE, FUN will be rerun regardless of cache state. If it exists, current cache contents will be overwritten. Default is SQC_FORCE_CACHE_OVERWRITE option or FALSE if option is not set.
 #' @param return_path_only If TRUE, FUN will not be run and instead the cache path is returned. Default is FALSE.
-#' @param verbose If TRUE, status is reported via messages. Default is FALSE.
+#' @param verbose If TRUE, status is reported via messages. Default is value of SQC_CACHE_VERBOSE option or FALSE if option not set.
 #'
 #' @return Result of FUN, from cache if available.
 #' @export
@@ -22,34 +22,49 @@
 #' bfcif(bfc, "test1", function(x)mean(seq(10)), verbose = TRUE, 
 #'   force_overwrite = TRUE)
 bfcif = function(bfc, rname, FUN, 
-                 version = getOption("SQC_CACHE_VERSION", "v3"),
+                 version = getOption("SQC_CACHE_VERSION", "v4"),
                  force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE),
                  return_path_only = FALSE, 
-                 verbose = FALSE){
+                 verbose = getOption("SQC_CACHE_VERBOSE", FALSE)){
   # is rname in cache?
   vrname = paste0(rname, "_", version)
   if(nrow(BiocFileCache::bfcquery(bfc, query = vrname, field = "rname")) == 0){
-    if(verbose) message("results not in cache. ", appendLF = FALSE)
+    if(verbose) message("results not in cache. ")
     cache_path = BiocFileCache::bfcnew(bfc, rname = vrname)
   }else{
-    if(verbose) message("previous cache results found. ", appendLF = FALSE)
+    if(verbose) message("previous cache results found. ")
     cache_path = BiocFileCache::bfcrpath(bfc, vrname)
   }
   if(return_path_only){
     if(verbose) message("returning cache path.")
+    if(verbose) message(cache_path)
     return(cache_path)
   }
   # does cached file exist?
   if(file.exists(cache_path) && !force_overwrite){
     if(verbose) message("loading previous cache results...")
-    load(BiocFileCache::bfcrpath(bfc, vrname))
+    if(verbose) message(cache_path)
+    load(cache_path)
   }else{
-    if(verbose) message("running function...", appendLF = FALSE)
+    if(verbose) message("running function...")
     res = FUN()
     if(verbose) message("caching results...")
+    if(verbose) message(cache_path)
     save(res, file = cache_path)
   }
   # return either new results or cached results
+  if(is(res, "data.table")){
+    data.table::setalloccol(res)
+  }
+  if(is.list(res)){
+    if(any(sapply(res, is, class2 = "data.table"))){
+      res = lapply(res, function(x){
+        if(is(x, "data.table")){
+          data.table::setalloccol(x)
+        }
+      })
+    }
+  }
   res
 }
 

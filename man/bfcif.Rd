@@ -8,10 +8,10 @@ bfcif(
   bfc,
   rname,
   FUN,
-  version = getOption("SQC_CACHE_VERSION", "v3"),
+  version = getOption("SQC_CACHE_VERSION", "v4"),
   force_overwrite = getOption("SQC_FORCE_CACHE_OVERWRITE", FALSE),
   return_path_only = FALSE,
-  verbose = FALSE
+  verbose = getOption("SQC_CACHE_VERBOSE", FALSE)
 )
 }
 \arguments{
@@ -27,7 +27,7 @@ bfcif(
 
 \item{return_path_only}{If TRUE, FUN will not be run and instead the cache path is returned. Default is FALSE.}
 
-\item{verbose}{If TRUE, status is reported via messages. Default is FALSE.}
+\item{verbose}{If TRUE, status is reported via messages. Default is value of SQC_CACHE_VERBOSE option or FALSE if option not set.}
 }
 \value{
 Result of FUN, from cache if available.

@@ -172,8 +172,7 @@ ssvQC = function(features_config = NULL,
                  signal_config = NULL,
                  out_dir = getwd(),
                  bfc = NULL, 
-                 matched_only = TRUE,
-                 ...){
+                 matched_only = TRUE){
   if(is.null(features_config) & is.null(signal_config)){
     stop("At least one of features_config or signal_config must be specified.")
   }
