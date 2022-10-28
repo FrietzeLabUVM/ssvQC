@@ -179,7 +179,7 @@ setReplaceMethod("$", "QcConfigSignal",
                              x@view_size = value
                            },
                            window_size = {
-                             x@win_size = window_size
+                             x@win_size = value
                            },
                            read_mode = {
                              stopifnot(value %in% c("bam_SE", "bam_PE", "bigwig", "null"))  
@@ -726,13 +726,23 @@ get_fetch_fun = function(read_mode){
 #' fetch_signal_at_features(qc_signal, query_gr)
 fetch_signal_at_features = function(qc_signal, query_gr, bfc = new_cache()){
   extra_args = qc_signal@fetch_options
-  if(!is.null(qc_signal@meta_data$fragLens)){
-    if(!is.null(extra_args$fragLens)){
-      if(extra_args$fragLens != "auto"){
-        warning("Overwriting configured fragLens with detected fragLens for fetch call.")  
-      }
+  ### JRB commenting out for now. user provided fragLens should be used.
+  # if(!is.null(qc_signal@meta_data$fragLens)){ # fragLens is in meta data
+  #   if(!is.null(extra_args$fragLens)){ # fragLens is in extra_args
+  #     if(extra_args$fragLens != "auto"){ 
+  #       warning("Overwriting configured fragLens with detected fragLens for fetch call.")  
+  #     }
+  #   }
+  #   extra_args$fragLens = qc_signal@meta_data$fragLens
+  # }
+  if(is.null(extra_args$fragLens)){ # no fragLens in extra_args
+    if(!is.null(qc_signal@meta_data$fragLens)){ # fragLens is in meta_data
+      extra_args$fragLens = qc_signal@meta_data$fragLens # apply fragLens to extra_args from meta_data
     }
-    extra_args$fragLens = qc_signal@meta_data$fragLens
+  }
+  if("win_size" %in% names(extra_args)){
+    warning("win_size found in configured fetch_options. ignored. Please use QcConfigSignal$window_size.")
+    extra_args[["win_size"]] = NULL
   }
   call_args = c(list(
     file_paths = qc_signal@meta_data, 

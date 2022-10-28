@@ -1,6 +1,12 @@
+1.0.19
+
+* fragLens from config now prefered over fragLens detected by SCC.
+* win_size from config now yields warning and is ignored.
+
 1.0.18
 
 * completed docs
+* ssvFetch* win_size now controlled by QcConfigSignal$window_size
 
 1.0.9
 
