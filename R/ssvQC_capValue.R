@@ -128,11 +128,21 @@
   }
   
   object@meta_data$cap_value = cap_dt[.(object@meta_data$name)]$y_cap_value
+  
   if(!is.null(cap_dt$y_RPM_cap_value)){
     object@meta_data$RPM_cap_value = cap_dt[.(object@meta_data$name)]$y_RPM_cap_value  
   }
   object
 }
+
+# append_RPM_cap_value = function(dt, y_cap_var_ = "cap_value", rpm_cap_var_ = "RPM_cap_value"){
+#   if(is.null(dt$mapped_reads)){
+#     stop("mapped_reads not in dt")
+#   }
+#   if(is.null(dt[[y_cap_var_]])){
+#     stop("mapped_reads not in dt")
+#   }
+# }
 
 #' @export
 #' @rdname ssvQC

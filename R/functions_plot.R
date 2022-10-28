@@ -134,32 +134,9 @@ plot_feature_comparison = function(peak_grs, min_fraction = 0, min_number = 2, f
   ))
 }
 
-#' plot_peak_dt
-#'
-#' @param peak_dt
-#' @param name_lev
-#'
-#' @return
-#' @export
-#'
-#' @examples
-plot_peak_dt = function(peak_dt, name_lev = NULL){
-  if(!is.null(name_lev)){
-    stopifnot(all(peak_dt$name %in% name_lev))
-    peak_dt$name = factor(peak_dt$name, levels = name_lev)
-  }
-
-
-  p_peaks1 = ggplot(peak_dt, aes(x = name, y = peak_count, fill = treatment)) +
-    geom_bar(stat = 'identity') +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
-          plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
-    scale_y_continuous(labels = function(x)x/1e3) +
-    labs(y = "peaks (k)", x = "")
-  p_peaks1
-}
-
 #' plot_frip_dt
+#' 
+#' internal function used by ssvQC.plotFRIP
 #'
 #' @param frip_dt output from \code{\link{make_frip_dt}}
 #' @param sort_by character. One of "frip" or "reads_in_peak". Should plots be
@@ -169,7 +146,6 @@ plot_peak_dt = function(peak_dt, name_lev = NULL){
 #'   not ignored if this is not NULL. Default is NULL.
 #'
 #' @return list of ggplot plots relevant to FRIP.
-#' @export
 #' @importFrom stats median quantile
 #'
 #' @examples

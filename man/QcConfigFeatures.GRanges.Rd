@@ -2,7 +2,7 @@
 % Please edit documentation in R/QcConfigFeatures.R
 \name{QcConfigFeatures.GRanges}
 \alias{QcConfigFeatures.GRanges}
-\title{Title}
+\title{QcConfigFeatures.GRanges}
 \usage{
 QcConfigFeatures.GRanges(
   query_gr,
@@ -44,6 +44,15 @@ QcConfigFeatures.GRanges(
 
 \item{process_features}{if TRUE, features are loaded and overlapped to generate assement regions as part of creating QcConfigFeatures object}
 }
+\value{
+A QcConfigFeatures object based only on input query_gr.
+}
 \description{
-Title
+QcConfigFeatures.GRanges
+}
+\examples{
+np_file = system.file("extdata/MCF10A_CTCF_random100.narrowPeak", package = "ssvQC")
+query_gr = seqsetvis::easyLoad_narrowPeak(np_file)[[1]]
+qc_feature.gr = QcConfigFeatures.GRanges(query_gr)
+qc_feature.gr
 }

@@ -157,8 +157,6 @@ setMethod("QcScaleFill", c("QcConfig"), function(object){
 #'
 #' @param qc A QcConfig object
 #'
-#' @return
-#'
 #' @examples
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' qc = QcConfigFeatures.parse(feature_config_file)
@@ -203,25 +201,25 @@ setMethod("QcScaleFill", c("QcConfig"), function(object){
 #' @export
 setMethod("plot", "QcConfig", definition = function(x).plot_QcConfig(x))
 
-#' Title
-#'
 #' @param QcConfig 
 #'
-#' @return
 #' @export
 #' @rdname QcConfig
-#' @examples
 setMethod("show", "QcConfig", definition = function(object).show_QcConfig(object))
 
-#' Title
+#' QcConfig.save_config
 #'
-#' @param object 
+#' @param object QcConfig object to save to text file.
 #'
-#' @return
+#' @return invisibly returns path to saved config file.
 #' @export
 #' @rdname QcConfig
 #' @examples
-QcConfig.save_config = function(object){
+#' cfg_file = system.file("extdata/ssvQC_peak_config.csv", package = "ssvQC")
+#' qc_features = QcConfigFeatures.parse(cfg_file)
+#' f = tempfile()
+#' QcConfig.save_config(qc_features, f)
+QcConfig.save_config = function(object, file){
     slots_to_save = c(
         "run_by",
         "to_run",

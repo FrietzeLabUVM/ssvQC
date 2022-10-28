@@ -22,7 +22,7 @@
 \alias{ssvQC.plotMappedReads}
 \alias{ssvQC.prepSignal}
 \alias{ssvQC.plotSignal}
-\title{ssvQC}
+\title{show concise summary of ssvQC object status.}
 \usage{
 \S4method{show}{ssvQC}(object)
 
@@ -92,7 +92,7 @@ new_cache() will be used.}
 A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods ssvQC.plot*.
 }
 \description{
-ssvQC
+show concise summary of ssvQC object status.
 
 ssvQC
 }

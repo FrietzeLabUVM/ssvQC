@@ -20,6 +20,7 @@ QcConfigSignal(
   color_mapping = NULL,
   read_mode = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
+  window_size = 200,
   fetch_options = list(),
   cluster_value = NULL,
   linearQuantile_cutoff = 0.98,
@@ -48,6 +49,7 @@ QcConfigSignal.files(
   group_name.input = "input",
   group_colors = NULL,
   view_size = getOption("SQC_VIEW_SIZE", 3000),
+  window_size = getOption("SQC_WINDOW_SIZE", 200),
   read_mode = NULL,
   cluster_value = NULL,
   linearQuantile_cutoff = 0.98,
@@ -64,41 +66,74 @@ fetch_signal_at_features(qc_signal, query_gr, bfc = new_cache())
 QcConfigSignal.save_config(object, file)
 }
 \arguments{
-\item{config_df}{}
+\item{config_df}{A data.frame containing configuration information for signal
+(bam or bigwig) files. Should contain a "file" attribute and entires for
+run_by and color_by.}
 
-\item{run_by}{}
+\item{run_by}{Name of the attribute specify how signal data should be
+grouped.}
 
-\item{to_run}{}
+\item{to_run}{Values in run_by that represent running groups.}
 
-\item{to_run_reference}{}
+\item{to_run_reference}{Values in run_by that should be included in all run
+groups.}
 
-\item{color_by}{}
+\item{color_by}{Name of the attribute specify how signal data should be
+colored in relevant plots}
 
-\item{color_mapping}{}
+\item{color_mapping}{Name character vector where names are values of color_by
+and values are valid R colors (color names or hex values).}
 
-\item{read_mode}{}
+\item{read_mode}{Read mode of signal data, one of bam_SE, bam_PE, or bigwig.
+Use SQC_READ_MODES$.}
 
 \item{view_size}{view size in bp to apply. Defaults to 3000.}
 
-\item{fetch_options}{}
+\item{window_size}{The window size used when fetching signal. Lower values
+increase resolution but also RAM usage. Default is 200 bp.}
 
-\item{cluster_value}{}
+\item{fetch_options}{Named list of additional arguments to pass to signal
+fetch function.}
 
-\item{linearQuantile_cutoff}{}
+\item{cluster_value}{Value in SQC_SIGNAL_VALUES$ to use for clustering. RPM
+values are not valid if read_mode is "bigwig".}
 
-\item{sort_value}{}
+\item{linearQuantile_cutoff}{Quantile to use for linearQuantile normalization
+procedure. Values above this cutoff are treated as outliers.}
 
-\item{sort_method}{}
+\item{sort_value}{Value in SQC_SIGNAL_VALUES$ to use for sorting. RPM values
+are not valid if read_mode is "bigwig".}
 
-\item{plot_value}{}
+\item{sort_method}{One of two available method to use when sorting within
+clusters. If "hclust", hierarchical clustering is applied. If the default
+of "sort", regions are sorting by decreasing signal.}
 
-\item{heatmap_limit_values}{}
+\item{plot_value}{Value in SQC_SIGNAL_VALUES$ to represent in plots. RPM
+values are not valid if read_mode is "bigwig".}
 
-\item{lineplot_free_limits}{}
+\item{heatmap_limit_values}{Color scale limits for heatmaps. Default is 0 to
+10.}
 
-\item{flip_signal_mode}{}
+\item{lineplot_free_limits}{If TRUE (default), lineplot facets per cluster
+will have free axis. If FALSE a consistnet y-axis is used for all clusters.}
 
-\item{n_clusters}{}
+\item{center_signal_at_max}{If TRUE, signal is centered at local maxima prior
+to any clustering. The default is FALSE. See details for explanation or
+interaction with assessment features.}
+
+\item{flip_signal_mode}{Value is SQC_FLIP_SIGNAL_MODES$.  If not "none"
+(Default) signal profiles are flipped so that highest signal is on one side
+or the other.  See details for explanation or interaction with assessment
+features.}
+
+\item{is_null}{If TRUE, this QcConfigSignal is considered null/empty.}
+
+\item{n_clusters}{The number of k-means clusters for the heatmap.
+
+  Since center_signal_at_max and flip_signal_mode have the potential to
+  modify the assessment regions based on signal run groups, the modified
+  assessment feature set is store in signal_data for each run group. They can
+  be accessed like this: sqc$signal_data$FEATURE_NAME$SIGNAL_NAME$query_gr}
 
 \item{signal_config_file}{Configuration file for signal data.}
 
@@ -108,16 +143,27 @@ QcConfigSignal.save_config(object, file)
 
 \item{group_colors}{vector of colors to use per group}
 
-\item{qc_signal}{}
+\item{qc_signal}{A QcConfigSignal object}
 
-\item{query_gr}{}
+\item{query_gr}{A GRanges to fetch data for}
 
 \item{groups}{numeric vector of group assignments. 1 is first item in group_names, 2 is second, etc. Default is seq_along(file_path)}
 }
 \value{
-QcConfigSignal object
+A QcConfigSignal object
+
+A null/empty QcConfigSignal object
+
+A QcConfigSignal object
 
 a QcConfigSignal object
+
+A list of 2 items prof_dt and query_gr.  prof_dt is a tidy data.table
+  of signal profiles.  query_gr is a GRanges that may have been modified from
+  input query_gr if signal profiles are flipped or centered according to
+  center_signal_at_max or flip_signal_mode in the signal config.
+
+Invisibly returns path to saved config file.
 }
 \description{
 QcConfigSignal
@@ -127,6 +173,8 @@ QcConfigSignal
 QcConfigSignal null placeholder
 
 QcConfigSignal.files
+
+QcConfigSignal.save_config
 }
 \section{Slots}{
 
@@ -148,6 +196,12 @@ QcConfigSignal.files
 \item{\code{plot_value}}{}
 
 \item{\code{heatmap_limit_values}}{}
+
+\item{\code{lineplot_free_limits}}{}
+
+\item{\code{center_signal_at_max}}{}
+
+\item{\code{flip_signal_mode}}{}
 
 \item{\code{n_clusters}}{}
 }}

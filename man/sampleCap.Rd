@@ -2,15 +2,26 @@
 % Please edit documentation in R/functions_misc.R
 \name{sampleCap}
 \alias{sampleCap}
-\title{Title}
+\title{sampleCap}
 \usage{
-sampleCap(x, n = 500)
+sampleCap(x, size = 500)
 }
 \arguments{
-\item{x}{}
+\item{x}{either a vector of one or more elements from which to choose,
+    or a positive integer.  See \sQuote{Details.}}
 
-\item{n}{}
+\item{size}{a non-negative integer giving the number of items to choose.}
+}
+\value{
+A vector of length size or original length of x if size is too larger, with elements drawn randomly from x.
 }
 \description{
-Title
+A safer version of sample with additional code so that if a sample size of n is greater than length of x, n is reduced and a reordered x is returned.
+}
+\examples{
+x = LETTERS
+#this would cause an error is normal sample
+sampleCap(x, 50)
+#this is equivalent to sample
+sampleCap(x, 5)
 }

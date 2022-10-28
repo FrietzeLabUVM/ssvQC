@@ -2,15 +2,18 @@
 % Please edit documentation in R/functions_misc.R
 \name{parse_fetch_options}
 \alias{parse_fetch_options}
-\title{Title}
+\title{parse_fetch_options}
 \usage{
 parse_fetch_options(fop)
 }
 \arguments{
-\item{fop}{}
+\item{fop}{character of options}
+}
+\value{
+named list of options
 }
 \description{
-Title
+parse_fetch_options
 }
 \examples{
 fop = "win_size:10,win_method:\"summary\",summary_FUN:mean"

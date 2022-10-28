@@ -1,12 +1,33 @@
 #' write_ssvQC.per_peak
 #'
-#' @param sqc 
-#' @param f 
+#' @param sqc A valid ssvQC object, FRIP and SCC must be present.
+#' @param out_dir Output directory path. Defaults to current directory.
 #'
-#' @return
+#' @return invisibly returns paths to per peak QC files.
 #' @export
-#'
+#' 
+#' @rdname write_ssvQC
 #' @examples
+#' set.seed(0)
+#' features_config_file = system.file(
+#'   package = "ssvQC", 
+#'   "extdata/ssvQC_peak_config.csv"
+#' )
+#' features_config = QcConfigFeatures.parse(features_config_file)
+#'
+#' bam_config_file = system.file(
+#'   package = "ssvQC", 
+#'   "extdata/ssvQC_bam_config.csv"
+#' )
+#' bam_config = QcConfigSignal.parse(bam_config_file)
+#' 
+#' sqc = ssvQC(features_config, bam_config)
+#' sqc = ssvQC.runAll(sqc)
+#' out = tempdir()
+#' qc_files.per_peak = write_ssvQC.per_peak(sqc, out)
+#' qc_files.summary = write_ssvQC.summary(sqc, out)
+#' qc_files.correlation = write_ssvQC.correlation(sqc, out)
+#' dir(out)
 write_ssvQC.per_peak = function(sqc, out_dir = getwd()){
   make_qc_table = function(x, value.var, value.var.final = value.var){
     x[, name := gsub("\n", "_", name_split)]
@@ -20,7 +41,7 @@ write_ssvQC.per_peak = function(sqc, out_dir = getwd()){
   }
   
   
-  lapply(names(sqc$FRIP), function(f_name){
+  out_files = lapply(names(sqc$FRIP), function(f_name){
     lapply(names(sqc$FRIP[[f_name]]), function(s_name){
       qc_gr = sqc$features_config$assessment_features[[f_name]]
       qc_gr.memb = as.data.frame(mcols(qc_gr))
@@ -62,20 +83,16 @@ write_ssvQC.per_peak = function(sqc, out_dir = getwd()){
       out_f = file.path(out_dir, paste0("qc_perpeak.", f_name, ".", s_name, ".bedlike.txt"))
       fwrite(qc_gr.df, out_f, sep = "\t")
       message("wrote ", out_f)
+      out_f
     })
   })
-  invisible()
+  invisible(unlist(out_files))
 }
 
 #' write_ssvQC.summary
 #'
-#' @param sqc 
-#' @param out_dir 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname write_ssvQC
 write_ssvQC.summary = function(sqc, out_dir = getwd()){
   if(is.null(sqc@other_data$FRIP)){
     stop("missing FRIP not yet supported")
@@ -83,7 +100,7 @@ write_ssvQC.summary = function(sqc, out_dir = getwd()){
   if(is.null(sqc$SCC)){
     stop("missing SCC not yet supported") 
   }
-  lapply(names(sqc$FRIP), function(f_name){
+  out_files = lapply(names(sqc$FRIP), function(f_name){
     lapply(names(sqc$FRIP[[f_name]]), function(s_name){
       qc_dt = sqc$FRIP[[f_name]][[s_name]][, list(FRIP_assessed = sum(reads_in_peak) / mapped_reads), list(name_split, mapped_reads)]
       qc_dt$mapped_reads = NULL
@@ -94,20 +111,14 @@ write_ssvQC.summary = function(sqc, out_dir = getwd()){
       out_f = file.path(out_dir, paste0("qc_summary.", f_name, ".", s_name, ".csv"))
       fwrite(qc_dt, out_f, sep = ",")
       message("wrote ", out_f)
+      out_f
     })
   })
-  invisible()
+  invisible(unlist(out_files))
 }
 
-#' write_ssvQC.correlation
-#'
-#' @param sqc 
-#' @param out_dir 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname write_ssvQC
 write_ssvQC.correlation = function(sqc, out_dir = getwd()){
   if(is.null(sqc@other_data$read_count_correlation)){
     stop("missing read_count_correlation not yet supported")

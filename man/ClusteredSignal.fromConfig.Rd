@@ -14,6 +14,24 @@ ClusteredSignal.fromConfig(
   bfc = new_cache()
 )
 }
+\arguments{
+\item{signal_config}{A valid QcConfigSignal}
+
+\item{query_gr}{A GRanges containing regions to retrieve signal data at.}
+
+\item{manual_assigned}{NYI but should allow manual cluster assignment.}
+
+\item{nclust}{Number of k-means clusters to calculate. Default is 6.}
+
+\item{facet_var}{Variable that will eventually be used in heatmap facets.  Ensures it is preserved and not aggregated away.  Default is "name_split".}
+
+\item{extra_var}{Any extra variables to preserve and avaoid aggregating away.}
+
+\item{bfc}{BiocFileCache to use, uses default location otherwise.}
+}
+\value{
+A ClusteredSignal object containing clustered signal profiles.
+}
 \description{
 ClusteredSignal.fromConfig
 }

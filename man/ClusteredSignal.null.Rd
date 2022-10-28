@@ -6,6 +6,12 @@
 \usage{
 ClusteredSignal.null()
 }
+\value{
+An empty ClusteredSignal object
+}
 \description{
 ClusteredSignal.null
+}
+\examples{
+ClusteredSignal.null()
 }

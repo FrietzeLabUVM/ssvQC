@@ -2,13 +2,20 @@
 % Please edit documentation in R/functions_misc.R
 \name{get_mapped_reads}
 \alias{get_mapped_reads}
-\title{Title}
+\title{get_mapped_reads}
 \usage{
-get_mapped_reads(f)
+get_mapped_reads(bam_file)
 }
 \arguments{
-\item{f}{}
+\item{bam_file}{A bam file.  Matching .bai file must exist.}
+}
+\value{
+The number of mapped reads in bam file.
 }
 \description{
-Title
+get_mapped_reads
+}
+\examples{
+bam_file = system.file("extdata/MCF10A_CTCF_R1.100peaks.bam", package = "ssvQC")
+get_mapped_reads(bam_file)
 }

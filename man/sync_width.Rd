@@ -2,13 +2,48 @@
 % Please edit documentation in R/functions_misc.R
 \name{sync_width}
 \alias{sync_width}
-\title{Title}
+\title{sync_width}
 \usage{
 sync_width(my_plots)
 }
 \arguments{
-\item{my_plots}{}
+\item{my_plots}{A}
+}
+\value{
+A list of grobs matching input my_plots list of ggplots.
 }
 \description{
-Title
+synchronize the element widths (axis, plot, etc.) of a list of ggplots.
+}
+\details{
+To work properly the number and order of elements must match between plots.  In practical terms, this means either all or non must have vertical facets.
+}
+\examples{
+library(ggplot2)
+
+theme_update(
+  plot.title.position = "plot", 
+  axis.title.y = element_text(angle = 0, vjust = .5, hjust = 0)
+)
+
+p1 = ggplot(mtcars, aes(x = mpg, y = cyl)) +
+  geom_point() +
+  labs(title = "cylinders vs mpg", y = "cylinder") 
+
+p2 = ggplot(mtcars, aes(x = mpg, y = disp)) +
+  geom_point() +
+  labs(title = "disp vs mpg") 
+
+p3 = ggplot(mtcars, aes(x = mpg, y = hp)) +
+  geom_point() +
+  labs(title = "horsepower vs mpg") 
+
+plots = list(p1, p2, p3)
+
+#without synchronization, x axis positions do not line up between plots.
+cowplot::plot_grid(plotlist = plots, ncol = 1)
+
+#after synchronization, x axis positions line up perfectly between plots.
+plots.sync = sync_width(plots)
+cowplot::plot_grid(plotlist = plots.sync, ncol = 1)
 }

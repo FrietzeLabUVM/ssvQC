@@ -28,7 +28,7 @@ not ignored if this is not NULL. Default is NULL.}
 list of ggplot plots relevant to FRIP.
 }
 \description{
-plot_frip_dt
+internal function used by ssvQC.plotFRIP
 }
 \examples{
 peak_files = dir(system.file("extdata", package = "seqqc"), pattern = "Peak$", full.names = TRUE)

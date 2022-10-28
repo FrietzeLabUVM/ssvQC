@@ -2,13 +2,22 @@
 % Please edit documentation in R/functions_misc.R
 \name{guess_read_mode}
 \alias{guess_read_mode}
-\title{Title}
+\title{guess_read_mode}
 \usage{
 guess_read_mode(signal_file)
 }
 \arguments{
-\item{signal_file}{}
+\item{signal_file}{A bam of bigwig file path.}
+}
+\value{
+A character describing format of signal_file.
 }
 \description{
-Title
+guess_read_mode
+}
+\examples{
+bam_file = dir(system.file("extdata", package = "ssvQC"), pattern = "bam$", full.names = TRUE)[1]
+bw_file = dir(system.file("extdata", package = "ssvQC"), pattern = "bw$", full.names = TRUE)[1]
+guess_read_mode(bam_file)
+guess_read_mode(bw_file)
 }

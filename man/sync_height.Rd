@@ -2,13 +2,49 @@
 % Please edit documentation in R/functions_misc.R
 \name{sync_height}
 \alias{sync_height}
-\title{Title}
+\title{sync_height}
 \usage{
 sync_height(my_plots)
 }
 \arguments{
-\item{my_plots}{}
+\item{my_plots}{A}
+}
+\value{
+A list of grobs matching input my_plots list of ggplots.
 }
 \description{
-Title
+synchronize the element heights (axis, plot, etc.) of a list of ggplots.
+}
+\details{
+To work properly the number and order of elements must match between plots.  In practical terms, this means either all or non must have horizontal facets.
+}
+\examples{
+library(ggplot2)
+
+theme_update(
+  plot.title.position = "plot", 
+  axis.title.y = element_text(angle = 0, vjust = .5, hjust = 0), 
+  axis.title.x = element_text(angle = 90, vjust = .5, hjust = 0)
+)
+
+p1 = ggplot(mtcars, aes(y = mpg, x = cyl)) +
+  geom_point() +
+  labs(title = "cylinders vs mpg", x = "cylinder") 
+
+p2 = ggplot(mtcars, aes(y = mpg, x = disp)) +
+  geom_point() +
+  labs(title = "disp vs mpg") 
+
+p3 = ggplot(mtcars, aes(y = mpg, x = hp)) +
+  geom_point() +
+  labs(title = "horsepower vs mpg") 
+
+plots = list(p1, p2, p3)
+
+#without synchronization, y axis positions do not line up between plots.
+cowplot::plot_grid(plotlist = plots, nrow = 1)
+
+#after synchronization, y axis positions line up perfectly between plots.
+plots.sync = sync_height(plots)
+cowplot::plot_grid(plotlist = plots.sync, nrow = 1)
 }

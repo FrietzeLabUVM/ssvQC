@@ -81,7 +81,15 @@ ClusteredSignal = function(signal_profile_dt,
 
 #' ClusteredSignal.fromConfig
 #'
-#' @return
+#' @param signal_config A valid QcConfigSignal
+#' @param query_gr A GRanges containing regions to retrieve signal data at.
+#' @param manual_assigned NYI but should allow manual cluster assignment.
+#' @param nclust Number of k-means clusters to calculate. Default is 6.
+#' @param facet_var Variable that will eventually be used in heatmap facets.  Ensures it is preserved and not aggregated away.  Default is "name_split".
+#' @param extra_var Any extra variables to preserve and avaoid aggregating away.
+#' @param bfc BiocFileCache to use, uses default location otherwise. 
+#'
+#' @return A ClusteredSignal object containing clustered signal profiles.
 #' @export
 #'
 #' @examples
@@ -164,10 +172,11 @@ ClusteredSignal.fromConfig = function(signal_config,
 
 #' ClusteredSignal.null
 #'
-#' @return
+#' @return An empty ClusteredSignal object
 #' @export
 #'
 #' @examples
+#' ClusteredSignal.null()
 ClusteredSignal.null = function(){
   new("ClusteredSignal",
       signal_data =  data.table(),

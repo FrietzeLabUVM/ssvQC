@@ -2,13 +2,23 @@
 % Please edit documentation in R/functions_misc.R
 \name{get_feature_file_load_function}
 \alias{get_feature_file_load_function}
-\title{Title}
+\title{get_feature_file_load_function}
 \usage{
 get_feature_file_load_function(feature_files)
 }
 \arguments{
 \item{feature_files}{}
 }
+\value{
+list of appropriate functions for loading feature_files.
+}
 \description{
-Title
+get_feature_file_load_function
+}
+\examples{
+feature_files = dir(system.file("extdata", package = "ssvQC"), pattern = "bed$|Peak$", full.names = TRUE)
+load_FUNs = get_feature_file_load_function(feature_files)
+all_loaded = lapply(feature_files, function(f){
+  get_feature_file_load_function(f)[[1]](f)[[1]]
+})
 }

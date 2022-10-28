@@ -34,47 +34,46 @@ setMethod("initialize","ssvQC", function(.Object,...){
   .Object
 })
 
-.show_ssvQC = function(qc){
+#' internal show function for ssvQC
+.show_ssvQC = function(sqc){
   message("Features configuration:")
-  print(qc$features_config)
+  print(sqc$features_config)
   message("\n")
   message("Signal configuration:")
-  print(qc$signal_config)
+  print(sqc$signal_config)
   message("\n")
-  if(length(qc@signal_data) > 0){
+  if(length(sqc@signal_data) > 0){
     message("Signal data has been LOADED.")
   }else{
     message("Signal data has NOT been loaded.")
   }
-  if(length(qc@other_data) > 0){
-    message(paste(names(qc@other_data), collapse = ", "), " have been LOADED.")
+  if(length(sqc@other_data) > 0){
+    message(paste(names(sqc@other_data), collapse = ", "), " have been LOADED.")
   }else{
     message("NO other data have been loaded.")
   }
-  if(length(qc@plots) > 0){
-    message(paste(names(qc@plots), collapse = ", "), " have been PLOTTED.")
+  if(length(sqc@plots) > 0){
+    message(paste(names(sqc@plots), collapse = ", "), " have been PLOTTED.")
   }else{
     message("NO plots have been made.")
   }
 }
 
-.plot_ssvQC = function(qc){
-  p1 = plot(qc$signal_config) + labs(title = "Signal configuration")
-  p2 = plot(qc$features_config) + labs(title = "Features configuration")
+.plot_ssvQC = function(sqc){
+  p1 = plot(sqc$signal_config) + labs(title = "Signal configuration")
+  p2 = plot(sqc$features_config) + labs(title = "Features configuration")
   cowplot::plot_grid(p1, p2)
 }
 
 #' @export
 setMethod("plot", "ssvQC", definition = function(x).plot_ssvQC(x))
 
-#' ssvQC
+#' show concise summary of ssvQC object status.
 #'
 #' @param ssvQC 
 #'
-#' @return
 #' @export
 #' @rdname ssvQC
-#' @examples
 setMethod("show", "ssvQC", definition = function(object).show_ssvQC(object))
 
 #' ssvQC.save_config
@@ -86,6 +85,22 @@ setMethod("show", "ssvQC", definition = function(object).show_ssvQC(object))
 #' @export
 #'
 #' @examples
+#' features_config_file = system.file(
+#'   package = "ssvQC", 
+#'   "extdata/ssvQC_peak_config.csv"
+#' )
+#' features_config = QcConfigFeatures.parse(features_config_file)
+#'
+#' bam_config_file = system.file(
+#'   package = "ssvQC", 
+#'   "extdata/ssvQC_bam_config.csv"
+#' )
+#' bam_config = QcConfigSignal.parse(bam_config_file)
+#' 
+#' sqc = ssvQC(features_config, bam_config)
+#' 
+#' out_dir = tempdir()
+#' ssvQC.save_config(sqc, file.path(out_dir, "test_save_config"))
 ssvQC.save_config = function(object, file){
   feature_file = paste0(sub(".csv", "",  file), ".features.csv")
   signal_file = paste0(sub(".csv", "",  file), ".signal.csv")

@@ -21,16 +21,12 @@ setMethod("ssvQC.prepFeatures", "QcConfigFeatures", function(object){
 })
 
 
-#' @param object 
+#' Internal function for ssvQC.prepFeatures
 #'
-#' @return
-#' @rdname QcConfigFeatures
-#' @examples
 .prepFeatures = function(object, bfc = new_cache()){
   if(object@is_null) return(object)
   
   if(length(object$assessment_features) > 0){
-    # message("Not prepping features.  Call resetFeatures() on object to reset before prepping.")
     return(object)
   }
   

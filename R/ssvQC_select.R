@@ -80,31 +80,25 @@
 
 #' ssvQC.selectFeatures
 #'
-#' @param sqc 
-#' @param ids 
-#' @param grs 
-#' @param features_name 
-#' @param invert 
-#'
-#' @return
 #' @export
+#' @rdname ssvQC.removeFeatures
 #'
-#' @examples
 ssvQC.selectFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NULL, invert = FALSE){
   ssvQC.removeFeatures(sqc, ids = ids, grs = grs, features_name = features_name, invert = !invert)
 }
 
 #' ssvQC.removeFeatures
 #' 
-#' @param sqc 
-#' @param ids 
-#' @param grs 
-#' @param invert 
+#' @param sqc A valid ssvQC object after clustering by ssvQC.prepSignal
+#' @param ids region ids.
+#' @param grs GRanges to use to fine region ids.
+#' @param invert If true, flip removal to selection and vice versa.
 #' 
-#' @return 
+#' @return ssvQC object with selected regions removed.
+#' @rdname ssvQC.removeFeatures 
 #' @export
 #' 
-#' @example 
+#' @examples
 #' library(ssvQC)
 #' options(mc.cores = 1)
 #' set.seed(0)
@@ -125,6 +119,7 @@ ssvQC.selectFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NUL
 #' 
 #' sqc$plots$SCC$dots
 #' 
+#' #removal
 #' sqc.filtered = ssvQC.removeFeatures(sqc, ids = c("region_1", "region_2"))
 #' 
 #' sqc.filtered2 = ssvQC.removeFeatures(sqc.filtered, ids = c("region_1", "region_2"))
@@ -140,6 +135,24 @@ ssvQC.selectFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NUL
 #' sqc.filtered.gr_inv$features_config$assessment_features
 #' sqc.filtered.gr_inv$plots$signal$heatmaps
 #' sqc.filtered.gr_inv$plots$SCC$dots
+#' 
+#' # selection
+#' sqc.selected = ssvQC.selectFeatures(sqc, ids = c("region_1", "region_2", "region_3", "region_4", "region_5"))
+#' 
+#' sqc.selected2 = ssvQC.selectFeatures(sqc.selected, ids = c("region_1", "region_2", "region_3", "region_4", "region_5"))
+#' 
+#' sqc.selected.inv = ssvQC.selectFeatures(sqc, ids = c("region_1", "region_2", "region_3", "region_4", "region_5"), invert = TRUE)
+#' 
+#' sqc.selected.gr = ssvQC.selectFeatures(sqc, grs = GRanges(paste0("chr", 1:16), IRanges(1, 1e9)))
+#' sqc.selected.gr$features_config$assessment_features
+#' sqc.selected.gr$plots$signal$heatmaps
+#' sqc.selected.gr$plots$SCC$dots
+#' 
+#' sqc.selected.gr_inv = ssvQC.selectFeatures(sqc, grs = GRanges(paste0("chr", 1:16), IRanges(1, 1e9)), invert = TRUE)
+#' sqc.selected.gr_inv$features_config$assessment_features
+#' sqc.selected.gr_inv$plots$signal$heatmaps
+#' sqc.selected.gr_inv$plots$SCC$dots
+#' 
 ssvQC.removeFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NULL, invert = FALSE){
   stopifnot(is(sqc, "ssvQC"))
   stopifnot(is.logical(invert))
@@ -248,14 +261,15 @@ ssvQC.removeFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NUL
 
 #' ssvQC.removeClusters
 #'
-#' @param sqc 
-#' @param cluster_numbers 
-#' @param features_name 
-#' @param signals_name 
-#' @param invert 
+#' @param sqc A valid ssvQC object after clustering by ssvQC.prepSignal
+#' @param cluster_numbers Number for clusters.
+#' @param features_name feature_name to perform selection on. Required if multiple feature sets present.
+#' @param signals_name signal_name to perform selection on. Required if multiple signal sets present.
+#' @param invert If true, flip removal to selection and vice versa.
 #'
-#' @return
+#' @return ssvQC object with selected clusters removed.
 #' @export
+#' @rdname ssvQC.selectClusters
 #'
 #' @examples
 #' library(ssvQC)
@@ -278,6 +292,12 @@ ssvQC.removeFeatures = function(sqc, ids = NULL, grs = NULL, features_name = NUL
 #' 
 #' sqc.rmclust_inv = ssvQC.removeClusters(sqc, cluster_numbers = 1:4, invert = TRUE)
 #' sqc.rmclust_inv$plots$signal$heatmaps$CTCF_features$CTCF_signal
+#' 
+#' sqc.selclust = ssvQC.selectClusters(sqc, cluster_numbers = 1:4)
+#' sqc.selclust$plots$signal$heatmaps$CTCF_features$CTCF_signal
+#' 
+#' sqc.selclust_inv = ssvQC.selectClusters(sqc, cluster_numbers = 1:4, invert = TRUE)
+#' sqc.selclust_inv$plots$signal$heatmaps$CTCF_features$CTCF_signal
 ssvQC.removeClusters = function(sqc, cluster_numbers, features_name = NULL, signals_name = NULL, invert = FALSE){
   stopifnot(is(sqc, "ssvQC"))
   stopifnot(is.logical(invert))
@@ -320,18 +340,10 @@ ssvQC.removeClusters = function(sqc, cluster_numbers, features_name = NULL, sign
   ssvQC.removeFeatures(sqc, ids = ids, features_name = features_name, invert = invert)
 }
 
-#' Title
+#' ssvQC.selectClusters
 #'
-#' @param sqc 
-#' @param cluster_numbers 
-#' @param features_name 
-#' @param signals_name 
-#' @param invert 
-#'
-#' @return
 #' @export
-#'
-#' @examples
+#' @rdname ssvQC.selectClusters
 ssvQC.selectClusters = function(sqc, cluster_numbers, features_name = NULL, signals_name = NULL, invert = FALSE){
   ssvQC.removeClusters(sqc, cluster_numbers, features_name = features_name, signals_name = signals_name, invert = !invert)
 }

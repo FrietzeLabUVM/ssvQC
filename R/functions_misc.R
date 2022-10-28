@@ -1,11 +1,42 @@
-#' Title
+#' sync_width
+#' 
+#' synchronize the element widths (axis, plot, etc.) of a list of ggplots.
+#' 
+#' To work properly the number and order of elements must match between plots.  In practical terms, this means either all or non must have vertical facets.
 #'
-#' @param my_plots 
+#' @param my_plots A
 #'
-#' @return
+#' @return A list of grobs matching input my_plots list of ggplots.
 #' @export
 #'
 #' @examples
+#' library(ggplot2)
+#' 
+#' theme_update(
+#'   plot.title.position = "plot", 
+#'   axis.title.y = element_text(angle = 0, vjust = .5, hjust = 0)
+#' )
+#' 
+#' p1 = ggplot(mtcars, aes(x = mpg, y = cyl)) +
+#'   geom_point() +
+#'   labs(title = "cylinders vs mpg", y = "cylinder") 
+#' 
+#' p2 = ggplot(mtcars, aes(x = mpg, y = disp)) +
+#'   geom_point() +
+#'   labs(title = "disp vs mpg") 
+#' 
+#' p3 = ggplot(mtcars, aes(x = mpg, y = hp)) +
+#'   geom_point() +
+#'   labs(title = "horsepower vs mpg") 
+#' 
+#' plots = list(p1, p2, p3)
+#' 
+#' #without synchronization, x axis positions do not line up between plots.
+#' cowplot::plot_grid(plotlist = plots, ncol = 1)
+#' 
+#' #after synchronization, x axis positions line up perfectly between plots.
+#' plots.sync = sync_width(plots)
+#' cowplot::plot_grid(plotlist = plots.sync, ncol = 1)
 sync_width = function(my_plots){
   stopifnot(class(my_plots) == "list")
   is_ok = sapply(my_plots, function(x){
@@ -35,14 +66,46 @@ sync_width = function(my_plots){
   my_grobs
 }
 
-#' Title
+#' sync_height
+#' 
+#' synchronize the element heights (axis, plot, etc.) of a list of ggplots.
+#' 
+#' To work properly the number and order of elements must match between plots.  In practical terms, this means either all or non must have horizontal facets.
 #'
-#' @param my_plots 
+#' @param my_plots A
 #'
-#' @return
+#' @return A list of grobs matching input my_plots list of ggplots.
 #' @export
 #'
 #' @examples
+#' library(ggplot2)
+#' 
+#' theme_update(
+#'   plot.title.position = "plot", 
+#'   axis.title.y = element_text(angle = 0, vjust = .5, hjust = 0), 
+#'   axis.title.x = element_text(angle = 90, vjust = .5, hjust = 0)
+#' )
+#' 
+#' p1 = ggplot(mtcars, aes(y = mpg, x = cyl)) +
+#'   geom_point() +
+#'   labs(title = "cylinders vs mpg", x = "cylinder") 
+#' 
+#' p2 = ggplot(mtcars, aes(y = mpg, x = disp)) +
+#'   geom_point() +
+#'   labs(title = "disp vs mpg") 
+#' 
+#' p3 = ggplot(mtcars, aes(y = mpg, x = hp)) +
+#'   geom_point() +
+#'   labs(title = "horsepower vs mpg") 
+#' 
+#' plots = list(p1, p2, p3)
+#' 
+#' #without synchronization, y axis positions do not line up between plots.
+#' cowplot::plot_grid(plotlist = plots, nrow = 1)
+#' 
+#' #after synchronization, y axis positions line up perfectly between plots.
+#' plots.sync = sync_height(plots)
+#' cowplot::plot_grid(plotlist = plots.sync, nrow = 1)
 sync_height = function(my_plots){
   stopifnot(class(my_plots) == "list")
   is_ok = sapply(my_plots, function(x){
@@ -72,44 +135,58 @@ sync_height = function(my_plots){
   my_grobs
 }
 
-#' Title
+#' sampleCap
+#' 
+#' A safer version of sample with additional code so that if a sample size of n is greater than length of x, n is reduced and a reordered x is returned.
 #'
-#' @param x 
-#' @param n 
+#' @inheritParams base::sample
 #'
-#' @return
+#' @return A vector of length size or original length of x if size is too larger, with elements drawn randomly from x.
 #' @export
 #'
 #' @examples
-sampleCap = function(x, n = 500){
-  n = min(n, length(unique(x)))
-  out = sample(unique(x), n)
-  if(is.factor(out)) out = as.character(out)
+#' x = LETTERS
+#' #this would cause an error is normal sample
+#' sampleCap(x, 50)
+#' #this is equivalent to sample
+#' sampleCap(x, 5)
+sampleCap = function(x, size = 500){
+  size = min(size, length(unique(x)))
+  out = sample(unique(x), size)
+  # if(is.factor(out)) out = as.character(out) #not sure why this would be necessary
   out
 }
 
-#' Title
+#' get_mapped_reads
 #'
-#' @param f 
+#' @param bam_file A bam file.  Matching .bai file must exist.
 #'
-#' @return
+#' @return The number of mapped reads in bam file.
 #' @export
 #'
 #' @examples
-get_mapped_reads = function(f){
-  stats = Rsamtools::idxstatsBam(f)
+#' bam_file = system.file("extdata/MCF10A_CTCF_R1.100peaks.bam", package = "ssvQC")
+#' get_mapped_reads(bam_file)
+get_mapped_reads = function(bam_file){
+  stopifnot(file.exists(bam_file))
+  stopifnot(file.exists(paste0(bam_file, ".bai")))
+  stats = Rsamtools::idxstatsBam(bam_file)
   sum(stats[,3])
 }
 
 
 #' guess_feature_file_format
+#' 
+#' Check if feature file has a common format. ie. narrowPeak, broadPeak, or bed.
+#'  
+#' @param feature_files A feature or interval file path. A vector of multiple files is acceptable.
 #'
-#' @param feature_files 
-#'
-#' @return
+#' @return A character vector describing each entry in feature_files.
 #' @export
 #'
 #' @examples
+#' feature_files = dir(system.file("extdata", package = "ssvQC"), pattern = "bed$|Peak$", full.names = TRUE)
+#' guess_feature_file_format(feature_files)
 guess_feature_file_format = function(feature_files){
   .guess_feature_file_format = function(feature_file){
     file_format = "unknown"
@@ -128,14 +205,18 @@ guess_feature_file_format = function(feature_files){
   sapply(feature_files, .guess_feature_file_format)
 }
 
-#' Title
+#' guess_read_mode
 #'
-#' @param signal_file 
+#' @param signal_file A bam of bigwig file path.
 #'
-#' @return
+#' @return A character describing format of signal_file.
 #' @export
 #'
 #' @examples
+#' bam_file = dir(system.file("extdata", package = "ssvQC"), pattern = "bam$", full.names = TRUE)[1]
+#' bw_file = dir(system.file("extdata", package = "ssvQC"), pattern = "bw$", full.names = TRUE)[1]
+#' guess_read_mode(bam_file)
+#' guess_read_mode(bw_file)
 guess_read_mode = function(signal_file){
   if(signal_file[1] == "null"){
     return("null")
@@ -152,14 +233,19 @@ guess_read_mode = function(signal_file){
   mode
 }
 
-#' Title
+#' get_feature_file_load_function
 #'
 #' @param feature_files 
 #'
-#' @return
+#' @return list of appropriate functions for loading feature_files.
 #' @export
 #'
 #' @examples
+#' feature_files = dir(system.file("extdata", package = "ssvQC"), pattern = "bed$|Peak$", full.names = TRUE)
+#' load_FUNs = get_feature_file_load_function(feature_files)
+#' all_loaded = lapply(feature_files, function(f){
+#'   get_feature_file_load_function(f)[[1]](f)[[1]]
+#' })
 get_feature_file_load_function = function(feature_files){
   file_types = guess_feature_file_format(feature_files)
   .get_feature_file_load_function = function(file_type){
@@ -224,15 +310,6 @@ get_feature_file_load_function = function(feature_files){
   my_df
 }
 
-
-#' Title
-#'
-#' @param f 
-#'
-#' @return
-#' @export
-#'
-#' @examples
 .parse_config_body = function(f){
   config_dt = read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE)
   config_dt = .enforce_file_var(config_dt)
@@ -244,11 +321,11 @@ get_feature_file_load_function = function(feature_files){
 }
 
 
-#' Title
+#' parse_fetch_options
+#' 
+#' @param fop character of options
 #'
-#' @param fop 
-#'
-#' @return
+#' @return named list of options
 #' 
 #' @examples
 #' fop = "win_size:10,win_method:\"summary\",summary_FUN:mean"
@@ -283,15 +360,20 @@ parse_fetch_options = function(fop){
   })
 }
 
-#' Title
+#' .parse_config_header
 #'
-#' @param f 
-#' @param valid_feature_var 
+#' @param f a config file
+#' @param valid_feature_var supported variables to attempt to extract
 #'
-#' @return
-#' @export
+#' @return A named list containing configuration options mapped to values.
 #'
 #' @examples
+#' valid_feature_var = c("main_dir", "overlap_extension", "n_peaks", 
+#'   "balance_groups", "consensus_n", 
+#'   "consensus_fraction", "color_by", "color_mapping", 
+#'   "run_by", "to_run", "to_run_reference", "is_null")
+#' cfg_file = system.file("extdata/ssvQC_peak_config.csv", package = "ssvQC")
+#' .parse_config_header(cfg_file, valid_feature_var)
 .parse_config_header = function(f, valid_feature_var){
   cfg_txt = fread(f, sep = "\n", header = FALSE)[grepl("^#CFG", V1)]
   cfg_txt = paste(sub("#CFG ?", "", cfg_txt$V1), collapse = " ")
@@ -381,7 +463,7 @@ is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam
   .test_suff(files, suff)
 }
 
-
+#' internal function used by QcConfig.save_config QcConfigSignal.save_config and QcConfigFeatures.save_config
 .save_config = function(object, file, slots_to_save, kvp_slots, toss_names = "summary_FUN"){
   hdr1 = sapply(slots_to_save, function(x){
     val = slot(object, x)

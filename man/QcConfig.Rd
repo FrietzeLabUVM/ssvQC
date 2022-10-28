@@ -32,7 +32,7 @@ QcScaleFill(object)
 
 \S4method{show}{QcConfig}(object)
 
-QcConfig.save_config(object)
+QcConfig.save_config(object, file)
 }
 \arguments{
 \item{file_paths}{character paths to files}
@@ -43,7 +43,7 @@ QcConfig.save_config(object)
 
 \item{group_colors}{vector of colors to use per group}
 
-\item{object}{}
+\item{object}{QcConfig object to save to text file.}
 
 \item{QcConfig}{}
 }
@@ -53,6 +53,8 @@ A QcConfig object
 a named vector of colors
 
 a ggplot2 scale_fill_manual
+
+invisibly returns path to saved config file.
 }
 \description{
 QcConfig
@@ -69,9 +71,7 @@ QcScaleFill
 
 QcScaleFill for QcConfig
 
-Title
-
-Title
+QcConfig.save_config
 }
 \section{Slots}{
 
@@ -104,4 +104,8 @@ ggplot(my_df, aes(x = x, y = y, fill = group)) +
   geom_point(size = 20, pch = 22) +
   expand_limits(x = c(0, 3)) +
   QcScaleFill(QcConfig(my_df$group))
+cfg_file = system.file("extdata/ssvQC_peak_config.csv", package = "ssvQC")
+qc_features = QcConfigFeatures.parse(cfg_file)
+f = tempfile()
+QcConfig.save_config(qc_features, f)
 }

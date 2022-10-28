@@ -17,3 +17,21 @@ invisibly returns config file paths.
 \description{
 ssvQC.save_config
 }
+\examples{
+features_config_file = system.file(
+  package = "ssvQC", 
+  "extdata/ssvQC_peak_config.csv"
+)
+features_config = QcConfigFeatures.parse(features_config_file)
+
+bam_config_file = system.file(
+  package = "ssvQC", 
+  "extdata/ssvQC_bam_config.csv"
+)
+bam_config = QcConfigSignal.parse(bam_config_file)
+
+sqc = ssvQC(features_config, bam_config)
+
+out_dir = tempdir()
+ssvQC.save_config(sqc, file.path(out_dir, "test_save_config"))
+}

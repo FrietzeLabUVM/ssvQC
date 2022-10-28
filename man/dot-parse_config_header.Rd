@@ -2,15 +2,26 @@
 % Please edit documentation in R/functions_misc.R
 \name{.parse_config_header}
 \alias{.parse_config_header}
-\title{Title}
+\title{.parse_config_header}
 \usage{
 .parse_config_header(f, valid_feature_var)
 }
 \arguments{
-\item{f}{}
+\item{f}{a config file}
 
-\item{valid_feature_var}{}
+\item{valid_feature_var}{supported variables to attempt to extract}
+}
+\value{
+A named list containing configuration options mapped to values.
 }
 \description{
-Title
+.parse_config_header
+}
+\examples{
+valid_feature_var = c("main_dir", "overlap_extension", "n_peaks", 
+  "balance_groups", "consensus_n", 
+  "consensus_fraction", "color_by", "color_mapping", 
+  "run_by", "to_run", "to_run_reference", "is_null")
+cfg_file = system.file("extdata/ssvQC_peak_config.csv", package = "ssvQC")
+.parse_config_header(cfg_file, valid_feature_var)
 }

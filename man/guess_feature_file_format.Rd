@@ -7,8 +7,15 @@
 guess_feature_file_format(feature_files)
 }
 \arguments{
-\item{feature_files}{}
+\item{feature_files}{A feature or interval file path. A vector of multiple files is acceptable.}
+}
+\value{
+A character vector describing each entry in feature_files.
 }
 \description{
-guess_feature_file_format
+Check if feature file has a common format. ie. narrowPeak, broadPeak, or bed.
+}
+\examples{
+feature_files = dir(system.file("extdata", package = "ssvQC"), pattern = "bed$|Peak$", full.names = TRUE)
+guess_feature_file_format(feature_files)
 }

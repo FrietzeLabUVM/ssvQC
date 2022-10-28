@@ -80,10 +80,10 @@ check_QcConfigSignal = function(object){
 #' @slot sort_method 
 #' @slot plot_value 
 #' @slot heatmap_limit_values 
-#' @slot lineplot_free_limits
+#' @slot lineplot_free_limits 
+#' @slot center_signal_at_max 
+#' @slot flip_signal_mode 
 #' @slot n_clusters 
-#'
-#' @slot  
 #'
 #' @rdname QcConfigSignal
 #' @export
@@ -91,6 +91,7 @@ check_QcConfigSignal = function(object){
 setClass("QcConfigSignal", contains = "QcConfig",
          representation = list(
            view_size = "numeric",
+           win_size = "numeric",
            read_mode = "character",
            fetch_options = "list",
            cluster_value = "character",
@@ -118,6 +119,7 @@ setMethod("names", "QcConfigSignal",
           {
             c(
               "view_size", 
+              "window_size",
               "read_mode", 
               "fetch_options", 
               "cluster_value", 
@@ -146,6 +148,7 @@ setMethod("$", "QcConfigSignal",
           {
             switch (name,
                     view_size = x@view_size, 
+                    window_size = x@win_size,
                     read_mode = x@read_mode, 
                     fetch_options = x@fetch_options, 
                     cluster_value = x@cluster_value, 
@@ -174,6 +177,9 @@ setReplaceMethod("$", "QcConfigSignal",
                    switch (name,
                            view_size = {
                              x@view_size = value
+                           },
+                           window_size = {
+                             x@win_size = window_size
                            },
                            read_mode = {
                              stopifnot(value %in% c("bam_SE", "bam_PE", "bigwig", "null"))  
@@ -308,35 +314,64 @@ setReplaceMethod("$", "QcConfigSignal",
 
 #' QcConfigSignal
 #'
-#' @param config_df 
-#' @param run_by 
-#' @param color_by 
-#' @param color_mapping 
-#' @param read_mode 
-#' @param view_size 
-#' @param to_run 
-#' @param to_run_reference 
-#' @param fetch_options 
-#' @param cluster_value 
-#' @param linearQuantile_cutoff 
-#' @param sort_value 
-#' @param sort_method 
-#' @param center_signal_at_max
-#' @param flip_signal_mode 
-#' @param is_null
-#' @param plot_value 
-#' @param heatmap_limit_values 
-#' @param lineplot_free_limits 
-#' @param n_clusters 
+#' @param config_df A data.frame containing configuration information for signal
+#'   (bam or bigwig) files. Should contain a "file" attribute and entires for
+#'   run_by and color_by.
+#' @param run_by Name of the attribute specify how signal data should be
+#'   grouped.
+#' @param to_run Values in run_by that represent running groups.
+#' @param to_run_reference Values in run_by that should be included in all run
+#'   groups.
+#' @param color_by Name of the attribute specify how signal data should be
+#'   colored in relevant plots
+#' @param color_mapping Name character vector where names are values of color_by
+#'   and values are valid R colors (color names or hex values).
+#' @param read_mode Read mode of signal data, one of bam_SE, bam_PE, or bigwig.
+#'   Use SQC_READ_MODES$.
+#' @param view_size Consistent size to use when viewing assessment regions. Uses
+#'   SQC_VIEW_SIZE option or 3kb as default.
+#' @param window_size The window size used when fetching signal. Lower values
+#'   increase resolution but also RAM usage. Default is 200 bp.
+#' @param fetch_options Named list of additional arguments to pass to signal
+#'   fetch function.
+#' @param cluster_value Value in SQC_SIGNAL_VALUES$ to use for clustering. RPM
+#'   values are not valid if read_mode is "bigwig".
+#' @param linearQuantile_cutoff Quantile to use for linearQuantile normalization
+#'   procedure. Values above this cutoff are treated as outliers.
+#' @param sort_value Value in SQC_SIGNAL_VALUES$ to use for sorting. RPM values
+#'   are not valid if read_mode is "bigwig".
+#' @param sort_method One of two available method to use when sorting within
+#'   clusters. If "hclust", hierarchical clustering is applied. If the default
+#'   of "sort", regions are sorting by decreasing signal.
+#' @param plot_value Value in SQC_SIGNAL_VALUES$ to represent in plots. RPM
+#'   values are not valid if read_mode is "bigwig".
+#' @param heatmap_limit_values Color scale limits for heatmaps. Default is 0 to
+#'   10.
+#' @param lineplot_free_limits If TRUE (default), lineplot facets per cluster
+#'   will have free axis. If FALSE a consistnet y-axis is used for all clusters.
+#' @param center_signal_at_max If TRUE, signal is centered at local maxima prior
+#'   to any clustering. The default is FALSE. See details for explanation or
+#'   interaction with assessment features.
+#' @param flip_signal_mode  Value is SQC_FLIP_SIGNAL_MODES$.  If not "none"
+#'   (Default) signal profiles are flipped so that highest signal is on one side
+#'   or the other.  See details for explanation or interaction with assessment
+#'   features.
+#' @param is_null If TRUE, this QcConfigSignal is considered null/empty.
+#' @param n_clusters The number of k-means clusters for the heatmap.
 #'
-#' @return
+#'   Since center_signal_at_max and flip_signal_mode have the potential to
+#'   modify the assessment regions based on signal run groups, the modified
+#'   assessment feature set is store in signal_data for each run group. They can
+#'   be accessed like this: sqc$signal_data$FEATURE_NAME$SIGNAL_NAME$query_gr
+#'
+#' @return A QcConfigSignal object
 #' @export
 #' @rdname QcConfigSignal
 #' @examples
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' bam_config_df = .parse_config_body(bam_config_file)
 #' sig_conf = QcConfigSignal(bam_config_df)
-#' 
+#'
 #' bigwig_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bigwig_config.csv")
 #' bigwig_config_df = .parse_config_body(bigwig_config_file)
 #' sig_conf.bw = QcConfigSignal(bigwig_config_df)
@@ -348,6 +383,7 @@ QcConfigSignal = function(config_df,
                           color_mapping = NULL,
                           read_mode = NULL,
                           view_size = getOption("SQC_VIEW_SIZE", 3e3), 
+                          window_size = 200,
                           fetch_options = list(),
                           cluster_value = NULL,
                           linearQuantile_cutoff = .98,
@@ -448,6 +484,7 @@ QcConfigSignal = function(config_df,
       color_mapping = color_mapping,
       read_mode = read_mode,
       view_size = view_size, 
+      win_size = window_size,
       fetch_options = fetch_options,
       cluster_value = cluster_value,
       linearQuantile_cutoff = linearQuantile_cutoff,
@@ -464,7 +501,7 @@ QcConfigSignal = function(config_df,
 
 #' QcConfigSignal null placeholder
 #'
-#' @return QcConfigSignal object
+#' @return A null/empty QcConfigSignal object
 #' @export
 #' @rdname QcConfigSignal
 #' @examples
@@ -476,7 +513,7 @@ QcConfigSignal.null = function(){
 
 #' @param signal_config_file Configuration file for signal data.
 #'
-#' @return
+#' @return A QcConfigSignal object
 #' @export
 #' @rdname QcConfigSignal
 #' @examples
@@ -489,6 +526,7 @@ QcConfigSignal.parse = function(signal_config_file){
   signal_config_dt = .parse_config_body(signal_config_file)
   valid_signal_var = c("main_dir", 
                        "view_size", 
+                       "window_size",
                        "read_mode", 
                        "color_by", 
                        "color_mapping", 
@@ -529,6 +567,7 @@ QcConfigSignal.parse = function(signal_config_file){
                   main_dir = NULL, 
                   read_mode = NULL,
                   view_size = getOption("SQC_VIEW_SIZE", 3e3),
+                  window_size = getOption("SQC_WINDOW_SIZE", 200),
                   color_by = NULL, color_mapping = NULL, 
                   run_by = NULL, 
                   to_run = NULL, 
@@ -553,6 +592,7 @@ QcConfigSignal.parse = function(signal_config_file){
                    color_mapping = color_mapping, 
                    read_mode = read_mode, 
                    view_size = view_size, 
+                   window_size = window_size,
                    fetch_options = fetch_options,
                    cluster_value = cluster_value,
                    linearQuantile_cutoff = linearQuantile_cutoff,
@@ -601,6 +641,7 @@ QcConfigSignal.files = function(file_paths,
                                 group_name.input = "input",
                                 group_colors = NULL,
                                 view_size = getOption("SQC_VIEW_SIZE", 3e3), 
+                                window_size = getOption("SQC_WINDOW_SIZE", 200),
                                 read_mode = NULL,
                                 cluster_value = NULL,
                                 linearQuantile_cutoff = .98,
@@ -641,6 +682,8 @@ QcConfigSignal.files = function(file_paths,
                  run_by = "All", 
                  color_by = "group", 
                  color_mapping = group_colors,
+                 view_size = view_size,
+                 window_size = window_size,
                  cluster_value = cluster_value,
                  linearQuantile_cutoff = linearQuantile_cutoff,
                  sort_value = sort_value,
@@ -664,17 +707,19 @@ get_fetch_fun = function(read_mode){
            seqsetvis::ssvFetchBigwig
          })
 }
-
-#' @param qc_signal 
-#' @param query_gr 
+ 
+#' @param qc_signal A QcConfigSignal object
+#' @param query_gr A GRanges to fetch data for
 #'
-#' @return
-#' @export
+#' @return A list of 2 items prof_dt and query_gr.  prof_dt is a tidy data.table
+#'   of signal profiles.  query_gr is a GRanges that may have been modified from
+#'   input query_gr if signal profiles are flipped or centered according to
+#'   center_signal_at_max or flip_signal_mode in the signal config.
 #' @rdname QcConfigSignal
 #' @examples
 #' bam_config_file = system.file(package = "ssvQC", "extdata/ssvQC_bam_config.csv")
 #' qc_signal = QcConfigSignal.parse(bam_config_file)
-#' 
+#'
 #' feature_config_file = system.file(package = "ssvQC", "extdata/ssvQC_peak_config.csv")
 #' qc_features = QcConfigFeatures.parse(feature_config_file)
 #' query_gr = qc_features$assessment_features
@@ -691,6 +736,7 @@ fetch_signal_at_features = function(qc_signal, query_gr, bfc = new_cache()){
   }
   call_args = c(list(
     file_paths = qc_signal@meta_data, 
+    win_size = qc_signal@win_size,
     qgr = query_gr, 
     return_data.table = TRUE, 
     names_variable = "name"), 
@@ -703,12 +749,8 @@ fetch_signal_at_features = function(qc_signal, query_gr, bfc = new_cache()){
   if(qc_signal@center_signal_at_max == TRUE){
     query_gr.center = centerGRangesAtMax(prof_dt = prof_dt, qgr = query_gr, width = width(query_gr))
     message("Centering signal profiles...")
-    call_args.center = c(list(
-      file_paths = qc_signal@meta_data, 
-      qgr = query_gr.center, 
-      return_data.table = TRUE, 
-      names_variable = "name"), 
-      extra_args)
+    call_args.center = call_args
+    call_args.center$qgr = query_gr.center
     prof_dt = bfcif(bfc, digest(list(fetch_FUN, call_args.center)), function(){
       do.call(fetch_FUN, call_args.center)
     })
@@ -770,6 +812,7 @@ setMethod("split", signature = c("QcConfigSignal", "factor", "logical"), definit
         color_mapping = x@color_mapping,
         read_mode = x@read_mode,
         view_size = x@view_size, 
+        win_size = x@win_size,
         cluster_value = x@cluster_value,
         linearQuantile_cutoff = x@linearQuantile_cutoff,
         sort_value = x@sort_value,
@@ -792,7 +835,9 @@ setMethod("split", signature = c("QcConfigSignal", "character", "logical"), defi
   split(x, factor(f, levels = unique(f)), FALSE)
 })
 
-#' @return
+#' QcConfigSignal.save_config
+#' 
+#' @return Invisibly returns path to saved config file.
 #' @export
 #' @rdname QcConfigSignal
 #' @examples
@@ -806,6 +851,7 @@ setMethod("split", signature = c("QcConfigSignal", "character", "logical"), defi
 QcConfigSignal.save_config = function(object, file){
   slots_to_save = c(
     "view_size",
+    "win_size",
     "read_mode",
     "run_by",
     "to_run",

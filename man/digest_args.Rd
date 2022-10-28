@@ -7,10 +7,39 @@
 digest_args(env = parent.frame(), to_ignore = character(), ...)
 }
 \arguments{
-\item{env}{}
+\item{env}{Environment to collect variable from. By default this is the
+calling environment, i.e. the function containing a call to get_args. This
+may also be a function that returns an environment.}
 
-\item{...}{}
+\item{to_ignore}{character names of variables to ignore.}
+
+\item{...}{Additional variables that should be considered as part of
+environment.}
+}
+\value{
+A md5 digest of all variabes in calling environment. For a function
+  is the same as calling arguments.
 }
 \description{
-returns digest results of name list of parameters of calling function
+returns digest::digest results of named list of arguments to calling function
+}
+\examples{
+#The most common usage is to simply collect all local variables in a function
+test_fun = function(x = 1, y = 2){
+  digest_args()
+}
+test_fun()
+
+#Specified variables may be ignored
+test_fun2 = function(x = 1, y = 2){
+  digest_args(to_ignore = "x")
+}
+test_fun2()
+
+#Additional variables can also be added from higher environments
+global_z = 3
+test_fun3 = function(x = 1, y = 2){
+  digest_args(env = parent.frame, to_ignore = character(), z = global_z)
+}
+test_fun3()
 }
