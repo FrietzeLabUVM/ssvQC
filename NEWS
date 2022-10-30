@@ -1,3 +1,7 @@
+1.0.20
+
+* ssvQC should work when unattached (bug in get_group_colors relying on SQC_OPTIONS)
+
 1.0.19
 
 * fragLens from config now prefered over fragLens detected by SCC.
