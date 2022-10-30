@@ -495,7 +495,7 @@ is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam
 }
 
 get_group_colors = function(group_names){
-  cols = SQC_OPTIONS$SQC_COLORS[(seq_along(group_names)-1) %% length(SQC_OPTIONS$SQC_COLORS) + 1]
+  cols = getOption("SQC_COLORS", seqsetvis::safeBrew(length(group_names), "Dark2"))
   names(cols) = group_names
   cols
 }
