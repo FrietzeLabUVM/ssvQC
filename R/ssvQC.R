@@ -202,7 +202,7 @@ ssvQC = function(features_config = NULL,
   dir.create(out_dir, showWarnings = FALSE)
   
   if(!is.null(features_config) & !is.null(signal_config)){
-    if(signal_config@read_mode == SQC_READ_MODES$bigwig){
+    if(signal_config@read_mode == sqc_read_modes$bigwig){
       new("ssvQC.complete.bw",
           features_config = features_config,
           signal_config = signal_config,
@@ -237,7 +237,7 @@ ssvQC = function(features_config = NULL,
         matched_only = matched_only
     )
   }else if(!is.null(signal_config)){
-    if(signal_config@read_mode == SQC_READ_MODES$bigwig){
+    if(signal_config@read_mode == sqc_read_modes$bigwig){
       new("ssvQC.signalOnly.bw",
           features_config = QcConfigFeatures.null(),
           signal_config = signal_config,

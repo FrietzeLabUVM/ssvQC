@@ -7,7 +7,7 @@
   }else{
     sig_dt = as.data.table(object@meta_data)[, .(file, name, fragLens)][order(file)]  
   }
-  if(object@read_mode != SQC_READ_MODES$bigwig){
+  if(object@read_mode != sqc_read_modes$bigwig){
     object = ssvQC.prepMappedReads(object)  
   }
   

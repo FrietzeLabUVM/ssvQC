@@ -1,6 +1,6 @@
-1.0.20
+1.0.21
 
-* ssvQC should work when unattached (bug in get_group_colors relying on SQC_OPTIONS)
+* ssvQC should work when unattached (bug in get_group_colors relying on SQC_OPTIONS, similar SQC_READ_MODES)
 
 1.0.19
 
