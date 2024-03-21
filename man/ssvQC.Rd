@@ -2,7 +2,13 @@
 % Please edit documentation in R/ssvQC.R, R/ssvQC_FRIP.R, R/ssvQC_SCC.R,
 %   R/ssvQC_capValue.R, R/ssvQC_correlation.R, R/ssvQC_features.R,
 %   R/ssvQC_fragLens.R, R/ssvQC_mappedReads.R, R/ssvQC_signal.R
-\name{show,ssvQC-method}
+\docType{class}
+\name{ssvQC.featureOnly-class}
+\alias{ssvQC.featureOnly-class}
+\alias{ssvQC.signalOnly-class}
+\alias{ssvQC.complete-class}
+\alias{ssvQC.signalOnly.bw-class}
+\alias{ssvQC.complete.bw-class}
 \alias{show,ssvQC-method}
 \alias{ssvQC}
 \alias{ssvQC.runAll}
@@ -22,7 +28,7 @@
 \alias{ssvQC.plotMappedReads}
 \alias{ssvQC.prepSignal}
 \alias{ssvQC.plotSignal}
-\title{show concise summary of ssvQC object status.}
+\title{ssvQC}
 \usage{
 \S4method{show}{ssvQC}(object)
 
@@ -86,14 +92,12 @@ new_cache() will be used.}
 
 \item{force_euler}{If TRUE forces Euler plots to be generated for a list of feature sets longer than 8.  Euler plots can take quite a long time to generate as more feature sets are generated.}
 
-\item{ssvQC}{}
+\item{ssvQC}{A ssvQC object}
 }
 \value{
 A ssvQC object.  Data needs to be loaded after via ssvQC.runAll or sub-methods ssvQC.plot*.
 }
 \description{
-show concise summary of ssvQC object status.
-
 ssvQC
 }
 \examples{

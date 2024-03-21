@@ -1,7 +1,7 @@
 
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage("Attaching ssvQC version ",
-                        packageDescription("ssvQC")$Version, ".")
+                        utils::packageDescription("ssvQC")$Version, ".")
   #When adding new options here, also add them to the "names" setMethod below
   options("SQC_COLORS" = seqsetvis::safeBrew(8, "Dark2"))
   options("SQC_CONSENSUS_N" = 1)
@@ -14,10 +14,10 @@
   options("SQC_CACHE_VERSION" = "v4")
   options("SQC_CACHE_PATH" = "~/.cache")
   options("SQC_CACHE_VERBOSE" = FALSE)
-  SQC_OPTIONS <<- new("SQC_OPTIONS")
-  SQC_SIGNAL_VALUES <<- sqc_signal_values
-  SQC_READ_MODES <<- sqc_read_modes
-  SQC_FLIP_SIGNAL_MODES <<- flip_signal_modes
+  assign("SQC_OPTIONS", new("SQC_OPTIONS"), envir = .GlobalEnv)
+  assign("SQC_SIGNAL_VALUES", sqc_signal_values, envir = .GlobalEnv)
+  assign("SQC_READ_MODES", sqc_read_modes, envir = .GlobalEnv)
+  assign("SQC_FLIP_SIGNAL_MODES", flip_signal_modes, envir = .GlobalEnv)
 }
 
 setClass("SQC_OPTIONS", representation = list(

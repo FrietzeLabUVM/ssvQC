@@ -289,7 +289,7 @@ setReplaceMethod("$", "QcConfigSignal",
                                }
                                names(value) = col_lev
                              }else{
-                               if(!all(names(value) %in% col_lev)){
+                               if(!all(col_lev %in% names(value))){
                                  stop(paste(collapse = "\n",
                                             c("Missing name values from color mapping. Required:", 
                                               setdiff(col_lev, names(value)))))

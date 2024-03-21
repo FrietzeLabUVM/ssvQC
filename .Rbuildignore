@@ -2,3 +2,11 @@
 ^\.Rproj\.user$
 vignettes/MM_CTCF_qc.Rmd
 ref_code
+.+csv$
+.+pdf$
+.+Rds$
+.+txt$
+^dev_.+
+^example..+
+^ik_.+
+^qc_.+

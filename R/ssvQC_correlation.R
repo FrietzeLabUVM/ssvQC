@@ -1,6 +1,7 @@
 ##Correlation
 #' @export
 #' @rdname ssvQC
+#' @importFrom reshape2 melt
 setGeneric("ssvQC.prepCorrelation", function(object){standardGeneric("ssvQC.prepCorrelation")})
 setMethod("ssvQC.prepCorrelation", "ssvQC.complete", function(object){
   if(is.null(object@other_data$FRIP)){
@@ -85,6 +86,7 @@ setMethod("ssvQC.prepCorrelation", "ssvQC.signalOnly", function(object){
 #' @export
 #' @rdname ssvQC
 #' @import pheatmap
+#' @importFrom scales rescale 
 setGeneric("ssvQC.plotCorrelation", function(object){standardGeneric("ssvQC.plotCorrelation")})
 setMethod("ssvQC.plotCorrelation", "ssvQC.complete", function(object){
   if(is.null(object@other_data$read_count_correlation) || is.null(object@other_data$signal_profile_correlation)){

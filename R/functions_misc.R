@@ -310,8 +310,9 @@ get_feature_file_load_function = function(feature_files){
   my_df
 }
 
+#' @importFrom utils read.table
 .parse_config_body = function(f){
-  config_dt = read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE)
+  config_dt = utils::read.table(f, sep = ",", header = TRUE, stringsAsFactors = FALSE)
   config_dt = .enforce_file_var(config_dt)
   config_dt = .enforce_name_var(config_dt)
   config_dt = .enforce_found_order(config_dt)
@@ -495,8 +496,7 @@ is_signal_file = function(files, suff = getOption("SQC_SIGNAL_FILE_SUFF", c("bam
 }
 
 get_group_colors = function(group_names){
-  cols = getOption("SQC_COLORS", seqsetvis::safeBrew(length(group_names), "Dark2"))
-  names(cols) = group_names
+  cols = getOption("SQC_COLORS", seqsetvis::safeBrew(group_names, "Dark2"))
   cols
 }
 

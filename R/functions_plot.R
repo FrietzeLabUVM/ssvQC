@@ -6,7 +6,7 @@
 #' @export
 #'
 #' @import ggplot2
-#' @rawNamespace import(data.table, except = c(shift, first, second, last))
+#' @rawNamespace import(data.table, except = c(shift, first, second, last, melt, dcast))
 #'
 #' @examples
 #' fq_files = dir("inst/extdata",
@@ -65,59 +65,59 @@ plot_fq_dt = function(fq_dt){
 #'
 plot_feature_comparison = function(peak_grs, min_fraction = 0, min_number = 2, force_euler = FALSE, peak_colors = NULL){
   olaps_all = seqsetvis::ssvOverlapIntervalSets(c(peak_grs))
-
+  
   p_peak_counts_all = seqsetvis::ssvFeatureBars(peak_grs, show_counts = FALSE, counts_text_colors = "gray60", bar_colors = peak_colors) +
     guides(fill = "none") +
     scale_y_continuous(labels = function(x)x/1e3) +
     labs(y = "peak count (k)", title = "all peaks", subtitle = paste("counts:", formatC(max(lengths(peak_grs)), big.mark = ",", format = "d"), "max"), x = "")
-
+  
   p_peak_overlaps_all = seqsetvis::ssvFeatureBinaryHeatmap(olaps_all, raster_approximation = TRUE) +
     labs(title = "all peaks", subtitle = paste("overlaps:", formatC(length(olaps_all), big.mark = ",", format = "d"), "regions"))
-
+  
   p_peak_upset_all = seqsetvis::ssvFeatureUpset(olaps_all) +
     labs(title = "all peaks", subtitle = paste("overlaps:", formatC(length(olaps_all), big.mark = ",", format = "d"), "regions"))
-
+  
   if(length(peak_grs) < 4){
     p_peak_venn_all = seqsetvis::ssvFeatureVenn(olaps_all, circle_colors = peak_colors) +
       labs(title = "all peaks", subtitle = paste("overlaps:", formatC(length(olaps_all), big.mark = ",", format = "d"), "regions"))
   }else{
     p_peak_venn_all = ggplot() + theme_void() + labs(title = "Can't run venn for more than 3 groups")
   }
-
+  
   if(length(peak_grs) < 9 || force_euler){
     p_peak_euler_all = seqsetvis::ssvFeatureEuler(olaps_all, circle_colors = peak_colors) +
       labs(title = "all peaks", subtitle = paste("overlaps:", formatC(length(olaps_all), big.mark = ",", format = "d"), "regions"))
   }else{
     p_peak_euler_all = ggplot() + theme_void() + labs(title = "Can't run Euler for more than 8 groups.\nCan force with force_euler = TRUE.")
   }
-
+  
   message("consensus peaks...")
   olaps_consensus = seqsetvis::ssvConsensusIntervalSets(peak_grs, min_fraction = min_fraction, min_number = max(2, min(min_number, length(peak_grs))))
   p_peak_counts_consenus = seqsetvis::ssvFeatureBars(olaps_consensus, bar_colors = "black", show_counts = FALSE, counts_text_colors = "gray60" ) +
     guides(fill = "none") +
     scale_y_continuous(labels = function(x)x/1e3) +
     labs(y = "peak count (k)", title = "consensus peaks only", subtitle = paste("counts:", formatC(max(colSums(as.data.frame(mcols(olaps_consensus)))), big.mark = ",", format = "d"), "max"))
-
+  
   p_peak_overlaps_consensus = seqsetvis::ssvFeatureBinaryHeatmap(olaps_consensus, raster_approximation = TRUE) +
     labs(title = "consensus peaks only", subtitle = paste("overlaps:", formatC(length(olaps_consensus), big.mark = ",", format = "d"), "regions"))
-
+  
   p_peak_upset_consensus = seqsetvis::ssvFeatureUpset(olaps_consensus) +
     labs(title = "consensus peaks only", subtitle = paste("overlaps:", formatC(length(olaps_consensus), big.mark = ",", format = "d"), "regions"))
-
+  
   if(length(peak_grs) < 4){
     p_peak_venn_consensus = seqsetvis::ssvFeatureVenn(olaps_consensus) +
       labs(title = "consensus peaks only", subtitle = paste("overlaps:", formatC(length(olaps_consensus), big.mark = ",", format = "d"), "regions"))
   }else{
     p_peak_venn_consensus = ggplot() + theme_void() + labs(title = "Can't run venn for more than 3 groups")
   }
-
+  
   if(length(peak_grs) < 9 || force_euler){
     p_peak_euler_consensus = seqsetvis::ssvFeatureEuler(olaps_consensus) +
       labs(title = "consensus peaks only", subtitle = paste("overlaps:", formatC(length(olaps_consensus), big.mark = ",", format = "d"), "regions"))
   }else{
     p_peak_euler_consensus = ggplot() + theme_void() + labs(title = "Can't run Euler for more than 8 groups.\nCan force with force_euler = TRUE.")
   }
-
+  
   return(list(
     all = list(
       count = p_peak_counts_all,
@@ -188,14 +188,14 @@ plot_frip_dt = function(frip_dt, sort_by = c("none", "frip", "reads_in_peak")[1]
     coord_cartesian(ylim = stats::quantile(frip_dt$reads_in_peak, c(0.1, 0.96))) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
     labs(y = "Read count per peak", x = "")
-
+  
   p_frip1 = ggplot(frip_dt,
                    aes_string(x = name_var, y = "frip", color = color_var)) +
     geom_boxplot(outlier.shape = NA) +
     coord_cartesian(ylim = stats::quantile(frip_dt$frip, c(0.1, 0.96))) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
     labs(y = "FRIP per peak", x = "")
-
+  
   tmp = frip_dt[, list(reads_in_peak = sum(reads_in_peak), mapped_reads = unique(mapped_reads)), c(union(color_var, name_var))]
   tmp[, frip := reads_in_peak / mapped_reads]
   p_fripSum1 = ggplot(tmp,
@@ -203,7 +203,7 @@ plot_frip_dt = function(frip_dt, sort_by = c("none", "frip", "reads_in_peak")[1]
     geom_bar(stat = "identity", color = "black") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(.01, .01, .01, .1, unit = "npc")) +
     labs(x = "", y = "FRIP")
-
+  
   if(!is.null(color_mapping)){
     p_reads1 = p_reads1 + scale_color_manual(values = color_mapping)
     p_frip1 = p_frip1 + scale_color_manual(values = color_mapping)
@@ -221,7 +221,7 @@ plot_frip_dt = function(frip_dt, sort_by = c("none", "frip", "reads_in_peak")[1]
     frip_total = p_fripSum1,
     levels = name_lev
   ))
-
+  
 }
 
 #' plot_scc_dt
@@ -246,7 +246,7 @@ plot_frip_dt = function(frip_dt, sort_by = c("none", "frip", "reads_in_peak")[1]
 plot_scc_dt = function(scc_dt, main_title = NULL, name_var = "name_split", name_lev = NULL){
   correlation = read_length = fragment_length = name = id = read_correlation = fragment_correlation = NULL #global bindings for data.table
   scc_dt_agg = scc_dt$average_correlation
-
+  
   if(!is.null(name_lev)){
     stopifnot(unique(scc_dt_agg[[name_var]]) %in% name_lev)
     scc_dt_agg[[name_var]] = factor(scc_dt_agg[[name_var]], levels = name_lev)
@@ -261,7 +261,7 @@ plot_scc_dt = function(scc_dt, main_title = NULL, name_var = "name_split", name_
     geom_vline(data = scc_dt$read_length, aes(xintercept = read_length), color = "red", linetype = 2) +
     geom_vline(data = scc_dt$fragment_length, aes(xintercept = fragment_length), color = "blue", linetype = 2) +
     labs(subtitle = "Average Strand Cross Correlation (SCC)", caption = "estimated fragment size in blue, read length in red")
-
+  
   tmp = scc_dt$read_correlation[, c(name_var, "id", "correlation"), with = FALSE]
   setnames(tmp, "correlation", "read_correlation")
   tmp2 = scc_dt$stable_fragment_correlation[, c(name_var, "id", "correlation"), with = FALSE]
@@ -269,7 +269,7 @@ plot_scc_dt = function(scc_dt, main_title = NULL, name_var = "name_split", name_
   scc_dt_p = merge(tmp, 
                    tmp2,
                    by = c(name_var, "id")
-                   )
+  )
   if(!is.null(name_lev)){
     stopifnot(unique(scc_dt_p[[name_var]]) %in% name_lev)
     scc_dt_p[[name_var]] = factor(scc_dt_p[[name_var]], levels = name_lev)
@@ -381,7 +381,7 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
   prof_dt$name = factor(prof_dt$name, levels = name_lev)
   prof_dt$facet = prof_dt$name
   levels(prof_dt$facet) = gsub("_", "\n", levels(prof_dt$facet))
-
+  
   prof_dt[, y_relative := y / max(y), list(id)]
   if(!is.null(prof_dt$cluster_id)){
     clust_dt = prof_dt
@@ -395,34 +395,34 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
     clust_dt = merge(prof_dt, assign_dt, by = "id")
     clust_dt$id = factor(clust_dt$id, levels = levels(assign_dt$id))
   }
-
+  
   toplot_id = sampleCap(unique(clust_dt$id), n_to_plot)
-
+  
   x_vals = unique(prof_dt$x)
   view_size = diff(range(x_vals)) + abs(x_vals[2] - x_vals[1])
-
+  
   p_heat = seqsetvis::ssvSignalHeatmap(clust_dt[id %in% toplot_id],
-                            fill_ = fill_var,
-                            max_cols = Inf,
-                            facet_ = "facet", show_cluster_bars = FALSE)
-
+                                       fill_ = fill_var,
+                                       max_cols = Inf,
+                                       facet_ = "facet", show_cluster_bars = FALSE)
+  
   p_heat_sb = seqsetvis::ssvSignalHeatmap.ClusterBars(clust_dt[id %in% toplot_id],
-                                           fill_ = fill_var,
-                                           max_cols = Inf,
-                                           facet_ = "facet", 
-                                           show_cluster_bars = FALSE, 
-                                           return_unassembled_plots = TRUE)
+                                                      fill_ = fill_var,
+                                                      max_cols = Inf,
+                                                      facet_ = "facet", 
+                                                      show_cluster_bars = FALSE, 
+                                                      return_unassembled_plots = TRUE)
   p_heat_sb$heatmap = p_heat_sb$heatmap +
     labs(x = paste(view_size, "bp view size"), fill = "relative pileup") +
     theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), legend.position = "bottom")
-
+  
   p_heat_sb_assembled = seqsetvis::assemble_heatmap_cluster_bars(p_heat_sb, rel_widths = c(1, 9))
-
-
+  
+  
   p_heat = p_heat +
     labs(x = paste(view_size, "bp view size"), fill = "relative pileup") +
     theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), legend.position = "bottom")
-
+  
   clust_sizes = unique(clust_dt[, list(cluster_id, id)])[, .N, list(cluster_id)][rev(order(cluster_id))]
   clust_sizes[, xmin := 0]
   clust_sizes[, xmax := 1]
@@ -438,7 +438,7 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
     coord_cartesian(expand = FALSE) +
     theme_void() +
     facet_grid(~facet)
-
+  
   if(is.null(anno_grs)){
     p_heat_anno = ggplot() + theme_void() + labs(title = "anno_grs not provided")
   }else{
@@ -455,7 +455,7 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
       labs(fill = "feature overlap", x= "kbp", y = "peak region") +
       theme(panel.background = element_blank(), panel.grid = element_blank())
   }
-
+  
   if(is.null(frip_dt)){
     p_fripHeat = ggplot() + theme_void() + labs(title = "frip_dt no provided")
     p_clust_text = ggplot() + theme_void() + labs(title = "frip_dt no provided")
@@ -465,16 +465,16 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
     dt.heat = merge(dt.heat, assign_dt, by = "id")
     tmp = dt.heat[, list(reads_in_peak = sum(reads_in_peak), mapped_reads = unique(mapped_reads)), list(treatment, name, cluster_id)]
     tmp[, frip := reads_in_peak / mapped_reads]
-
+    
     .genome_fraction = function(x){
       sum(width(query_gr[x]))  /3.2e9
     }
-
+    
     w_frac = lapply(split(as.character(assign_dt$id), assign_dt$cluster_id), .genome_fraction)
     w_frac = unlist(w_frac)
     tmp[, cluster_label := paste0("cluster", cluster_id, "\n", w_frac[cluster_id])]
-
-
+    
+    
     p_fripHeat = ggplot(tmp,
                         aes(x = name, y = frip, fill = treatment)) +
       geom_bar(stat = "identity") +
@@ -482,12 +482,12 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
       labs(subtitle = paste(sum(width((query_gr)))/3.2e9, "of genome covered by peaks"), x = "", y = "FRIP") +
       facet_grid(cluster_label~., scales = "free_y", switch = "y") +
       theme(strip.text.y = element_text(angle = 0), strip.placement = "outside")
-
+    
     dt.heat_summary = dt.heat[, list(mean_frip = mean(frip), median_frip = median(frip)), list(name, cluster_id)]
     dt.heat_summary[, txt_mean := round(mean_frip*1e6, 1)]
     dt.heat_summary[, txt_median := round(median_frip*1e6, 1)]
     dt.heat_summary[, txt := paste0(round(mean_frip*1e6, 1), "\n", round(median_frip*1e6, 1))]
-
+    
     p_clust_text = ggplot(dt.heat_summary, aes(x = name, y = factor(cluster_id), label = txt)) +
       geom_text(size = 5, color = NA) +
       geom_text(data = dt.heat_summary, aes(x = name, as.numeric(cluster_id)+.1, label = txt_mean), color = "red", vjust = 0) +
@@ -496,25 +496,25 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
       labs(y = "cluster", x= "", title = "mean FRIP e6", subtitle = "median FRIP e6") +
       theme(plot.title = element_text(size = 14, color = "red"), plot.subtitle = element_text(size = 14, color = "blue"))
   }
-
+  
   if(is.null(scc_dt)){
     p_scc_correlation = ggplot() + theme_void() + labs(title = "scc_dt no provided")
     p_scc_frag_vs_read = ggplot() + theme_void() + labs(title = "scc_dt no provided")
   }else{
-
+    
     scc_dt_agg = scc_dt$full_correlation_results
     stopifnot(any(scc_dt_agg$id %in% assign_dt$id))
     scc_dt_agg = merge(scc_dt_agg, assign_dt, by = "id")
     scc_dt_agg = scc_dt_agg[, list(correlation = mean(correlation)), list(shift, name, cluster_id)]
-
+    
     p_scc_correlation = ggplot(scc_dt_agg, aes(x = shift, y = correlation)) +
       geom_path() +
       facet_grid(cluster_id~name) +
       geom_vline(data = scc_dt$read_length, aes(xintercept = read_length), color = "red", linetype = 2) +
       geom_vline(data = scc_dt$fragment_length, aes(xintercept = fragment_length), color = "blue", linetype = 2) +
       labs(title = "Strand Cross Correlation (SCC)", subtitle = "estimated fragment size in blue, read length in red")
-
-
+    
+    
     scc_dt_p = merge(scc_dt$read_correlation[, list(name, id, read_correlation = correlation)],
                      scc_dt$stable_fragment_correlation[, list(name, id, fragment_correlation = correlation)], by = c("name", "id"))
     scc_dt_p = merge(scc_dt_p, assign_dt, by = "id")
@@ -531,7 +531,7 @@ plot_signals = function(prof_dt, query_gr, assign_dt = NULL, n_to_plot = 500, fi
            x = "read length SCC",
            y = "fragment length estimate SCC")
   }
-
+  
   return(list(
     # assembled = pg_heat,
     heatmap = p_heat,
@@ -571,7 +571,7 @@ plot_anno_overlap = function(anno_dt, name_lev = NULL){
   }
   anno_dt = anno_dt[order(sample)]
   anno_dt$sample_cnt = factor(anno_dt$sample_cnt, levels = unique(anno_dt$sample_cnt))
-
+  
   p_features = ggplot(anno_dt, aes(x = sample_cnt, y = fraction, fill = feature)) +
     geom_bar(stat = "identity") +
     labs(x = "sample\npeak count") +
@@ -636,10 +636,10 @@ plot_feature_overlap_signal_profiles = function(grouped_prof_dt,
     fill_limits = range(grouped_prof_dt[[signal_var]])
   }
   grouped_prof_dt[, plot_fill_ := get(signal_var)]
-
+  
   grouped_prof_dt[plot_fill_ > max(fill_limits), plot_fill_ := max(fill_limits)]
   grouped_prof_dt[plot_fill_ < min(fill_limits), plot_fill_ := min(fill_limits)]
-
+  
   p2_heat_overlaps = ggplot(grouped_prof_dt, aes_string(x = "x", y = rank_var, fill = "plot_fill_")) +
     geom_raster() +
     scale_fill_viridis_c(limits = fill_limits) +
@@ -651,9 +651,9 @@ plot_feature_overlap_signal_profiles = function(grouped_prof_dt,
           strip.text.y = element_text(angle = 0), 
           legend.position = "bottom")
   # p2_heat_overlaps
-
+  
   agg_dt = grouped_prof_dt[, list(plot_fill_ = mean(plot_fill_)), c("name", "name_split", group_var, "x")]
-
+  
   p2_line_facets = ggplot(agg_dt, aes_string(x = "x", y = "plot_fill_", color = color_var)) +
     geom_path() +
     facet_grid(paste0(group_var, "~name_split"), scales = "free_y") +

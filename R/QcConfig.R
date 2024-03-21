@@ -1,6 +1,4 @@
 
-# getOption("SQC_COLORS")
-
 #' QcConfig
 #'
 #' @slot file_paths character.

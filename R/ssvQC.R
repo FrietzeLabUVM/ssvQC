@@ -13,15 +13,20 @@ setClass("ssvQC",
            plots = "list",
            matched_only = "logical"
          ))
+
+#' @rdname ssvQC
 #' @export
 setClass("ssvQC.featureOnly", contains = "ssvQC")
+#' @rdname ssvQC
 #' @export
 setClass("ssvQC.signalOnly", contains = "ssvQC")
+#' @rdname ssvQC
 #' @export
 setClass("ssvQC.complete", contains = "ssvQC")
-
+#' @rdname ssvQC
 #' @export
 setClass("ssvQC.signalOnly.bw", contains = "ssvQC.signalOnly")
+#' @rdname ssvQC
 #' @export
 setClass("ssvQC.complete.bw", contains = "ssvQC.complete")
 
@@ -68,10 +73,7 @@ setMethod("initialize","ssvQC", function(.Object,...){
 #' @export
 setMethod("plot", "ssvQC", definition = function(x).plot_ssvQC(x))
 
-#' show concise summary of ssvQC object status.
-#'
-#' @param ssvQC 
-#'
+#' @param ssvQC A ssvQC object
 #' @export
 #' @rdname ssvQC
 setMethod("show", "ssvQC", definition = function(object).show_ssvQC(object))
@@ -132,7 +134,7 @@ ssvQC.save_config = function(object, file){
 #' options(mc.cores = 1)
 #' set.seed(0)
 #' # To make an ssvQC object, confiugration for features (peaks, other genomic 
-#' regions) and signal (numeric values on the genome from bam pileups or bigwigs)
+#' #regions) and signal (numeric values on the genome from bam pileups or bigwigs)
 #' features_config_file = system.file(
 #'   package = "ssvQC", 
 #'   "extdata/ssvQC_peak_config.csv"
