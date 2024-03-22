@@ -39,5 +39,5 @@ Imports:
     seqsetvis (>= 1.13.1),
     S4Vectors,
     stats
-RoxygenNote: 7.2.2
+RoxygenNote: 7.3.1
 biocViews: Software, ChIPSeq, MultipleComparison, Sequencing, Visualization

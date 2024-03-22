@@ -1,3 +1,7 @@
+1.0.22
+* bugfix for requesting more colors than configured.
+
+
 1.0.21
 
 * ssvQC should work when unattached (bug in get_group_colors relying on SQC_OPTIONS, similar SQC_READ_MODES)

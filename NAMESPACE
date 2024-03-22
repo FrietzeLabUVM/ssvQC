@@ -94,7 +94,6 @@ import(GenomeInfoDb)
 import(GenomicRanges)
 import(Rsamtools)
 import(data.table, except = c(shift, first, second, last, melt, dcast))
-
 import(digest)
 import(ggplot2)
 import(pbmcapply)
