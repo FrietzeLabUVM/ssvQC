@@ -149,15 +149,16 @@ plot_feature_comparison = function(peak_grs, min_fraction = 0, min_number = 2, f
 #' @importFrom stats median quantile
 #'
 #' @examples
-#' peak_files = dir(system.file("extdata", package = "seqqc"), pattern = "Peak$", full.names = TRUE)
+#' library(GenomicRanges)
+#' peak_files = dir(system.file("extdata", package = "ssvQC"), pattern = "Peak$", full.names = TRUE)
 #' peak_grs = seqsetvis::easyLoad_narrowPeak(peak_files)
 #' query_gr = resize(seqsetvis::ssvOverlapIntervalSets(peak_grs), 6e2, fix = "center")
 #'
-#' bam_files = dir(system.file("extdata", package = "seqqc"), pattern = "^M.+bam$", full.names = TRUE)
-#' query_dt.bam = make_dt(bam_files)
+#' bam_files = dir(system.file("extdata", package = "ssvQC"), pattern = "^M.+bam$", full.names = TRUE)
+#' query_dt.bam = ssvQC:::make_dt(bam_files)
 #'
-#' frip_dt = make_frip_dt(query_dt.bam, query_gr)
-#' frip_plots = plot_frip_dt(frip_dt)
+#' frip_dt = ssvQC:::make_frip_dt(query_dt.bam, query_gr)
+#' frip_plots = ssvQC:::plot_frip_dt(frip_dt)
 #' frip_plots$frip_per_peaks
 #' frip_plots$frip_total
 plot_frip_dt = function(frip_dt, sort_by = c("none", "frip", "reads_in_peak")[1], name_lev = NULL, name_var = "name_split", color_var = name_var, color_mapping = NULL, main_title = NULL){

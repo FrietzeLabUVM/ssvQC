@@ -43,7 +43,7 @@ setMethod("ssvQC.prepMappedReads", c("QcConfigSignal"), function(object){
       group_var = sig_config@run_by
       color_mapping = sig_config@color_mapping
       
-      p_mapped_reads = ggplot(bam_config_dt, aes_string(x = "name_split", y = "mapped_reads", fill = color_var)) +
+      p_mapped_reads = ggplot(bam_config_dt, aes_string(x = "name", y = "mapped_reads", fill = color_var)) +
         geom_bar(stat = "identity", position = "dodge", color = "black") +
         scale_fill_manual(values = color_mapping) +
         scale_y_continuous(labels = function(x)paste(x/1e6, "M")) +

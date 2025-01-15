@@ -474,7 +474,7 @@ make_frip_dt = function(query_dt,
     
     setnames(frip_dt, "y", "N")
     
-    frip_dt_filled = melt(dcast(frip_dt, paste0("id~", name_var), value.var = "N", fill = 0), id.vars = "id", value.name = "N", variable.name = name_var)
+    frip_dt_filled = data.table::melt(data.table::dcast(frip_dt, paste0("id~", name_var), value.var = "N", fill = 0), id.vars = "id", value.name = "N", variable.name = name_var)
     frip_dt = merge(frip_dt_filled, unique(frip_dt[, c(intersect(aes_vars, colnames(frip_dt))), with = FALSE]), by = name_var)
     
     message("fetch total mapped reads...")
